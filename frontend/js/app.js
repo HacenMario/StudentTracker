@@ -329,7 +329,7 @@ document.getElementById('settingsLogoUpload').addEventListener('change', functio
 });
 
 // ==========================================
-// 9. دوال QR Code (المسح والتحميل) - النسخة المُصحَّحة
+// 9. دوال QR Code (المسح والتحميل) - النسخة المُحسَّنة للتبديل
 // ==========================================
 
 window.downloadQR = function(studentId) {
@@ -353,6 +353,7 @@ window.downloadQR = function(studentId) {
         .catch(err => alert('فشل تحميل QR: ' + err.message));
 };
 
+// فتح الماسح الضوئي
 function openScanner() {
     const modal = document.getElementById('scannerModal');
     modal.style.display = 'flex';
@@ -373,7 +374,6 @@ function openScanner() {
                 startScannerProcess();
             })
             .catch(() => {
-                // في حال فشل الإيقاف، نُعيد تعيين الكائن
                 html5QrCode = null;
                 startScannerProcess();
             });
@@ -393,25 +393,29 @@ function startScannerProcess() {
         .then(devices => {
             if (devices && devices.length > 0) {
                 availableCameras = devices;
+                // عرض معلومات الكاميرات في الكونسول للمساعدة في التصحيح
+                console.log('📷 الكاميرات المتاحة:', devices.map(d => d.label));
+
+                // اختيار الكاميرا الخلفية إن وجدت، وإلا أول كاميرا
                 let selectedCamera = devices[0];
                 const backCamera = devices.find(d => {
                     const label = d.label.toLowerCase();
-                    return label.includes('back') || label.includes('rear') || 
-                           label.includes('environment') || label.includes('خلفية');
+                    return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('خلفية');
                 });
                 if (backCamera) {
                     selectedCamera = backCamera;
                 } else {
+                    // حاول العثور على كاميرا ليست أمامية
                     const nonFront = devices.find(d => {
                         const label = d.label.toLowerCase();
-                        return !label.includes('front') && !label.includes('selfie') && 
-                               !label.includes('أمامية');
+                        return !label.includes('front') && !label.includes('selfie') && !label.includes('أمامية');
                     });
                     if (nonFront) selectedCamera = nonFront;
                 }
 
                 currentCameraId = selectedCamera.id;
                 resultsContainer.innerHTML = `✅ تم اختيار الكاميرا: ${selectedCamera.label || 'غير معروف'}`;
+                console.log('✅ الكاميرا المختارة:', selectedCamera.label);
                 
                 const switchBtn = document.getElementById('switchCameraBtn');
                 if (devices.length > 1) {
@@ -439,7 +443,6 @@ function startNewScanner(cameraId) {
     const resultsContainer = document.getElementById('qr-reader-results');
     resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
 
-    // التأكد من وجود كائن الماسح (قد يكون null إذا لم يتم إنشاؤه)
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode('qr-reader');
     }
@@ -453,6 +456,7 @@ function startNewScanner(cameraId) {
     .then(() => {
         resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
         currentCameraId = cameraId;
+        console.log('✅ الكاميرا تعمل الآن:', cameraId);
     })
     .catch(err => {
         console.error('فشل تشغيل الكاميرا:', err);
@@ -463,27 +467,33 @@ function startNewScanner(cameraId) {
     });
 }
 
+// تبديل الكاميرا
 function switchCamera() {
     if (availableCameras.length < 2) {
         alert('لا توجد كاميرات أخرى');
         return;
     }
 
+    // اختيار الكاميرا التالية في القائمة
     const currentIndex = availableCameras.findIndex(d => d.id === currentCameraId);
     const nextIndex = (currentIndex + 1) % availableCameras.length;
     const nextCamera = availableCameras[nextIndex];
     
     console.log('🔄 تبديل الكاميرا إلى:', nextCamera.label || 'غير معروف');
-    
-    // إيقاف الماسح الحالي ثم تشغيل الجديد
+    const resultsContainer = document.getElementById('qr-reader-results');
+    resultsContainer.innerHTML = '🔄 جاري تبديل الكاميرا...';
+
+    // إيقاف الماسح الحالي وتشغيل الجديد
     if (html5QrCode) {
         html5QrCode.stop()
             .then(() => {
                 html5QrCode.clear();
                 html5QrCode = null;
+                // نعيد تشغيل الماسح بالكاميرا الجديدة
                 startScannerProcess();
             })
-            .catch(() => {
+            .catch(err => {
+                console.warn('خطأ في إيقاف الماسح للتبديل:', err);
                 html5QrCode = null;
                 startScannerProcess();
             });
@@ -496,7 +506,6 @@ function onScanSuccess(decodedText, decodedResult) {
     const resultsContainer = document.getElementById('qr-reader-results');
     resultsContainer.innerHTML = '✅ جاري معالجة الكود...';
 
-    // إيقاف الماسح مؤقتاً لمنع تكرار المسح
     if (html5QrCode) {
         html5QrCode.pause();
     }
@@ -532,7 +541,7 @@ function onScanSuccess(decodedText, decodedResult) {
 }
 
 function onScanError(error) {
-    // نتجاهل الأخطاء العادية
+    // تجاهل
 }
 
 function closeScanner() {
@@ -552,7 +561,7 @@ function closeScanner() {
     document.getElementById('switchCameraBtn').style.display = 'none';
 }
 
-// ربط الأحداث الخاصة بالماسح
+// ربط الأحداث
 document.getElementById('openScannerBtn').addEventListener('click', openScanner);
 document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
 document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
