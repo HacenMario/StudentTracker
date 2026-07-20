@@ -31,7 +31,7 @@ const io = socketIo(server, {
 app.set('io', io);
 
 app.use(cors());
-app.use(express.json({ limit: '5mb' })); // زيادة الحد لاستقبال الصور
+app.use(express.json({ limit: '10mb' })); // زيادة الحد لاستقبال الصور
 
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
