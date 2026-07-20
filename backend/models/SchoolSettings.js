@@ -3,19 +3,19 @@ const mongoose = require('mongoose');
 const SchoolSettingsSchema = new mongoose.Schema({
   schoolName: {
     type: String,
-    default: 'مدرسة النور الابتدائية',
+    default: 'ابتدائية عقبة بن نافع',
   },
   address: {
     type: String,
-    default: 'شارع السلام، المدينة التعليمية',
+    default: 'شاطئ لافونتان عين البنيان، الجزائر العاصمة',
   },
   phone: {
     type: String,
-    default: '0555 123 456',
+    default: '0542163526',
   },
   email: {
     type: String,
-    default: 'info@school.edu',
+    default: 'stevenhacen@gmail.com',
   },
   // تخزين الصورة كـ Base64 (حد أقصى 1 ميجابايت)
   logo: {
