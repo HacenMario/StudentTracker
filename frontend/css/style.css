@@ -388,3 +388,49 @@ header h1 {
     cursor: pointer;
     text-decoration: none;
 }
+/* تنسيقات لوحة المدير وولي الأمر */
+#adminDashboard, #parentDashboard {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#adminDashboard textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 16px;
+    border: 2px solid #e2eaf2;
+    font-family: 'Tajawal', sans-serif;
+    resize: vertical;
+    min-height: 80px;
+}
+
+#adminNotificationMsg {
+    margin: 10px 0;
+}
+
+#adminSendNotificationBtn {
+    background: #e67e22;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 60px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+#notificationList {
+    list-style: none;
+    padding: 0;
+}
+
+#notificationList li {
+    background: #eaf4ff;
+    padding: 10px 16px;
+    border-radius: 12px;
+    margin: 6px 0;
+    border-right: 4px solid #1c7ed6;
+}
