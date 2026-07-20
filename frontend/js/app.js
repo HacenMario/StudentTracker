@@ -17,7 +17,7 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
-let html5QrCode = null; // لماسح QR
+let html5QrCode = null;
 
 // ==========================================
 // 3. دوال مساعدة
@@ -101,7 +101,6 @@ function logout() {
     token = null;
     currentUser = null;
     if (socket) { socket.disconnect(); socket = null; }
-    // إيقاف الماسح إذا كان مفتوحاً
     closeScanner();
     showLogin();
 }
@@ -329,25 +328,15 @@ document.getElementById('settingsLogoUpload').addEventListener('change', functio
 // 9. دوال QR Code (المسح والتحميل)
 // ==========================================
 
-// تحميل QR Code للطالب
 window.downloadQR = function(studentId) {
-    // إظهار مؤشر تحميل (اختياري)
-    const btn = document.querySelector(`[onclick="downloadQR('${studentId}')"]`);
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري...';
-        btn.disabled = true;
-    }
-
     fetchWithAuth('/api/students/' + studentId + '/qr')
         .then(res => {
-            if (!res.ok) throw new Error('فشل تحميل QR');
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || 'فشل التحميل'); });
+            }
             return res.blob();
         })
         .then(blob => {
-            // التحقق من أن الـ blob هو صورة PNG
-            if (!blob.type.includes('image/png')) {
-                throw new Error('الملف المستلم ليس صورة PNG');
-            }
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -357,19 +346,9 @@ window.downloadQR = function(studentId) {
             a.remove();
             window.URL.revokeObjectURL(url);
         })
-        .catch(err => {
-            alert('فشل تحميل QR: ' + err.message);
-            console.error(err);
-        })
-        .finally(() => {
-            // إعادة الزر إلى حالته الأصلية
-            if (btn) {
-                btn.innerHTML = '<i class="fas fa-qrcode"></i> QR';
-                btn.disabled = false;
-            }
-        });
+        .catch(err => alert('فشل تحميل QR: ' + err.message));
 };
-// فتح الماسح الضوئي
+
 function openScanner() {
     const modal = document.getElementById('scannerModal');
     modal.style.display = 'flex';
@@ -391,10 +370,36 @@ function openScanner() {
 
     Html5Qrcode.getCameras().then(devices => {
         if (devices && devices.length > 0) {
-            let cameraId = devices[0].id;
-            // محاولة اختيار الكاميرا الخلفية إذا كانت موجودة
-            const backCamera = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear'));
-            if (backCamera) cameraId = backCamera.id;
+            // ==========================================
+            // 🔧 تحسين اختيار الكاميرا الخلفية
+            // ==========================================
+            let cameraId = devices[0].id; // افتراضي (أول كاميرا)
+            
+            // 1. محاولة العثور على كاميرا خلفية (back/rear/environment)
+            const backCamera = devices.find(d => 
+                d.label.toLowerCase().includes('back') || 
+                d.label.toLowerCase().includes('rear') ||
+                d.label.toLowerCase().includes('environment') ||
+                d.label.toLowerCase().includes('خلفية')
+            );
+            
+            if (backCamera) {
+                cameraId = backCamera.id;
+                console.log('📷 تم اختيار الكاميرا الخلفية:', backCamera.label);
+            } else {
+                // 2. إذا لم نجد كاميرا خلفية، نبحث عن كاميرا ليست أمامية
+                const notFront = devices.find(d => 
+                    !d.label.toLowerCase().includes('front') && 
+                    !d.label.toLowerCase().includes('selfie') &&
+                    !d.label.toLowerCase().includes('أمامية')
+                );
+                if (notFront) {
+                    cameraId = notFront.id;
+                    console.log('📷 تم اختيار كاميرا (غير أمامية):', notFront.label);
+                } else {
+                    console.log('📷 تم اختيار الكاميرا الافتراضية:', devices[0].label);
+                }
+            }
 
             html5QrCode.start(
                 cameraId,
@@ -425,7 +430,6 @@ function onScanSuccess(decodedText, decodedResult) {
     .then(data => {
         if (data.success) {
             resultsContainer.innerHTML = '✅ ' + data.message;
-            // تحديث القائمة
             if (currentUser.role === 'admin') {
                 loadAdminStudents();
                 loadAdminLogs();
@@ -433,7 +437,6 @@ function onScanSuccess(decodedText, decodedResult) {
                 loadParentStudents();
                 loadParentLogs();
             }
-            // إغلاق الماسح بعد نجاح المسح
             setTimeout(closeScanner, 2000);
         } else {
             resultsContainer.innerHTML = '❌ ' + data.message;
@@ -446,8 +449,7 @@ function onScanSuccess(decodedText, decodedResult) {
 }
 
 function onScanError(error) {
-    // نتجاهل الأخطاء العادية (تظهر أثناء المسح المستمر)
-    // console.warn(error);
+    // نتجاهل الأخطاء العادية
 }
 
 function closeScanner() {
@@ -461,7 +463,6 @@ function closeScanner() {
     document.getElementById('qr-reader-results').innerHTML = '';
 }
 
-// ربط أحداث الماسح
 document.getElementById('openScannerBtn').addEventListener('click', openScanner);
 document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
 
@@ -627,18 +628,17 @@ function renderStudents(students, containerId, showAdminControls) {
                     <span class="student-time">🕒 آخر تحديث: ${formatFullTime(s.lastUpdate)}</span>
                 </div>
                 <span class="status-badge ${statusClass}">${statusText}</span>
-<div class="card-actions">
-    ${showAdminControls ? `
-        <button class="btn-toggle ${toggleClass}" onclick="adminToggle('${s._id}')">${toggleText}</button>
-        <button class="btn-delete" onclick="adminDelete('${s._id}')">🗑️</button>
-    ` : `
-        <span style="font-size:13px;color:#7b8b9e;">آخر دخول/خروج: ${formatFullTime(s.lastUpdate)}</span>
-    `}
-    <!-- زر QR يظهر للجميع (مدير أو ولي أمر) -->
-    <button class="btn-qr" onclick="downloadQR('${s._id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:40px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
-        <i class="fas fa-qrcode"></i> QR
-    </button>
-</div>
+                <div class="card-actions">
+                    ${showAdminControls ? `
+                        <button class="btn-toggle ${toggleClass}" onclick="adminToggle('${s._id}')">${toggleText}</button>
+                        <button class="btn-delete" onclick="adminDelete('${s._id}')">🗑️</button>
+                    ` : `
+                        <span style="font-size:13px;color:#7b8b9e;">آخر دخول/خروج: ${formatFullTime(s.lastUpdate)}</span>
+                    `}
+                    <button class="btn-qr" onclick="downloadQR('${s._id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:40px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                        <i class="fas fa-qrcode"></i> QR
+                    </button>
+                </div>
             </div>
         `;
     });
