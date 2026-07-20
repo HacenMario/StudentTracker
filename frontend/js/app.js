@@ -491,6 +491,9 @@ function renderStudents(students, containerId, showAdminControls) {
                     ` : `
                         <span style="font-size:13px;color:#7b8b9e;">آخر دخول/خروج: ${formatFullTime(s.lastUpdate)}</span>
                     `}
+                    <button class="btn-qr" onclick="downloadQR('${s._id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:40px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+    <i class="fas fa-qrcode"></i> QR
+</button>
                 </div>
             </div>
         `;
@@ -603,6 +606,129 @@ async function adminSendParentNotification() {
     } else {
         alert('Socket غير متصل');
     }
+}
+// ==========================================
+// دوال QR Code
+// ==========================================
+
+// تحميل وعرض QR Code لطالب
+async function downloadQR(studentId) {
+    try {
+        const res = await fetchWithAuth('/api/students/' + studentId + '/qr');
+        if (!res.ok) throw new Error('فشل جلب QR');
+        const data = await res.json();
+        
+        // فتح الصورة في علامة تبويب جديدة للطباعة/التحميل
+        const win = window.open();
+        win.document.write(`<img src="${data.qrImage}" alt="QR Code" style="display:block; margin:20px auto; max-width:300px;">`);
+        win.document.write(`<p style="text-align:center; font-size:16px; font-weight:bold;">${data.qrCode}</p>`);
+        win.document.write(`<p style="text-align:center;"><button onclick="window.print()">🖨️ طباعة</button></p>`);
+        win.document.close();
+    } catch (err) {
+        alert('خطأ في تحميل QR: ' + err.message);
+    }
+}
+
+// فتح الماسح الضوئي
+function openScanner() {
+    const modal = document.getElementById('scannerModal');
+    modal.style.display = 'flex';
+    
+    // تأكد من تحميل مكتبة html5-qrcode
+    if (typeof Html5Qrcode === 'undefined') {
+        alert('جاري تحميل مكتبة المسح...');
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+        script.onload = function() {
+            initScanner();
+        };
+        document.head.appendChild(script);
+    } else {
+        initScanner();
+    }
+}
+
+let html5QrCode = null;
+
+function initScanner() {
+    const readerContainer = document.getElementById('qr-reader');
+    readerContainer.innerHTML = ''; // تفريغ المحتوى السابق
+    
+    if (html5QrCode) {
+        try {
+            html5QrCode.stop().then(() => {
+                html5QrCode.clear();
+            });
+        } catch(e) {}
+        html5QrCode = null;
+    }
+
+    html5QrCode = new Html5Qrcode("qr-reader");
+    const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+    };
+
+    html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess,
+        onScanError
+    );
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    // إيقاف الماسح بعد نجاح المسح
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+        });
+    }
+    
+    document.getElementById('qr-reader-results').innerHTML = '✅ جاري معالجة الكود...';
+    
+    // إرسال النص إلى الخادم
+    fetchWithAuth('/api/students/scan-qr', {
+        method: 'POST',
+        body: JSON.stringify({ qrText: decodedText })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('qr-reader-results').innerHTML = '✅ ' + (data.message || 'تم تغيير الحالة بنجاح');
+        // تحديث القوائم
+        if (currentUser.role === 'admin') {
+            loadAdminStudents();
+            loadAdminLogs();
+        } else {
+            loadParentStudents();
+            loadParentLogs();
+        }
+        // إغلاق الماسح بعد 2 ثانية
+        setTimeout(() => {
+            document.getElementById('closeScannerBtn').click();
+        }, 2000);
+    })
+    .catch(err => {
+        document.getElementById('qr-reader-results').innerHTML = '❌ ' + err.message;
+    });
+}
+
+function onScanError(errorMessage) {
+    // لا تفعل شيئاً، فقط تجاهل الأخطاء المتكررة
+    // console.warn(errorMessage);
+}
+
+// إغلاق الماسح الضوئي
+function closeScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+        }).catch(() => {});
+        html5QrCode = null;
+    }
+    document.getElementById('scannerModal').style.display = 'none';
+    document.getElementById('qr-reader').innerHTML = '';
+    document.getElementById('qr-reader-results').innerHTML = '';
 }
 
 // ==========================================
@@ -862,6 +988,8 @@ function setupAuthEvents() {
     document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
         toggleOldNotifications(false);
     });
+    document.getElementById('openScannerBtn').addEventListener('click', openScanner);
+    document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
 }
 
 // ==========================================
