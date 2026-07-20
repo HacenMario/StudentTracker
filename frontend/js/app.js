@@ -1,7 +1,7 @@
 ﻿// ==========================================
 // 1. تحديد رابط الخادم (عدّل هذا برابط Render الخاص بك)
 // ==========================================
-const API_BASE_URL = 'https://your-backend.onrender.com'; // ⚠️ استبدله برابط الخادم
+const API_BASE_URL = 'https://studenttracker-zgom.onrender.com'; // ⚠️ استبدله برابط الخادم
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
