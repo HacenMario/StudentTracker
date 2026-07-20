@@ -13,7 +13,7 @@ const StudentSchema = new mongoose.Schema({
   parent: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true, // كل طالب مرتبط بولي أمر
+    required: true,
   },
   parentName: {
     type: String,
@@ -36,7 +36,6 @@ const StudentSchema = new mongoose.Schema({
     trim: true,
     default: '',
   },
-  // الحالة الحالية (آخر حالة مسجلة)
   isInside: {
     type: Boolean,
     default: false,
@@ -49,12 +48,23 @@ const StudentSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  // حقل جديد لتخزين نص QR (فريد)
+  qrCode: {
+    type: String,
+    unique: true,
+    sparse: true, // يسمح بقيم null أو فريدة فقط عند وجود قيمة
+  },
 });
 
 StudentSchema.pre('save', async function(next) {
   if (this.isNew && !this.studentId) {
     const count = await mongoose.model('Student').countDocuments();
     this.studentId = 'STU-' + String(count + 1).padStart(4, '0');
+  }
+  // إذا لم يكن هناك QR Code، قم بتوليده تلقائياً (يعتمد على _id)
+  if (!this.qrCode) {
+    // استخدم studentId أو _id كنص فريد
+    this.qrCode = 'QR-' + (this.studentId || this._id.toString());
   }
   next();
 });
