@@ -15,13 +15,30 @@ router.get('/', async (req, res) => {
 // إضافة طالب جديد
 router.post('/', async (req, res) => {
   try {
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ message: 'الاسم مطلوب' });
-    
-    const existing = await Student.findOne({ name: { $regex: new RegExp('^' + name + '$', 'i') } });
-    if (existing) return res.status(400).json({ message: 'الطالب موجود مسبقاً' });
+    const { name, parentName, phone, address, email } = req.body;
+    if (!name || !parentName || !phone || !address || !email) {
+      return res.status(400).json({ message: 'جميع الحقول مطلوبة' });
+    }
 
-    const newStudent = new Student({ name });
+    // التحقق من عدم تكرار البريد أو الهاتف
+    const existing = await Student.findOne({ $or: [{ email }, { phone }] });
+    if (existing) {
+      return res.status(400).json({ message: 'البريد الإلكتروني أو رقم الهاتف موجود مسبقاً' });
+    }
+
+    // إنشاء studentId فريد (مثال: STU-2026-001)
+    const count = await Student.countDocuments();
+    const studentId = `STU-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`;
+
+    const newStudent = new Student({
+      studentId,
+      name,
+      parentName,
+      phone,
+      address,
+      email,
+    });
+
     await newStudent.save();
     res.status(201).json(newStudent);
   } catch (err) {
