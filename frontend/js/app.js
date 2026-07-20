@@ -251,16 +251,20 @@ async function adminAddStudent() {
 
 function adminSendNotification() {
     const msg = document.getElementById('adminNotificationMsg').value.trim();
+    const targetEmail = document.getElementById('adminTargetEmail').value.trim();
     if (!msg) return alert('اكتب رسالة الإشعار');
     if (socket) {
-        socket.emit('admin-notification', { message: msg });
+        socket.emit('admin-notification', { 
+            message: msg,
+            targetParentEmail: targetEmail || undefined
+        });
         document.getElementById('adminNotificationMsg').value = '';
-        addLog('📢 تم إرسال إشعار عام', new Date(), 'adminLogContainer');
+        document.getElementById('adminTargetEmail').value = '';
+        addLog('📢 تم إرسال إشعار' + (targetEmail ? ' لـ ' + targetEmail : ' عام'), new Date(), 'adminLogContainer');
     } else {
         alert('Socket غير متصل');
     }
 }
-
 // ==========================================
 // دوال ولي الأمر
 // ==========================================
