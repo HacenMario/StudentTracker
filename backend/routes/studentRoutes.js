@@ -1,53 +1,94 @@
 const express = require('express');
 const router = express.Router();
 const Student = require('../models/Student');
-const auth = require('../middleware/auth'); // سننشئ هذا الملف لاحقاً
+const User = require('../models/User');
+const Attendance = require('../models/Attendance');
+const auth = require('../middleware/auth');
+const { isAdmin } = require('../middleware/auth');
 
-// جلب جميع الطلاب المرتبطين بولي الأمر (بناءً على البريد الإلكتروني من التوكن)
+// ==========================================
+// 1. جلب الطلاب (حسب الدور)
+// ==========================================
 router.get('/', auth, async (req, res) => {
   try {
-    // req.user تم تعبئته من middleware auth ويحتوي على email
-    const students = await Student.find({ parentEmail: req.user.email }).sort({ createdAt: -1 });
+    let query = {};
+    // إذا كان المستخدم ولي أمر، يرى أبناءه فقط
+    if (req.user.role === 'parent') {
+      // البحث عن الطلاب المرتبطين بهذا المستخدم عبر حقل parent
+      const students = await Student.find({ parent: req.user.id }).populate('parent', 'name email');
+      return res.json(students);
+    }
+    // إذا كان مديراً، يرى الجميع
+    const students = await Student.find().populate('parent', 'name email');
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// إضافة طالب جديد (يتم ربطه تلقائياً بولي الأمر الحالي)
-router.post('/', auth, async (req, res) => {
+// ==========================================
+// 2. إضافة طالب جديد (للمدير فقط)
+// ==========================================
+router.post('/', auth, isAdmin, async (req, res) => {
   try {
-    const { name, parentName, parentPhone, parentEmail, address } = req.body;
-    
-    // التأكد من أن البريد المدخل هو نفس بريد ولي الأمر المسجل (أو يمكن تغيير حسب الرغبة)
-    if (parentEmail !== req.user.email) {
-      return res.status(403).json({ message: 'لا يمكنك إضافة طالب لبريد آخر' });
+    const { name, parentEmail, parentName, parentPhone, address } = req.body;
+
+    // البحث عن ولي الأمر باستخدام البريد الإلكتروني
+    let parent = await User.findOne({ email: parentEmail, role: 'parent' });
+    if (!parent) {
+      // إذا لم يكن موجوداً، يمكن إنشاؤه تلقائياً (أو رفض الطلب)
+      return res.status(400).json({ message: 'ولي الأمر غير موجود، يجب تسجيله أولاً' });
     }
 
     const newStudent = new Student({
       name,
-      parentName,
-      parentPhone,
-      parentEmail,
+      parent: parent._id,
+      parentName: parentName || parent.name,
+      parentPhone: parentPhone || parent.phone,
+      parentEmail: parent.email,
       address: address || '',
     });
 
     await newStudent.save();
+
+    // إضافة الطالب إلى قائمة أبناء ولي الأمر
+    parent.students.push(newStudent._id);
+    await parent.save();
+
     res.status(201).json(newStudent);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// تبديل حالة الطالب (مع التأكد من أنه يخص ولي الأمر الحالي)
-router.put('/:id/toggle', auth, async (req, res) => {
+// ==========================================
+// 3. تبديل حالة الطالب (داخل/خارج) - للمدير فقط
+// ==========================================
+router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
   try {
-    const student = await Student.findOne({ _id: req.params.id, parentEmail: req.user.email });
-    if (!student) return res.status(404).json({ message: 'غير موجود أو غير مسموح' });
+    const student = await Student.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: 'غير موجود' });
 
+    // تغيير الحالة
     student.isInside = !student.isInside;
     student.lastUpdate = new Date();
     await student.save();
+
+    // تسجيل في سجل الحضور
+    const attendance = new Attendance({
+      student: student._id,
+      status: student.isInside ? 'in' : 'out',
+      method: 'manual',
+    });
+    await attendance.save();
+
+    // إرسال إشعار عبر Socket.io (سنقوم ببثه من server.js)
+    const message = `التلميذ ${student.name} أصبح ${student.isInside ? 'داخل 🏫' : 'خارج 🚪'}`;
+    req.app.get('io').emit('status-changed', {
+      student: student,
+      message: message,
+      parentId: student.parent.toString(),
+    });
 
     res.json(student);
   } catch (err) {
@@ -55,12 +96,47 @@ router.put('/:id/toggle', auth, async (req, res) => {
   }
 });
 
-// حذف طالب (مع التأكد من الملكية)
-router.delete('/:id', auth, async (req, res) => {
+// ==========================================
+// 4. حذف طالب (للمدير فقط)
+// ==========================================
+router.delete('/:id', auth, isAdmin, async (req, res) => {
   try {
-    const student = await Student.findOneAndDelete({ _id: req.params.id, parentEmail: req.user.email });
-    if (!student) return res.status(404).json({ message: 'غير موجود أو غير مسموح' });
+    const student = await Student.findByIdAndDelete(req.params.id);
+    if (!student) return res.status(404).json({ message: 'غير موجود' });
+
+    // إزالة الطالب من قائمة أبناء ولي الأمر
+    await User.updateOne(
+      { _id: student.parent },
+      { $pull: { students: student._id } }
+    );
+
+    // حذف سجل الحضور المرتبط به
+    await Attendance.deleteMany({ student: student._id });
+
     res.json({ message: 'تم الحذف' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// 5. جلب سجل الحضور لطالب معين (لولي الأمر أو المدير)
+// ==========================================
+router.get('/:id/attendance', auth, async (req, res) => {
+  try {
+    const student = await Student.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: 'غير موجود' });
+
+    // التحقق من الصلاحية: ولي الأمر يرى فقط أبناءه، المدير يرى الكل
+    if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'غير مصرح لك برؤية هذا السجل' });
+    }
+
+    const records = await Attendance.find({ student: student._id })
+      .sort({ timestamp: -1 })
+      .limit(30); // آخر 30 تسجيلاً
+
+    res.json(records);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
