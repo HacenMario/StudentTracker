@@ -4,7 +4,7 @@ const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
 
 // ==========================================
-// 1. جلب إشعارات المستخدم الحالي
+// 1. جلب إشعارات المستخدم الحالي (مع ترتيب تنازلي)
 // ==========================================
 router.get('/', auth, async (req, res) => {
   try {
@@ -17,13 +17,13 @@ router.get('/', auth, async (req, res) => {
       // المدير يرى كل الإشعارات (للمتابعة)
       query = {};
     } else {
-      // أي دور آخر (غير متوقع) لا يرى شيئاً
       return res.status(403).json({ message: 'غير مصرح لك' });
     }
 
+    // جلب الإشعارات مع ترتيب تنازلي (الأحدث أولاً)
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
-      .limit(50); // آخر 50 إشعار
+      .limit(100); // آخر 100 إشعار
 
     res.json(notifications);
   } catch (err) {
@@ -43,21 +43,30 @@ router.put('/:id/read', auth, async (req, res) => {
 
     // التحقق من الصلاحية
     if (req.user.role === 'parent') {
-      // ولي الأمر يمكنه تحديث الإشعارات العامة أو الخاصة به فقط
       if (notification.target !== 'all' && notification.target !== req.user.email) {
         return res.status(403).json({ message: 'غير مصرح لك بتحديث هذا الإشعار' });
       }
-    } else if (req.user.role === 'admin') {
-      // المدير يمكنه تحديث أي إشعار (اختياري)
-      // يمكنك إضافة منطق إضافي هنا إذا أردت
-    } else {
-      return res.status(403).json({ message: 'غير مصرح لك' });
     }
 
     notification.isRead = true;
     await notification.save();
 
     res.json({ message: 'تم تحديث الإشعار كمقروء', notification });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// 3. (اختياري) حذف إشعار (للمدير فقط)
+// ==========================================
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'غير مصرح لك' });
+    }
+    await Notification.findByIdAndDelete(req.params.id);
+    res.json({ message: 'تم حذف الإشعار' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
