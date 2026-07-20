@@ -10,13 +10,13 @@ const SOCKET_URL = API_BASE_URL;
 let token = localStorage.getItem('token');
 let currentUser = null;
 let socket = null;
-let schoolSettings = null;          // إعدادات المدرسة
-let allNotifications = [];           // جميع الإشعارات
-let showOldNotifications = false;    // حالة عرض الإشعارات القديمة
-let adminShowOldLogs = false;        // حالة عرض السجلات القديمة للمدير
-let parentShowOldLogs = false;       // حالة عرض السجلات القديمة لولي الأمر
-let adminLogs = [];                 // سجل نشاطات المدير
-let parentLogs = [];                // سجل دخول/خروج ولي الأمر
+let schoolSettings = null;
+let allNotifications = [];
+let showOldNotifications = false;
+let adminShowOldLogs = false;
+let parentShowOldLogs = false;
+let adminLogs = [];
+let parentLogs = [];
 
 // ==========================================
 // 3. دوال مساعدة
@@ -123,7 +123,7 @@ function showAdminDashboard() {
     document.getElementById('adminDashboard').style.display = 'block';
     document.getElementById('parentDashboard').style.display = 'none';
     connectSocket();
-    loadSchoolSettings(); // تحميل إعدادات المدرسة
+    loadSchoolSettings();
     loadAdminStudents();
     loadAdminLogs();
     loadAdminNotifications();
@@ -310,7 +310,6 @@ function toggleSettingsForm() {
     }
 }
 
-// معاينة الصورة قبل الرفع
 document.getElementById('settingsLogoUpload').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
@@ -340,7 +339,7 @@ async function toggleAllStudents(status) {
 }
 
 // ==========================================
-// 10. دوال الإشعارات (مع التقسيم جديد/قديم)
+// 10. دوال الإشعارات
 // ==========================================
 async function loadAdminNotifications() {
     try {
@@ -607,7 +606,7 @@ async function adminSendParentNotification() {
 }
 
 // ==========================================
-// 12. دوال السجل (مع ترتيب الأحدث أولاً)
+// 12. دوال السجل (مع التصحيح الكامل للأزرار)
 // ==========================================
 function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
@@ -625,6 +624,7 @@ function addLog(message, date, containerId) {
 }
 
 async function loadAdminLogs() {
+    // إعادة عرض السجلات الموجودة (بدون جلب من API)
     renderAdminLogs(adminShowOldLogs);
 }
 
@@ -632,10 +632,12 @@ function renderAdminLogs(showOld) {
     const container = document.getElementById('adminLogContainer');
     if (!container) return;
 
+    // إخفاء الأزرار بشكل افتراضي
+    document.getElementById('adminShowOldLogsBtn').style.display = 'none';
+    document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+
     if (adminLogs.length === 0) {
         container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد نشاطات بعد</div>';
-        document.getElementById('adminShowOldLogsBtn').style.display = 'none';
-        document.getElementById('adminHideOldLogsBtn').style.display = 'none';
         return;
     }
 
@@ -651,7 +653,7 @@ function renderAdminLogs(showOld) {
     if (showOld) {
         logsToShow = sortedLogs;
         document.getElementById('adminShowOldLogsBtn').style.display = 'none';
-        document.getElementById('adminHideOldLogsBtn').style.display = 'block';
+        document.getElementById('adminHideOldLogsBtn').style.display = 'inline-flex';
     } else {
         logsToShow = todayLogs;
         if (oldLogs.length > 0) {
@@ -725,14 +727,14 @@ function renderParentLogs(showOld) {
     const container = document.getElementById('parentLogContainer');
     if (!container) return;
 
+    document.getElementById('parentShowOldLogsBtn').style.display = 'none';
+    document.getElementById('parentHideOldLogsBtn').style.display = 'none';
+
     if (parentLogs.length === 0) {
         container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد سجلات بعد</div>';
-        document.getElementById('parentShowOldLogsBtn').style.display = 'none';
-        document.getElementById('parentHideOldLogsBtn').style.display = 'none';
         return;
     }
 
-    // ترتيب تنازلي (الأحدث أولاً)
     const sortedLogs = [...parentLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const todayLogs = sortedLogs.filter(log => isToday(log.date));
@@ -744,7 +746,7 @@ function renderParentLogs(showOld) {
     if (showOld) {
         logsToShow = sortedLogs;
         document.getElementById('parentShowOldLogsBtn').style.display = 'none';
-        document.getElementById('parentHideOldLogsBtn').style.display = 'block';
+        document.getElementById('parentHideOldLogsBtn').style.display = 'inline-flex';
     } else {
         logsToShow = todayLogs;
         if (oldLogs.length > 0) {
@@ -826,7 +828,6 @@ function setupAuthEvents() {
     document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
     document.getElementById('logoutBtnParent').addEventListener('click', logout);
 
-    // أحداث المدير
     document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsForm);
     document.getElementById('saveSettingsBtn').addEventListener('click', saveSchoolSettings);
     document.getElementById('toggleAddStudentBtn').addEventListener('click', toggleAddStudentForm);
@@ -834,7 +835,6 @@ function setupAuthEvents() {
     document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
     document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
     
-    // التغيير الجماعي
     document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
         toggleAllStudents(true);
     });
@@ -842,7 +842,6 @@ function setupAuthEvents() {
         toggleAllStudents(false);
     });
 
-    // أزرار عرض/إخفاء السجل القديم للمدير
     document.getElementById('adminShowOldLogsBtn').addEventListener('click', function() {
         toggleAdminOldLogs(true);
     });
@@ -850,7 +849,6 @@ function setupAuthEvents() {
         toggleAdminOldLogs(false);
     });
 
-    // أزرار عرض/إخفاء السجل القديم لولي الأمر
     document.getElementById('parentShowOldLogsBtn').addEventListener('click', function() {
         toggleParentOldLogs(true);
     });
@@ -858,7 +856,6 @@ function setupAuthEvents() {
         toggleParentOldLogs(false);
     });
 
-    // أزرار الإشعارات القديمة
     document.getElementById('showOldNotificationsBtn').addEventListener('click', function() {
         toggleOldNotifications(true);
     });
