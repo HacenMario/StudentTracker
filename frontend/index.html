@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تتبع التلاميذ - نظام احترافي</title>
+    <title>نظام الحضور المدرسي - احترافي</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </head>
@@ -15,15 +15,24 @@
                 <span class="live-badge">🟢 مباشر</span>
             </header>
 
+            <!-- نموذج إضافة طالب (موسع) -->
             <div class="add-section">
-                <input type="text" id="studentNameInput" placeholder="أدخل اسم التلميذ الجديد...">
+                <div class="form-grid">
+                    <input type="text" id="studentName" placeholder="اسم التلميذ *">
+                    <input type="text" id="parentName" placeholder="اسم ولي الأمر *">
+                    <input type="tel" id="phone" placeholder="رقم الهاتف *">
+                    <input type="text" id="address" placeholder="العنوان *">
+                    <input type="email" id="email" placeholder="البريد الإلكتروني *">
+                </div>
                 <button id="addBtn">إضافة <i class="fas fa-plus"></i></button>
             </div>
 
+            <!-- قائمة التلاميذ -->
             <div id="studentsContainer" class="students-grid">
                 <div class="loading-state">جاري تحميل البيانات...</div>
             </div>
 
+            <!-- سجل النشاطات -->
             <div class="log-section">
                 <h3>📋 آخر النشاطات</h3>
                 <div id="logContainer"></div>
