@@ -6,8 +6,16 @@ const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 
+// استيراد النماذج
+const Student = require('./models/Student');
+const User = require('./models/User');
+const Attendance = require('./models/Attendance');
+const Notification = require('./models/Notification');
+
+// استيراد المسارات
 const studentRoutes = require('./routes/studentRoutes');
 const authRoutes = require('./routes/authRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,10 +32,10 @@ app.set('io', io);
 app.use(cors());
 app.use(express.json());
 
-// مسارات المصادقة
+// تسجيل المسارات
 app.use('/api/auth', authRoutes);
-// مسارات الطلاب (محمية)
 app.use('/api/students', studentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ==========================================
 // Socket.io مع التحقق من التوكن وتخزين المستخدمين
@@ -55,27 +63,22 @@ io.on('connection', (socket) => {
   // 1. تبديل حالة الطالب (يستمع له المدير)
   // ----------------------
   socket.on('toggle-status', async (studentId) => {
-    // التأكد من أن المرسل هو مدير
     if (socket.user.role !== 'admin') {
       socket.emit('error', { message: 'غير مصرح لك بتغيير الحالة' });
       return;
     }
 
     try {
-      const Student = require('./models/Student');
-      const Attendance = require('./models/Attendance');
       const student = await Student.findById(studentId);
       if (!student) {
         socket.emit('error', { message: 'الطالب غير موجود' });
         return;
       }
 
-      // تغيير الحالة
       student.isInside = !student.isInside;
       student.lastUpdate = new Date();
       await student.save();
 
-      // تسجيل في سجل الحضور
       const attendance = new Attendance({
         student: student._id,
         status: student.isInside ? 'in' : 'out',
@@ -83,11 +86,9 @@ io.on('connection', (socket) => {
       });
       await attendance.save();
 
-      // إرسال التحديث لجميع العملاء (بما في ذلك أولياء الأمور)
       const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
       const message = `التلميذ ${student.name} أصبح ${statusText}`;
-      
-      // بث عام
+
       io.emit('status-changed', {
         student: student,
         message: message,
@@ -102,33 +103,60 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 2. إشعار عام من المدير لجميع أولياء الأمور
+  // 2. إشعار عام من المدير لجميع أولياء الأمور (مع الحفظ في DB)
   // ----------------------
-  socket.on('admin-notification', (data) => {
+  socket.on('admin-notification', async (data) => {
     if (socket.user.role !== 'admin') return;
-    io.emit('notification', { message: data.message });
+
+    try {
+      const notification = new Notification({
+        target: 'all',
+        message: data.message,
+      });
+      await notification.save();
+
+      io.emit('notification', { message: data.message, notificationId: notification._id });
+    } catch (err) {
+      console.error(err);
+      socket.emit('notification-error', { message: 'فشل حفظ الإشعار العام' });
+    }
   });
 
   // ----------------------
-  // 3. إشعار خاص لولي أمر معين (بالبريد الإلكتروني)
+  // 3. إشعار خاص لولي أمر معين (مع الحفظ في DB)
   // ----------------------
-  socket.on('admin-notification-to-parent', (data) => {
+  socket.on('admin-notification-to-parent', async (data) => {
     if (socket.user.role !== 'admin') {
       socket.emit('notification-error', { message: 'غير مصرح لك' });
       return;
     }
+
     const { parentEmail, message } = data;
     if (!parentEmail || !message) {
       socket.emit('notification-error', { message: 'البريد الإلكتروني والرسالة مطلوبان' });
       return;
     }
 
-    const targetSocketId = userSockets.get(parentEmail);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('notification', { message });
-      socket.emit('notification-sent', { parentEmail, message });
-    } else {
-      socket.emit('notification-error', { message: `ولي الأمر (${parentEmail}) غير متصل حالياً` });
+    try {
+      const notification = new Notification({
+        target: parentEmail,
+        message: message,
+      });
+      await notification.save();
+
+      const targetSocketId = userSockets.get(parentEmail);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('notification', { message, notificationId: notification._id });
+        socket.emit('notification-sent', { parentEmail, message });
+      } else {
+        socket.emit('notification-sent', {
+          parentEmail,
+          message: message + ' (تم حفظ الإشعار، سيظهر عند تسجيل دخول ولي الأمر)'
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      socket.emit('notification-error', { message: 'فشل حفظ الإشعار الخاص' });
     }
   });
 
