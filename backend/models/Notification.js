@@ -10,6 +10,7 @@ const NotificationSchema = new mongoose.Schema({
   target: {
     type: String,
     required: true,
+    index: true, // لتسريع البحث
   },
   // محتوى الرسالة
   message: {
@@ -20,11 +21,13 @@ const NotificationSchema = new mongoose.Schema({
   isRead: {
     type: Boolean,
     default: false,
+    index: true,
   },
   // تاريخ الإرسال
   createdAt: {
     type: Date,
     default: Date.now,
+    index: true,
   },
 });
 
