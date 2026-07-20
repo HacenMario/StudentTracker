@@ -7,7 +7,13 @@ const SOCKET_URL = API_BASE_URL;
 const socket = io(SOCKET_URL);
 
 // ==========================================
-// 2. دوال مساعدة
+// 2. إدارة التوكن والمستخدم
+// ==========================================
+let token = localStorage.getItem('token');
+let currentUser = null;
+
+// ==========================================
+// 3. دوال مساعدة للواجهة
 // ==========================================
 function getStatusText(isInside) {
     return isInside ? 'داخل 🏫' : 'خارج 🚪';
@@ -17,11 +23,16 @@ function getStatusClass(isInside) {
     return isInside ? 'inside' : 'outside';
 }
 
-// تنسيق الوقت الكامل (YYYY-MM-DD HH:MM:SS)
+// تنسيق الوقت الكامل (YYYY-MM-DD HH:mm:ss)
 function formatFullTime(dateString) {
-    const d = new Date(dateString);
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 function showBrowserNotification(title, body) {
@@ -34,31 +45,112 @@ function showBrowserNotification(title, body) {
 }
 
 // ==========================================
-// 3. جلب البيانات
+// 4. دوال المصادقة
 // ==========================================
+function saveAuth(data) {
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    showDashboard();
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    token = null;
+    currentUser = null;
+    showLogin();
+}
+
+function showLogin() {
+    document.getElementById('loginScreen').style.display = 'block';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('dashboardScreen').style.display = 'none';
+}
+
+function showRegister() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'block';
+    document.getElementById('dashboardScreen').style.display = 'none';
+}
+
+function showDashboard() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('dashboardScreen').style.display = 'block';
+    // تعبئة بريد ولي الأمر تلقائياً في حقل الإضافة
+    document.getElementById('parentEmailInput').value = currentUser.email;
+    // بدء Socket.io
+    connectSocket();
+    loadAndRender();
+}
+
+// ==========================================
+// 5. Socket.io مع التوكن
+// ==========================================
+let socket = null;
+
+function connectSocket() {
+    if (socket) socket.disconnect();
+    socket = io(SOCKET_URL, {
+        auth: { token: token }
+    });
+
+    socket.on('connect', function() {
+        console.log('✅ متصل بالخادم عبر Socket');
+    });
+
+    socket.on('status-changed', function(data) {
+        console.log('📢 تحديث لحظي:', data.message);
+        loadAndRender(); // إعادة تحميل القائمة
+        addLog('🔔 ' + data.message, new Date());
+        showBrowserNotification('تحديث حالة التلميذ', data.message);
+    });
+
+    socket.on('disconnect', function() {
+        console.warn('⚠️ انقطع الاتصال بالخادم');
+    });
+}
+
+// ==========================================
+// 6. دوال API (مع إضافة التوكن في الهيدر)
+// ==========================================
+function fetchWithAuth(url, options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+    };
+    return fetch(API_BASE_URL + url, {
+        ...options,
+        headers: { ...headers, ...options.headers }
+    });
+}
+
 async function fetchStudents() {
     try {
-        const res = await fetch(API_BASE_URL + '/api/students');
-        if (!res.ok) throw new Error('فشل الجلب');
+        const res = await fetchWithAuth('/api/students');
+        if (!res.ok) throw new Error('فشل في جلب البيانات');
         return await res.json();
     } catch (error) {
-        console.error(error);
+        console.error('خطأ في الجلب:', error);
         return [];
     }
 }
 
 // ==========================================
-// 4. عرض الطلاب مع المعلومات الكاملة
+// 7. دوال العرض
 // ==========================================
 function renderStudents(students) {
     const container = document.getElementById('studentsContainer');
+    
     if (!students || students.length === 0) {
-        container.innerHTML = '<div class="loading-state">📭 لا يوجد تلاميذ مسجلون</div>';
+        container.innerHTML = '<div class="loading-state">📭 لا يوجد تلاميذ مسجلون، أضف الأول الآن!</div>';
         return;
     }
 
     let html = '';
-    students.forEach(student => {
+    students.forEach(function(student) {
         const statusText = getStatusText(student.isInside);
         const statusClass = getStatusClass(student.isInside);
         const toggleText = student.isInside ? 'تسجيل خروج' : 'تسجيل دخول';
@@ -66,18 +158,17 @@ function renderStudents(students) {
 
         html += `
             <div class="student-card" data-id="${student._id}">
-                <div class="student-id">#${student.studentId}</div>
-                <div class="student-name">${student.name}</div>
-                <div class="student-details">
-                    <span><i class="fas fa-user"></i> ولي الأمر: ${student.parentName}</span>
-                    <span><i class="fas fa-phone"></i> ${student.phone}</span>
-                    <span><i class="fas fa-envelope"></i> ${student.email}</span>
-                    <span><i class="fas fa-home"></i> ${student.address}</span>
-                    <span><i class="fas fa-clock"></i> آخر تحديث: ${formatFullTime(student.lastUpdate)}</span>
+                <div>
+                    <div class="student-name">${student.name} (${student.studentId})</div>
+                    <div style="font-size:14px;color:#4a5a6e;">ولي الأمر: ${student.parentName}</div>
+                    <div style="font-size:13px;color:#6a7a8e;">📞 ${student.parentPhone}</div>
+                    <span class="student-time">🕒 ${formatFullTime(student.lastUpdate)}</span>
                 </div>
                 <span class="status-badge ${statusClass}">${statusText}</span>
                 <div class="card-actions">
-                    <button class="btn-toggle ${toggleClass}" onclick="handleToggle('${student._id}')">${toggleText}</button>
+                    <button class="btn-toggle ${toggleClass}" onclick="handleToggle('${student._id}')">
+                        ${toggleText}
+                    </button>
                     <button class="btn-delete" onclick="handleDelete('${student._id}')">🗑️</button>
                 </div>
             </div>
@@ -87,103 +178,181 @@ function renderStudents(students) {
 }
 
 // ==========================================
-// 5. التفاعلات
+// 8. دوال التفاعل (Toggle - Delete - Add)
 // ==========================================
+
 window.handleToggle = function(id) {
-    socket.emit('toggle-status', id);
+    if (socket) socket.emit('toggle-status', id);
 };
 
 window.handleDelete = function(id) {
-    if (!confirm('حذف التلميذ؟')) return;
-    fetch(API_BASE_URL + '/api/students/' + id, { method: 'DELETE' })
-        .then(res => {
+    if (!confirm('هل أنت متأكد من حذف هذا التلميذ؟')) return;
+    fetchWithAuth('/api/students/' + id, { method: 'DELETE' })
+        .then(function(res) {
             if (res.ok) {
                 loadAndRender();
                 addLog('🗑️ تم حذف تلميذ', new Date());
             }
         })
-        .catch(console.error);
+        .catch(function(error) {
+            console.error('خطأ في الحذف:', error);
+        });
 };
 
 function handleAddStudent() {
-    const getVal = (id) => document.getElementById(id).value.trim();
-    const name = getVal('studentName');
-    const parentName = getVal('parentName');
-    const phone = getVal('phone');
-    const address = getVal('address');
-    const email = getVal('email');
+    const name = document.getElementById('studentNameInput').value.trim();
+    const parentName = document.getElementById('parentNameInput').value.trim();
+    const parentPhone = document.getElementById('parentPhoneInput').value.trim();
+    const parentEmail = document.getElementById('parentEmailInput').value.trim();
+    const address = document.getElementById('addressInput').value.trim();
 
-    if (!name || !parentName || !phone || !address || !email) {
-        alert('جميع الحقول مطلوبة (*)');
+    if (!name || !parentName || !parentPhone || !parentEmail) {
+        alert('الرجاء ملء جميع الحقول المطلوبة');
         return;
     }
 
-    fetch(API_BASE_URL + '/api/students', {
+    fetchWithAuth('/api/students', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, parentName, phone, address, email })
+        body: JSON.stringify({ name, parentName, parentPhone, parentEmail, address })
     })
-    .then(res => res.json().then(data => {
-        if (!res.ok) {
-            alert(data.message || 'حدث خطأ');
-            return;
-        }
-        // إفراغ الحقول
-        ['studentName','parentName','phone','address','email'].forEach(id => document.getElementById(id).value = '');
-        loadAndRender();
-        addLog('➕ تم إضافة ' + name, new Date());
-    }))
-    .catch(() => alert('فشل الاتصال بالخادم'));
+    .then(function(res) {
+        return res.json().then(function(data) {
+            if (!res.ok) {
+                alert(data.message || 'حدث خطأ');
+                return;
+            }
+            // تفريغ الحقول
+            document.getElementById('studentNameInput').value = '';
+            document.getElementById('parentNameInput').value = '';
+            document.getElementById('parentPhoneInput').value = '';
+            document.getElementById('addressInput').value = '';
+            loadAndRender();
+            addLog('➕ تم إضافة التلميذ ' + name, new Date());
+        });
+    })
+    .catch(function(error) {
+        alert('فشل الاتصال بالخادم');
+    });
 }
 
 // ==========================================
-// 6. السجل (Logs)
+// 9. دوال السجل
 // ==========================================
 function addLog(message, date) {
     date = date || new Date();
     const container = document.getElementById('logContainer');
     const time = formatFullTime(date);
+    
     const item = document.createElement('div');
     item.className = 'log-item';
-    item.innerHTML = `<span>${message}</span><span class="log-time">${time}</span>`;
+    item.innerHTML = '<span>' + message + '</span><span class="log-time">' + time + '</span>';
+    
     container.prepend(item);
-    while (container.children.length > 8) container.removeChild(container.lastChild);
+    while (container.children.length > 8) {
+        container.removeChild(container.lastChild);
+    }
 }
 
 // ==========================================
-// 7. التحميل والتحديث
+// 10. تحميل البيانات
 // ==========================================
 function loadAndRender() {
-    fetchStudents().then(renderStudents);
+    fetchStudents().then(function(students) {
+        renderStudents(students);
+    });
 }
 
 // ==========================================
-// 8. أحداث Socket.io
+// 11. ربط أحداث المصادقة
 // ==========================================
-socket.on('connect', function() {
-    console.log('✅ متصل بالخادم');
-    loadAndRender();
-});
+function setupAuthEvents() {
+    // تسجيل الدخول
+    document.getElementById('loginBtn').addEventListener('click', function() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        if (!email || !password) return alert('يرجى ملء جميع الحقول');
 
-socket.on('status-changed', function(data) {
-    loadAndRender();
-    addLog('🔔 ' + data.message, new Date());
-    showBrowserNotification('تحديث الحالة', data.message);
-});
-
-// ==========================================
-// 9. بدء التشغيل
-// ==========================================
-document.addEventListener('DOMContentLoaded', function() {
-    if (Notification.permission === 'default') Notification.requestPermission();
-
-    document.getElementById('addBtn').addEventListener('click', handleAddStudent);
-    // السماح بالضغط على Enter في أي حقل
-    document.querySelectorAll('.form-grid input').forEach(input => {
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') handleAddStudent();
-        });
+        fetch(API_BASE_URL + '/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
+        .then(function(res) {
+            return res.json().then(function(data) {
+                if (!res.ok) {
+                    alert(data.message || 'فشل تسجيل الدخول');
+                    return;
+                }
+                saveAuth(data);
+            });
+        })
+        .catch(function(err) { alert('خطأ في الاتصال'); });
     });
 
-    loadAndRender();
+    // التسجيل
+    document.getElementById('registerBtn').addEventListener('click', function() {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+
+        if (!name || !email || !password || !phone) {
+            return alert('الرجاء ملء جميع الحقول');
+        }
+        if (password.length < 6) {
+            return alert('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+        }
+
+        fetch(API_BASE_URL + '/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password, phone })
+        })
+        .then(function(res) {
+            return res.json().then(function(data) {
+                if (!res.ok) {
+                    alert(data.message || 'فشل التسجيل');
+                    return;
+                }
+                saveAuth(data);
+            });
+        })
+        .catch(function(err) { alert('خطأ في الاتصال'); });
+    });
+
+    // التبديل بين الشاشات
+    document.getElementById('showRegister').addEventListener('click', showRegister);
+    document.getElementById('showLogin').addEventListener('click', showLogin);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+}
+
+// ==========================================
+// 12. بدء التطبيق
+// ==========================================
+document.addEventListener('DOMContentLoaded', function() {
+    // طلب إذن الإشعارات
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
+    setupAuthEvents();
+
+    // التحقق من وجود توكن سابق
+    if (token) {
+        try {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user) {
+                currentUser = user;
+                showDashboard();
+                return;
+            }
+        } catch(e) {}
+    }
+    showLogin();
+
+    // ربط زر إضافة الطالب (يعمل بعد ظهور لوحة التحكم)
+    document.getElementById('addBtn').addEventListener('click', handleAddStudent);
+    document.getElementById('studentNameInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') handleAddStudent();
+    });
 });
