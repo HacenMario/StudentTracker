@@ -804,3 +804,75 @@ header h1 {
 .settings-panel .btn-secondary:hover {
     background: #cbddee;
 }
+/* ========================================== */
+/* تنسيقات الشعار واسم المدرسة */
+/* ========================================== */
+.school-logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.school-logo-container img {
+    max-height: 60px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+#schoolName {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+/* ========================================== */
+/* تنسيقات زر إعدادات المدرسة */
+/* ========================================== */
+#settingsForm {
+    background: #f8fcff;
+    border-radius: 24px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid #e2eaf2;
+    animation: fadeIn 0.3s ease;
+}
+
+#settingsForm h4 {
+    color: #1a365d;
+    font-weight: 700;
+}
+
+#settingsForm .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+#settingsForm .form-grid > div {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+    #settingsForm .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+#logoPreview img {
+    max-height: 80px;
+    border-radius: 12px;
+    border: 2px solid #e2eaf2;
+    padding: 4px;
+}
+
+/* ========================================== */
+/* أزرار التغيير الجماعي */
+/* ========================================== */
+#toggleAllInsideBtn, #toggleAllOutsideBtn {
+    flex: 1;
+    min-width: 160px;
+    justify-content: center;
+}
