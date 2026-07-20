@@ -1,18 +1,17 @@
 const mongoose = require('mongoose');
 
 const StudentSchema = new mongoose.Schema({
-  // المعرف الفريد الظاهر للطالب (رقم تسلسلي أو كود)
+  // studentId غير مطلوب، سيتم توليده آلياً
   studentId: {
     type: String,
     unique: true,
-    required: true,
+    // إزالة required: true
   },
   name: {
     type: String,
     required: true,
     trim: true,
   },
-  // معلومات ولي الأمر
   parentName: {
     type: String,
     required: true,
@@ -34,7 +33,6 @@ const StudentSchema = new mongoose.Schema({
     trim: true,
     default: '',
   },
-  // الحالة (داخل/خارج)
   isInside: {
     type: Boolean,
     default: false,
@@ -43,23 +41,22 @@ const StudentSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  // ربط الطالب بالمستخدم (ولي الأمر) عبر الـ email
-  parentEmail: { // مكرر ولكن للتأكيد
-    type: String,
-    required: true,
-  },
-  // تاريخ الإنشاء
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-// إنشاء رقم طالب تلقائي قبل الحفظ (مثال: STU-0001)
+// قبل الحفظ، إذا لم يكن studentId موجوداً، قم بإنشائه
 StudentSchema.pre('save', async function(next) {
-  if (this.isNew) {
-    const count = await mongoose.model('Student').countDocuments();
-    this.studentId = 'STU-' + String(count + 1).padStart(4, '0');
+  if (this.isNew && !this.studentId) {
+    try {
+      // الحصول على عدد الطلاب الحاليين لتوليد رقم تسلسلي
+      const count = await mongoose.model('Student').countDocuments();
+      this.studentId = 'STU-' + String(count + 1).padStart(4, '0');
+    } catch (err) {
+      return next(err);
+    }
   }
   next();
 });
