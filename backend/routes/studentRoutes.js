@@ -5,7 +5,15 @@ const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
-const QRCode = require('qrcode');
+
+// استيراد مكتبة QR Code مع التحقق من وجودها
+let QRCode;
+try {
+  QRCode = require('qrcode');
+} catch (err) {
+  console.error('❌ مكتبة qrcode غير مثبتة. قم بتشغيل: npm install qrcode');
+  QRCode = null;
+}
 
 // ==========================================
 // 1. جلب الطلاب (حسب الدور)
@@ -14,11 +22,9 @@ router.get('/', auth, async (req, res) => {
   try {
     let query = {};
     if (req.user.role === 'parent') {
-      // ولي الأمر يرى أبناءه فقط
       const students = await Student.find({ parent: req.user.id }).populate('parent', 'name email');
       return res.json(students);
     }
-    // المدير يرى الجميع
     const students = await Student.find().populate('parent', 'name email');
     res.json(students);
   } catch (err) {
@@ -120,7 +126,6 @@ router.get('/:id/attendance', auth, async (req, res) => {
     const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: 'غير موجود' });
 
-    // التحقق من الصلاحية
     if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
       return res.status(403).json({ message: 'غير مصرح لك برؤية هذا السجل' });
     }
@@ -143,18 +148,15 @@ router.post('/scan-qr', auth, async (req, res) => {
     const { qrData } = req.body;
     if (!qrData) return res.status(400).json({ success: false, message: 'بيانات QR مطلوبة' });
 
-    // البحث عن الطالب باستخدام qrCode (وهو studentId أو معرف فريد)
     const student = await Student.findOne({ studentId: qrData });
     if (!student) {
       return res.status(404).json({ success: false, message: 'الطالب غير موجود' });
     }
 
-    // التحقق من الصلاحية: المدير يمكنه مسح أي طالب، ولي الأمر يمكنه مسح أبناءه فقط
     if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'غير مصرح لك بتغيير حالة هذا الطالب' });
     }
 
-    // تغيير الحالة
     student.isInside = !student.isInside;
     student.lastUpdate = new Date();
     await student.save();
@@ -178,29 +180,38 @@ router.post('/scan-qr', auth, async (req, res) => {
 
     res.json({ success: true, message: `تم تغيير حالة ${student.name} إلى ${statusText}` });
   } catch (err) {
-    console.error(err);
+    console.error('❌ خطأ في مسح QR:', err);
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء معالجة QR' });
   }
 });
 
 // ==========================================
-// 7. تحميل QR Code كصورة (للمدير وولي الأمر)
+// 7. تحميل QR Code كصورة (للمدير وولي الأمر) - النسخة المُعدّلة
 // ==========================================
 router.get('/:id/qr', auth, async (req, res) => {
   try {
+    // 1. التحقق من وجود المكتبة
+    if (!QRCode) {
+      console.error('❌ مكتبة qrcode غير مثبتة');
+      return res.status(500).json({ message: 'مكتبة QR Code غير مثبتة على الخادم' });
+    }
+
+    // 2. البحث عن الطالب
     const student = await Student.findById(req.params.id);
     if (!student) {
       return res.status(404).json({ message: 'الطالب غير موجود' });
     }
 
-    // التحقق من الصلاحية: المدير يمكنه تحميل أي QR، ولي الأمر يمكنه تحميل QR لأبنائه فقط
+    // 3. التحقق من الصلاحية
     if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
       return res.status(403).json({ message: 'غير مصرح لك بتحميل QR لهذا الطالب' });
     }
 
-    // استخدام studentId كبيانات QR (يمكنك تغييرها إلى أي نص فريد)
+    // 4. تجهيز البيانات
     const qrData = student.studentId || student._id.toString();
-    const qrCodeImage = await QRCode.toBuffer(qrData, {
+
+    // 5. توليد QR Code كـ Buffer
+    const qrCodeBuffer = await QRCode.toBuffer(qrData, {
       type: 'png',
       width: 300,
       margin: 4,
@@ -208,14 +219,22 @@ router.get('/:id/qr', auth, async (req, res) => {
         dark: '#1a365d',
         light: '#ffffff',
       },
+      errorCorrectionLevel: 'H', // مستوى تصحيح أخطاء عالي
     });
 
+    // 6. إرسال الصورة
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Disposition', `attachment; filename=QR_${student.name}_${student.studentId}.png`);
-    res.send(qrCodeImage);
+    res.send(qrCodeBuffer);
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'فشل توليد QR Code' });
+    console.error('❌ خطأ في توليد QR Code:', err);
+    // إرسال رسالة خطأ مفصلة للتصحيح
+    res.status(500).json({ 
+      message: 'فشل توليد QR Code', 
+      error: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 
