@@ -17,7 +17,7 @@ const AttendanceSchema = new mongoose.Schema({
   },
   method: {
     type: String,
-    enum: ['manual', 'rfid', 'auto', 'qr'], // أضفنا 'qr' هنا
+    enum: ['manual', 'rfid', 'auto', 'qr'],
     default: 'manual',
   },
 });
