@@ -1,10 +1,8 @@
-﻿// ==========================================
-// 1. تحديد رابط الخادم (عدّل هذا برابط Render الخاص بك)
 // ==========================================
-const API_BASE_URL = 'https://studenttracker-zgom.onrender.com'; // ⚠️ استبدله برابط الخادم
+// 1. رابط الخادم (عدّله بعد نشر Backend)
+// ==========================================
+const API_BASE_URL = 'https://studenttracker-zgom.onrender.com'; // رابط الخادم الجديد
 const SOCKET_URL = API_BASE_URL;
-
-const socket = io(SOCKET_URL);
 
 // ==========================================
 // 2. إدارة التوكن والمستخدم
@@ -60,6 +58,10 @@ function logout() {
     localStorage.removeItem('user');
     token = null;
     currentUser = null;
+    if (socket) {
+        socket.disconnect();
+        socket = null;
+    }
     showLogin();
 }
 
@@ -87,12 +89,15 @@ function showDashboard() {
 }
 
 // ==========================================
-// 5. Socket.io مع التوكن
+// 5. Socket.io مع التوكن (متغير socket مُصرّح هنا)
 // ==========================================
-let socket = null;
+let socket = null; // تعريف واحد فقط
 
 function connectSocket() {
-    if (socket) socket.disconnect();
+    if (socket) {
+        socket.disconnect();
+        socket = null;
+    }
     socket = io(SOCKET_URL, {
         auth: { token: token }
     });
@@ -103,7 +108,7 @@ function connectSocket() {
 
     socket.on('status-changed', function(data) {
         console.log('📢 تحديث لحظي:', data.message);
-        loadAndRender(); // إعادة تحميل القائمة
+        loadAndRender();
         addLog('🔔 ' + data.message, new Date());
         showBrowserNotification('تحديث حالة التلميذ', data.message);
     });
@@ -344,13 +349,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (user) {
                 currentUser = user;
                 showDashboard();
+                // تأكد من ربط زر الإضافة بعد ظهور اللوحة
+                document.getElementById('addBtn').addEventListener('click', handleAddStudent);
+                document.getElementById('studentNameInput').addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') handleAddStudent();
+                });
                 return;
             }
         } catch(e) {}
     }
     showLogin();
 
-    // ربط زر إضافة الطالب (يعمل بعد ظهور لوحة التحكم)
+    // ربط زر الإضافة (في حالة عدم تسجيل الدخول، سيتم ربطه مرة أخرى عند ظهور اللوحة)
     document.getElementById('addBtn').addEventListener('click', handleAddStudent);
     document.getElementById('studentNameInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') handleAddStudent();
