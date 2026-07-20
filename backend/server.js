@@ -60,11 +60,11 @@ io.on('connection', (socket) => {
   console.log(`🟢 عميل متصل: ${userEmail} (الدور: ${socket.user.role})`);
 
   // ----------------------
-  // 1. تبديل حالة الطالب (يستمع له المدير)
+  // 1. تبديل حالة الطالب (للمدير)
   // ----------------------
   socket.on('toggle-status', async (studentId) => {
     if (socket.user.role !== 'admin') {
-      socket.emit('error', { message: 'غير مصرح لك بتغيير الحالة' });
+      socket.emit('error', { message: 'غير مصرح لك' });
       return;
     }
 
@@ -89,6 +89,7 @@ io.on('connection', (socket) => {
       const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
       const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
+      // بث التحديث لجميع العملاء
       io.emit('status-changed', {
         student: student,
         message: message,
@@ -103,19 +104,26 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 2. إشعار عام من المدير لجميع أولياء الأمور (مع الحفظ في DB)
+  // 2. إشعار عام من المدير (مع الحفظ في DB)
   // ----------------------
   socket.on('admin-notification', async (data) => {
     if (socket.user.role !== 'admin') return;
 
     try {
+      // حفظ الإشعار في قاعدة البيانات
       const notification = new Notification({
         target: 'all',
         message: data.message,
       });
       await notification.save();
 
-      io.emit('notification', { message: data.message, notificationId: notification._id });
+      // إرسال الإشعار لجميع العملاء المتصلين حالياً
+      io.emit('notification', { 
+        message: data.message, 
+        notificationId: notification._id,
+        createdAt: notification.createdAt 
+      });
+
     } catch (err) {
       console.error(err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار العام' });
@@ -138,22 +146,32 @@ io.on('connection', (socket) => {
     }
 
     try {
+      // حفظ الإشعار في قاعدة البيانات
       const notification = new Notification({
         target: parentEmail,
         message: message,
       });
       await notification.save();
 
+      // محاولة إرسال الإشعار فوراً إذا كان ولي الأمر متصلاً
       const targetSocketId = userSockets.get(parentEmail);
       if (targetSocketId) {
-        io.to(targetSocketId).emit('notification', { message, notificationId: notification._id });
-        socket.emit('notification-sent', { parentEmail, message });
+        io.to(targetSocketId).emit('notification', { 
+          message, 
+          notificationId: notification._id,
+          createdAt: notification.createdAt 
+        });
+        socket.emit('notification-sent', { 
+          parentEmail, 
+          message: message + ' (تم الإرسال فوراً)' 
+        });
       } else {
-        socket.emit('notification-sent', {
-          parentEmail,
-          message: message + ' (تم حفظ الإشعار، سيظهر عند تسجيل دخول ولي الأمر)'
+        socket.emit('notification-sent', { 
+          parentEmail, 
+          message: message + ' (تم الحفظ، سيظهر عند تسجيل الدخول)' 
         });
       }
+
     } catch (err) {
       console.error(err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار الخاص' });
