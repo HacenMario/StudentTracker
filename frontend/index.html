@@ -6,20 +6,38 @@
     <title>نظام الحضور المدرسي - متكامل</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- Font Awesome للأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <!-- ========================================== -->
+    <!-- قسم اسم المؤسسة (يظهر في جميع الشاشات) -->
+    <!-- ========================================== -->
+    <div class="school-header">
+        <div class="school-info">
+            <h1>🏫 مدرسة النور الابتدائية</h1>
+            <p>📍 العنوان: شارع السلام، المدينة التعليمية</p>
+            <p>📞 الهاتف: 0555 123 456 | ✉️ info@school.edu</p>
+        </div>
+    </div>
+
     <div class="app-wrapper">
         <div class="container" id="appContainer">
+
+            <!-- ========================================== -->
             <!-- شاشة تسجيل الدخول -->
+            <!-- ========================================== -->
             <div id="loginScreen">
                 <h2>🔐 تسجيل الدخول</h2>
                 <input type="email" id="loginEmail" placeholder="البريد الإلكتروني">
                 <input type="password" id="loginPassword" placeholder="كلمة المرور">
-                <button id="loginBtn">دخول</button>
+                <button id="loginBtn">دخول <i class="fas fa-arrow-left"></i></button>
                 <p>ليس لديك حساب؟ <a href="#" id="showRegister">سجل الآن</a></p>
             </div>
 
+            <!-- ========================================== -->
             <!-- شاشة التسجيل -->
+            <!-- ========================================== -->
             <div id="registerScreen" style="display:none;">
                 <h2>📝 إنشاء حساب</h2>
                 <input type="text" id="regName" placeholder="الاسم الكامل">
@@ -30,115 +48,126 @@
                     <option value="parent">ولي أمر</option>
                     <option value="admin">مدير/موظف</option>
                 </select>
-                <button id="registerBtn">تسجيل</button>
+                <button id="registerBtn">تسجيل <i class="fas fa-user-plus"></i></button>
                 <p>لديك حساب؟ <a href="#" id="showLogin">سجل دخول</a></p>
             </div>
 
+            <!-- ========================================== -->
             <!-- لوحة المدير -->
+            <!-- ========================================== -->
             <div id="adminDashboard" style="display:none;">
                 <header>
-                    <h1>🏫 لوحة المدير</h1>
-                    <span class="live-badge">🟢 مباشر</span>
-                    <button id="logoutBtnAdmin" style="background:#f0f0f0;border:none;padding:6px 16px;border-radius:20px;cursor:pointer;">🚪 خروج</button>
+                    <h1><i class="fas fa-user-cog"></i> لوحة المدير</h1>
+                    <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
+                    <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
                 </header>
 
-                <div class="add-section" style="flex-wrap:wrap; gap:8px;">
-                    <input type="text" id="adminStudentName" placeholder="اسم التلميذ" style="flex:1; min-width:140px;">
-                    <input type="email" id="adminParentEmail" placeholder="بريد ولي الأمر" style="flex:1; min-width:140px;">
-                    <input type="text" id="adminParentName" placeholder="اسم ولي الأمر" style="flex:1; min-width:140px;">
-                    <input type="text" id="adminParentPhone" placeholder="هاتف ولي الأمر" style="flex:1; min-width:140px;">
-                    <input type="text" id="adminAddress" placeholder="العنوان" style="flex:1; min-width:140px;">
-                    <button id="adminAddBtn" style="padding: 12px 24px;">إضافة طالب</button>
+                <!-- زر إضافة طالب جديد (يظهر/يخفي الحقول) -->
+                <button id="toggleAddStudentBtn" class="btn-toggle-form">
+                    <i class="fas fa-plus-circle"></i> إضافة طالب جديد
+                </button>
+
+                <!-- حقول إضافة الطالب (مخفية افتراضياً) -->
+                <div id="addStudentForm" style="display:none;" class="add-student-form">
+                    <div class="form-grid">
+                        <input type="text" id="adminStudentName" placeholder="اسم التلميذ">
+                        <input type="email" id="adminParentEmail" placeholder="بريد ولي الأمر">
+                        <input type="text" id="adminParentName" placeholder="اسم ولي الأمر">
+                        <input type="text" id="adminParentPhone" placeholder="هاتف ولي الأمر">
+                        <input type="text" id="adminAddress" placeholder="العنوان (اختياري)">
+                        <button id="adminAddBtn" class="btn-primary"><i class="fas fa-save"></i> حفظ</button>
+                    </div>
                 </div>
 
+                <!-- قائمة الطلاب -->
                 <div id="adminStudentsList" class="students-grid"></div>
 
-                <!-- سجل النشاطات مع زر إظهار القديمة -->
+                <!-- سجل النشاطات (مع زر إظهار القديمة) -->
                 <div class="log-section">
-                    <h3>📋 سجل النشاطات</h3>
+                    <div class="log-header">
+                        <h3><i class="fas fa-history"></i> 📋 سجل النشاطات</h3>
+                        <button id="adminShowOldLogsBtn" class="btn-show-old" style="display:none;">
+                            <i class="fas fa-chevron-down"></i> عرض السجل السابق
+                        </button>
+                        <button id="adminHideOldLogsBtn" class="btn-hide-old" style="display:none;">
+                            <i class="fas fa-chevron-up"></i> إخفاء السجل السابق
+                        </button>
+                    </div>
                     <div id="adminLogContainer"></div>
-                    <div style="margin-top:10px;">
-                        <button id="showOldAdminLogBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-                            📜 عرض النشاطات القديمة
-                        </button>
-                        <button id="hideOldAdminLogBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-                            🔼 إخفاء النشاطات القديمة
-                        </button>
+                </div>
+
+                <!-- إرسال الإشعارات -->
+                <div class="notification-forms">
+                    <div class="notif-box">
+                        <h4><i class="fas fa-bullhorn"></i> إشعار عام</h4>
+                        <textarea id="adminNotificationMsg" placeholder="اكتب رسالة الإشعار العام..."></textarea>
+                        <button id="adminSendNotificationBtn" class="btn-warning"><i class="fas fa-paper-plane"></i> إرسال للجميع</button>
                     </div>
-                </div>
-
-                <!-- إشعارات المدير مع زر إظهار القديمة -->
-                <div style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
-                    <h4>📩 سجل الإشعارات المرسلة</h4>
-                    <div id="adminNotificationContainer">
-                        <ul id="adminNotificationList" style="list-style:none; padding:0; margin:0;"></ul>
-                        <div style="margin-top:10px;">
-                            <button id="showOldAdminNotifBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-                                📜 عرض الإشعارات القديمة
-                            </button>
-                            <button id="hideOldAdminNotifBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-                                🔼 إخفاء الإشعارات القديمة
-                            </button>
-                        </div>
+                    <div class="notif-box">
+                        <h4><i class="fas fa-envelope"></i> إشعار خاص لولي أمر</h4>
+                        <input type="email" id="adminParentEmailInput" placeholder="بريد ولي الأمر المستهدف">
+                        <textarea id="adminParentNotificationMsg" placeholder="اكتب رسالة الإشعار الخاص..."></textarea>
+                        <button id="adminSendParentNotificationBtn" class="btn-success"><i class="fas fa-paper-plane"></i> إرسال</button>
                     </div>
-                </div>
-
-                <!-- إرسال إشعار عام -->
-                <div style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
-                    <h4>📢 إرسال إشعار عام لجميع أولياء الأمور</h4>
-                    <textarea id="adminNotificationMsg" placeholder="اكتب رسالة الإشعار العام..." style="width:100%; padding:12px; border-radius:16px; border:2px solid #e2eaf2; min-height:60px; font-family: 'Tajawal', sans-serif;"></textarea>
-                    <button id="adminSendNotificationBtn" style="background:#e67e22; color:white; border:none; padding:10px 24px; border-radius:60px; font-weight:700; cursor:pointer; margin-top:8px;">إرسال الإشعار العام</button>
-                </div>
-
-                <!-- إرسال إشعار خاص لولي أمر -->
-                <div style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
-                    <h4>📩 إرسال إشعار لولي أمر معين</h4>
-                    <input type="email" id="adminParentEmailInput" placeholder="بريد ولي الأمر المستهدف" style="width:100%; padding:12px; border-radius:16px; border:2px solid #e2eaf2; margin-bottom:10px; font-family: 'Tajawal', sans-serif;">
-                    <textarea id="adminParentNotificationMsg" placeholder="اكتب رسالة الإشعار الخاص..." style="width:100%; padding:12px; border-radius:16px; border:2px solid #e2eaf2; min-height:60px; font-family: 'Tajawal', sans-serif;"></textarea>
-                    <button id="adminSendParentNotificationBtn" style="background:#2ecc71; color:white; border:none; padding:10px 24px; border-radius:60px; font-weight:700; cursor:pointer; margin-top:8px;">إرسال الإشعار لولي الأمر</button>
                 </div>
             </div>
 
+            <!-- ========================================== -->
             <!-- لوحة ولي الأمر -->
+            <!-- ========================================== -->
             <div id="parentDashboard" style="display:none;">
                 <header>
-                    <h1>🏫 لوحة ولي الأمر</h1>
-                    <span class="live-badge">🟢 مباشر</span>
-                    <button id="logoutBtnParent" style="background:#f0f0f0;border:none;padding:6px 16px;border-radius:20px;cursor:pointer;">🚪 خروج</button>
+                    <h1><i class="fas fa-user-friends"></i> لوحة ولي الأمر</h1>
+                    <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
+                    <button id="logoutBtnParent" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
                 </header>
 
                 <div id="parentStudentsList" class="students-grid"></div>
 
-                <!-- سجل دخول/خروج أبنائي مع زر إظهار القديمة -->
+                <!-- سجل دخول/خروج أبنائي (مع زر إظهار القديمة) -->
                 <div class="log-section">
-                    <h3>📋 سجل دخول/خروج أبنائي</h3>
-                    <div id="parentLogContainer"></div>
-                    <div style="margin-top:10px;">
-                        <button id="showOldParentLogBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-                            📜 عرض السجلات القديمة
+                    <div class="log-header">
+                        <h3><i class="fas fa-clipboard-list"></i> 📋 سجل دخول/خروج أبنائي</h3>
+                        <button id="parentShowOldLogsBtn" class="btn-show-old" style="display:none;">
+                            <i class="fas fa-chevron-down"></i> عرض السجل السابق
                         </button>
-                        <button id="hideOldParentLogBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-                            🔼 إخفاء السجلات القديمة
+                        <button id="parentHideOldLogsBtn" class="btn-hide-old" style="display:none;">
+                            <i class="fas fa-chevron-up"></i> إخفاء السجل السابق
                         </button>
                     </div>
+                    <div id="parentLogContainer"></div>
                 </div>
 
-                <!-- استقبال الإشعارات -->
-                <div id="notificationContainer" style="margin-top:20px; background:#f0f8ff; padding:15px; border-radius:20px; border:1px solid #d6e8f5;">
-                    <h4>📩 الإشعارات الواردة</h4>
-                    <ul id="notificationList" style="list-style:none; padding:0; margin:0;"></ul>
-                    <div style="margin-top:10px;">
-                        <button id="showOldNotificationsBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-                            📜 عرض الإشعارات القديمة
-                        </button>
-                        <button id="hideOldNotificationsBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-                            🔼 إخفاء الإشعارات القديمة
-                        </button>
-                    </div>
+                <!-- الإشعارات الواردة -->
+                <div id="notificationContainer">
+                    <h4><i class="fas fa-bell"></i> 📩 الإشعارات الواردة</h4>
+                    <ul id="notificationList"></ul>
+                    <button id="showOldNotificationsBtn" class="btn-show-old" style="display:none;">
+                        <i class="fas fa-chevron-down"></i> عرض الإشعارات القديمة
+                    </button>
+                    <button id="hideOldNotificationsBtn" class="btn-hide-old" style="display:none;">
+                        <i class="fas fa-chevron-up"></i> إخفاء الإشعارات القديمة
+                    </button>
                 </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- نافذة التأكيد (Modal) -->
+    <!-- ========================================== -->
+    <div id="confirmModal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3 id="modalTitle">تأكيد العملية</h3>
+            <p id="modalMessage">هل أنت متأكد من تنفيذ هذا الإجراء؟</p>
+            <div class="modal-actions">
+                <button id="modalConfirmBtn" class="btn-danger"><i class="fas fa-check"></i> نعم، تأكيد</button>
+                <button id="modalCancelBtn" class="btn-secondary"><i class="fas fa-times"></i> إلغاء</button>
             </div>
         </div>
     </div>
+
     <script src="js/app.js"></script>
 </body>
 </html>
