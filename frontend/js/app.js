@@ -201,15 +201,17 @@ function renderStudents(students, containerId, showAdminControls) {
 }
 
 window.adminToggle = function(id) {
-    if (socket) {
-        socket.emit('toggle-status', id);
-    } else {
-        // الطريقة القديمة عبر API
-        fetchWithAuth('/api/students/' + id + '/toggle', { method: 'PUT' })
-            .then(res => res.json())
-            .then(() => loadAdminStudents())
-            .catch(err => alert('خطأ'));
-    }
+    fetchWithAuth('/api/students/' + id + '/toggle', { method: 'PUT' })
+        .then(res => {
+            if (!res.ok) throw new Error('فشل التبديل');
+            return res.json();
+        })
+        .then(() => {
+            loadAdminStudents(); // تحديث القائمة
+            // إضافة سجل
+            addLog('🔄 تم تبديل حالة الطالب', new Date(), 'adminLogContainer');
+        })
+        .catch(err => alert('حدث خطأ: ' + err.message));
 };
 
 window.adminDelete = function(id) {
