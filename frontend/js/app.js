@@ -627,17 +627,18 @@ function renderStudents(students, containerId, showAdminControls) {
                     <span class="student-time">🕒 آخر تحديث: ${formatFullTime(s.lastUpdate)}</span>
                 </div>
                 <span class="status-badge ${statusClass}">${statusText}</span>
-                <div class="card-actions">
-                    ${showAdminControls ? `
-                        <button class="btn-toggle ${toggleClass}" onclick="adminToggle('${s._id}')">${toggleText}</button>
-                        <button class="btn-delete" onclick="adminDelete('${s._id}')">🗑️</button>
-                    ` : `
-                        <span style="font-size:13px;color:#7b8b9e;">آخر دخول/خروج: ${formatFullTime(s.lastUpdate)}</span>
-                    `}
-                    <button class="btn-qr" onclick="downloadQR('${s._id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:40px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
-                        <i class="fas fa-qrcode"></i> QR
-                    </button>
-                </div>
+<div class="card-actions">
+    ${showAdminControls ? `
+        <button class="btn-toggle ${toggleClass}" onclick="adminToggle('${s._id}')">${toggleText}</button>
+        <button class="btn-delete" onclick="adminDelete('${s._id}')">🗑️</button>
+    ` : `
+        <span style="font-size:13px;color:#7b8b9e;">آخر دخول/خروج: ${formatFullTime(s.lastUpdate)}</span>
+    `}
+    <!-- زر QR يظهر للجميع (مدير أو ولي أمر) -->
+    <button class="btn-qr" onclick="downloadQR('${s._id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:40px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+        <i class="fas fa-qrcode"></i> QR
+    </button>
+</div>
             </div>
         `;
     });
