@@ -1,42 +1,35 @@
 const express = require('express');
 const router = express.Router();
 const Student = require('../models/Student');
+const auth = require('../middleware/auth'); // سننشئ هذا الملف لاحقاً
 
-// GET - جلب جميع الطلاب
-router.get('/', async (req, res) => {
+// جلب جميع الطلاب المرتبطين بولي الأمر (بناءً على البريد الإلكتروني من التوكن)
+router.get('/', auth, async (req, res) => {
   try {
-    const students = await Student.find().sort({ createdAt: -1 });
+    // req.user تم تعبئته من middleware auth ويحتوي على email
+    const students = await Student.find({ parentEmail: req.user.email }).sort({ createdAt: -1 });
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// POST - إضافة طالب جديد مع جميع الحقول
-router.post('/', async (req, res) => {
+// إضافة طالب جديد (يتم ربطه تلقائياً بولي الأمر الحالي)
+router.post('/', auth, async (req, res) => {
   try {
-    const { name, parentName, phone, address, email } = req.body;
-    if (!name || !parentName || !phone || !address || !email) {
-      return res.status(400).json({ message: 'جميع الحقول مطلوبة' });
+    const { name, parentName, parentPhone, parentEmail, address } = req.body;
+    
+    // التأكد من أن البريد المدخل هو نفس بريد ولي الأمر المسجل (أو يمكن تغيير حسب الرغبة)
+    if (parentEmail !== req.user.email) {
+      return res.status(403).json({ message: 'لا يمكنك إضافة طالب لبريد آخر' });
     }
-
-    // التحقق من عدم تكرار البريد أو الهاتف
-    const existing = await Student.findOne({ $or: [{ email }, { phone }] });
-    if (existing) {
-      return res.status(400).json({ message: 'البريد أو الهاتف موجود مسبقاً' });
-    }
-
-    // إنشاء studentId تلقائي
-    const count = await Student.countDocuments();
-    const studentId = `STU-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`;
 
     const newStudent = new Student({
-      studentId,
       name,
       parentName,
-      phone,
-      address,
-      email,
+      parentPhone,
+      parentEmail,
+      address: address || '',
     });
 
     await newStudent.save();
@@ -46,25 +39,27 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT - تبديل الحالة (نفسه سابقاً)
-router.put('/:id/toggle', async (req, res) => {
+// تبديل حالة الطالب (مع التأكد من أنه يخص ولي الأمر الحالي)
+router.put('/:id/toggle', auth, async (req, res) => {
   try {
-    const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: 'غير موجود' });
+    const student = await Student.findOne({ _id: req.params.id, parentEmail: req.user.email });
+    if (!student) return res.status(404).json({ message: 'غير موجود أو غير مسموح' });
 
     student.isInside = !student.isInside;
     student.lastUpdate = new Date();
     await student.save();
+
     res.json(student);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// DELETE - حذف طالب
-router.delete('/:id', async (req, res) => {
+// حذف طالب (مع التأكد من الملكية)
+router.delete('/:id', auth, async (req, res) => {
   try {
-    await Student.findByIdAndDelete(req.params.id);
+    const student = await Student.findOneAndDelete({ _id: req.params.id, parentEmail: req.user.email });
+    if (!student) return res.status(404).json({ message: 'غير موجود أو غير مسموح' });
     res.json({ message: 'تم الحذف' });
   } catch (err) {
     res.status(500).json({ message: err.message });
