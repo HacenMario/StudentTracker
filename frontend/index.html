@@ -53,9 +53,34 @@
 
                 <div id="adminStudentsList" class="students-grid"></div>
 
+                <!-- سجل النشاطات مع زر إظهار القديمة -->
                 <div class="log-section">
                     <h3>📋 سجل النشاطات</h3>
                     <div id="adminLogContainer"></div>
+                    <div style="margin-top:10px;">
+                        <button id="showOldAdminLogBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
+                            📜 عرض النشاطات القديمة
+                        </button>
+                        <button id="hideOldAdminLogBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
+                            🔼 إخفاء النشاطات القديمة
+                        </button>
+                    </div>
+                </div>
+
+                <!-- إشعارات المدير مع زر إظهار القديمة -->
+                <div style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+                    <h4>📩 سجل الإشعارات المرسلة</h4>
+                    <div id="adminNotificationContainer">
+                        <ul id="adminNotificationList" style="list-style:none; padding:0; margin:0;"></ul>
+                        <div style="margin-top:10px;">
+                            <button id="showOldAdminNotifBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
+                                📜 عرض الإشعارات القديمة
+                            </button>
+                            <button id="hideOldAdminNotifBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
+                                🔼 إخفاء الإشعارات القديمة
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- إرسال إشعار عام -->
@@ -84,23 +109,32 @@
 
                 <div id="parentStudentsList" class="students-grid"></div>
 
+                <!-- سجل دخول/خروج أبنائي مع زر إظهار القديمة -->
                 <div class="log-section">
                     <h3>📋 سجل دخول/خروج أبنائي</h3>
                     <div id="parentLogContainer"></div>
+                    <div style="margin-top:10px;">
+                        <button id="showOldParentLogBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
+                            📜 عرض السجلات القديمة
+                        </button>
+                        <button id="hideOldParentLogBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
+                            🔼 إخفاء السجلات القديمة
+                        </button>
+                    </div>
                 </div>
 
                 <!-- استقبال الإشعارات -->
                 <div id="notificationContainer" style="margin-top:20px; background:#f0f8ff; padding:15px; border-radius:20px; border:1px solid #d6e8f5;">
                     <h4>📩 الإشعارات الواردة</h4>
                     <ul id="notificationList" style="list-style:none; padding:0; margin:0;"></ul>
-                        <!-- زر عرض الإشعارات القديمة -->
-    <button id="showOldNotificationsBtn" style="display:none; margin-top:10px; background:#e2eaf2; border:none; padding:8px 20px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-        📜 عرض الإشعارات القديمة
-    </button>
-    <button id="hideOldNotificationsBtn" style="display:none; margin-top:10px; background:#e2eaf2; border:none; padding:8px 20px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
-        🔼 إخفاء الإشعارات القديمة
-    </button>
-</div>
+                    <div style="margin-top:10px;">
+                        <button id="showOldNotificationsBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
+                            📜 عرض الإشعارات القديمة
+                        </button>
+                        <button id="hideOldNotificationsBtn" style="display:none; background:#e2eaf2; border:none; padding:6px 18px; border-radius:40px; cursor:pointer; font-family: 'Tajawal', sans-serif; font-weight:600;">
+                            🔼 إخفاء الإشعارات القديمة
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
