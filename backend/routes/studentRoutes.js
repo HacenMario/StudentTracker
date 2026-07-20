@@ -12,13 +12,12 @@ const { isAdmin } = require('../middleware/auth');
 router.get('/', auth, async (req, res) => {
   try {
     let query = {};
-    // إذا كان المستخدم ولي أمر، يرى أبناءه فقط
     if (req.user.role === 'parent') {
-      // البحث عن الطلاب المرتبطين بهذا المستخدم عبر حقل parent
+      // ولي الأمر يرى أبناءه فقط
       const students = await Student.find({ parent: req.user.id }).populate('parent', 'name email');
       return res.json(students);
     }
-    // إذا كان مديراً، يرى الجميع
+    // المدير يرى الجميع
     const students = await Student.find().populate('parent', 'name email');
     res.json(students);
   } catch (err) {
@@ -36,7 +35,6 @@ router.post('/', auth, isAdmin, async (req, res) => {
     // البحث عن ولي الأمر باستخدام البريد الإلكتروني
     let parent = await User.findOne({ email: parentEmail, role: 'parent' });
     if (!parent) {
-      // إذا لم يكن موجوداً، يمكن إنشاؤه تلقائياً (أو رفض الطلب)
       return res.status(400).json({ message: 'ولي الأمر غير موجود، يجب تسجيله أولاً' });
     }
 
@@ -73,7 +71,7 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     student.lastUpdate = new Date();
     await student.save();
 
-    // تسجيل الحضور
+    // تسجيل في سجل الحضور
     const attendance = new Attendance({
       student: student._id,
       status: student.isInside ? 'in' : 'out',
@@ -81,20 +79,16 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     });
     await attendance.save();
 
-    // إرسال إشعار عبر Socket.io
+    // إرسال إشعار عبر Socket.io (سيتم بثه من server.js)
+    const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
+    const message = `التلميذ ${student.name} أصبح ${statusText}`;
     const io = req.app.get('io');
-    const message = `التلميذ ${student.name} أصبح ${student.isInside ? 'داخل 🏫' : 'خارج 🚪'}`;
     io.emit('status-changed', {
       student: student,
       message: message,
-      parentId: student.parent.toString(),
+      parentId: student.parent ? student.parent.toString() : null,
+      parentEmail: student.parentEmail,
     });
-
-    res.json(student);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
 
     res.json(student);
   } catch (err) {
@@ -133,14 +127,14 @@ router.get('/:id/attendance', auth, async (req, res) => {
     const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: 'غير موجود' });
 
-    // التحقق من الصلاحية: ولي الأمر يرى فقط أبناءه، المدير يرى الكل
+    // التحقق من الصلاحية: ولي الأمر يرى فقط أبناءه
     if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
       return res.status(403).json({ message: 'غير مصرح لك برؤية هذا السجل' });
     }
 
     const records = await Attendance.find({ student: student._id })
       .sort({ timestamp: -1 })
-      .limit(30); // آخر 30 تسجيلاً
+      .limit(30);
 
     res.json(records);
   } catch (err) {
