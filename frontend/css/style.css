@@ -348,3 +348,43 @@ header h1 {
     color: #6a8aaa;
     width: 18px;
 }
+/* شاشات المصادقة */
+#loginScreen, #registerScreen {
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 32px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+}
+#loginScreen input, #registerScreen input {
+    width: 100%;
+    padding: 14px 18px;
+    margin: 8px 0;
+    border: 2px solid #e2eaf2;
+    border-radius: 60px;
+    font-size: 16px;
+    font-family: 'Tajawal', sans-serif;
+}
+#loginScreen button, #registerScreen button {
+    width: 100%;
+    padding: 14px;
+    background: #1c7ed6;
+    color: white;
+    border: none;
+    border-radius: 60px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    margin-top: 10px;
+}
+#loginScreen p, #registerScreen p {
+    text-align: center;
+    margin-top: 15px;
+}
+#loginScreen a, #registerScreen a {
+    color: #1c7ed6;
+    cursor: pointer;
+    text-decoration: none;
+}
