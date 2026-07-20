@@ -45,16 +45,18 @@ io.use((socket, next) => {
   }
 });
 
-io.on('connection', (socket) => {
-  console.log('🟢 عميل متصل:', socket.user.email, socket.user.role);
-
-  // يمكن للمدير بث إشعارات عامة
-  socket.on('admin-notification', (data) => {
-    // data: { message, parentId (اختياري) }
-    if (socket.user.role === 'admin') {
-      io.emit('notification', data);
+socket.on('admin-notification', (data) => {
+  // data: { message, targetParentEmail? }
+  if (socket.user.role === 'admin') {
+    if (data.targetParentEmail) {
+      // إرسال فقط لولي الأمر المستهدف
+      io.to(data.targetParentEmail).emit('notification', { message: data.message });
+    } else {
+      // إرسال للجميع
+      io.emit('notification', { message: data.message });
     }
-  });
+  }
+});
 
   socket.on('disconnect', () => {
     console.log('🔴 عميل غير متصل:', socket.user.email);
