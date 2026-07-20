@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -12,21 +12,16 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "*", // في الإنتاج، استبدل برابط Vercel الخاص بك
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// ربط Routes
 app.use('/api/students', studentRoutes);
 
-// ==========================================
-// إعداد Socket.io للإشعارات اللحظية
-// ==========================================
 io.on('connection', (socket) => {
   console.log('🟢 عميل جديد متصل');
 
@@ -39,9 +34,14 @@ io.on('connection', (socket) => {
       student.lastUpdate = new Date();
       await student.save();
 
+      // ===== التصحيح هنا =====
+      const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
+      const message = 'التلميذ ' + student.name + ' أصبح ' + statusText;
+      // =========================
+
       io.emit('status-changed', {
         student: student,
-        message: التلميذ  أصبح 
+        message: message
       });
     } catch (error) {
       console.error(error);
@@ -53,9 +53,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// ==========================================
-// الاتصال بقاعدة البيانات وبدء الخادم
-// ==========================================
 const PORT = process.env.PORT || 5000;
 
 mongoose.connect(process.env.MONGO_URI, {
@@ -65,7 +62,7 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => {
   console.log('✅ متصل بـ MongoDB بنجاح');
   server.listen(PORT, () => {
-    console.log(🚀 الخادم يعمل على http://localhost:);
+    console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
   });
 })
 .catch(err => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err));
