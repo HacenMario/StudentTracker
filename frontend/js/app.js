@@ -17,6 +17,7 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
+let html5QrCode = null; // لماسح QR
 
 // ==========================================
 // 3. دوال مساعدة
@@ -100,6 +101,8 @@ function logout() {
     token = null;
     currentUser = null;
     if (socket) { socket.disconnect(); socket = null; }
+    // إيقاف الماسح إذا كان مفتوحاً
+    closeScanner();
     showLogin();
 }
 
@@ -323,7 +326,124 @@ document.getElementById('settingsLogoUpload').addEventListener('change', functio
 });
 
 // ==========================================
-// 9. دوال التغيير الجماعي
+// 9. دوال QR Code (المسح والتحميل)
+// ==========================================
+
+// تحميل QR Code للطالب
+window.downloadQR = function(studentId) {
+    fetchWithAuth('/api/students/' + studentId + '/qr')
+        .then(res => res.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `QR_${studentId}.png`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(err => alert('فشل تحميل QR: ' + err.message));
+};
+
+// فتح الماسح الضوئي
+function openScanner() {
+    const modal = document.getElementById('scannerModal');
+    modal.style.display = 'flex';
+    const readerContainer = document.getElementById('qr-reader');
+    const resultsContainer = document.getElementById('qr-reader-results');
+    resultsContainer.innerHTML = '';
+
+    if (typeof Html5Qrcode === 'undefined') {
+        resultsContainer.innerHTML = '❌ مكتبة المسح غير محملة، تحقق من اتصال الإنترنت.';
+        return;
+    }
+
+    if (html5QrCode) {
+        html5QrCode.clear();
+        html5QrCode = null;
+    }
+
+    html5QrCode = new Html5Qrcode('qr-reader');
+
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length > 0) {
+            let cameraId = devices[0].id;
+            // محاولة اختيار الكاميرا الخلفية إذا كانت موجودة
+            const backCamera = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear'));
+            if (backCamera) cameraId = backCamera.id;
+
+            html5QrCode.start(
+                cameraId,
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                },
+                onScanSuccess,
+                onScanError
+            );
+        } else {
+            resultsContainer.innerHTML = '❌ لا توجد كاميرا متاحة.';
+        }
+    }).catch(err => {
+        resultsContainer.innerHTML = '❌ فشل الوصول للكاميرا: ' + err.message;
+    });
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    const resultsContainer = document.getElementById('qr-reader-results');
+    resultsContainer.innerHTML = '✅ جاري معالجة الكود...';
+
+    fetchWithAuth('/api/students/scan-qr', {
+        method: 'POST',
+        body: JSON.stringify({ qrData: decodedText })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            resultsContainer.innerHTML = '✅ ' + data.message;
+            // تحديث القائمة
+            if (currentUser.role === 'admin') {
+                loadAdminStudents();
+                loadAdminLogs();
+            } else {
+                loadParentStudents();
+                loadParentLogs();
+            }
+            // إغلاق الماسح بعد نجاح المسح
+            setTimeout(closeScanner, 2000);
+        } else {
+            resultsContainer.innerHTML = '❌ ' + data.message;
+        }
+    })
+    .catch(err => {
+        resultsContainer.innerHTML = '❌ خطأ في الاتصال بالخادم';
+        console.error(err);
+    });
+}
+
+function onScanError(error) {
+    // نتجاهل الأخطاء العادية (تظهر أثناء المسح المستمر)
+    // console.warn(error);
+}
+
+function closeScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+        }).catch(err => console.warn('خطأ في إيقاف الماسح:', err));
+        html5QrCode = null;
+    }
+    document.getElementById('scannerModal').style.display = 'none';
+    document.getElementById('qr-reader-results').innerHTML = '';
+}
+
+// ربط أحداث الماسح
+document.getElementById('openScannerBtn').addEventListener('click', openScanner);
+document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
+
+// ==========================================
+// 10. دوال التغيير الجماعي
 // ==========================================
 async function toggleAllStudents(status) {
     const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
@@ -339,7 +459,7 @@ async function toggleAllStudents(status) {
 }
 
 // ==========================================
-// 10. دوال الإشعارات
+// 11. دوال الإشعارات
 // ==========================================
 async function loadAdminNotifications() {
     try {
@@ -449,7 +569,7 @@ function toggleOldNotifications(show) {
 }
 
 // ==========================================
-// 11. دوال المدير
+// 12. دوال المدير
 // ==========================================
 async function loadAdminStudents() {
     try {
@@ -492,8 +612,8 @@ function renderStudents(students, containerId, showAdminControls) {
                         <span style="font-size:13px;color:#7b8b9e;">آخر دخول/خروج: ${formatFullTime(s.lastUpdate)}</span>
                     `}
                     <button class="btn-qr" onclick="downloadQR('${s._id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:40px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
-    <i class="fas fa-qrcode"></i> QR
-</button>
+                        <i class="fas fa-qrcode"></i> QR
+                    </button>
                 </div>
             </div>
         `;
@@ -607,132 +727,9 @@ async function adminSendParentNotification() {
         alert('Socket غير متصل');
     }
 }
-// ==========================================
-// دوال QR Code
-// ==========================================
-
-// تحميل وعرض QR Code لطالب
-async function downloadQR(studentId) {
-    try {
-        const res = await fetchWithAuth('/api/students/' + studentId + '/qr');
-        if (!res.ok) throw new Error('فشل جلب QR');
-        const data = await res.json();
-        
-        // فتح الصورة في علامة تبويب جديدة للطباعة/التحميل
-        const win = window.open();
-        win.document.write(`<img src="${data.qrImage}" alt="QR Code" style="display:block; margin:20px auto; max-width:300px;">`);
-        win.document.write(`<p style="text-align:center; font-size:16px; font-weight:bold;">${data.qrCode}</p>`);
-        win.document.write(`<p style="text-align:center;"><button onclick="window.print()">🖨️ طباعة</button></p>`);
-        win.document.close();
-    } catch (err) {
-        alert('خطأ في تحميل QR: ' + err.message);
-    }
-}
-
-// فتح الماسح الضوئي
-function openScanner() {
-    const modal = document.getElementById('scannerModal');
-    modal.style.display = 'flex';
-    
-    // تأكد من تحميل مكتبة html5-qrcode
-    if (typeof Html5Qrcode === 'undefined') {
-        alert('جاري تحميل مكتبة المسح...');
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
-        script.onload = function() {
-            initScanner();
-        };
-        document.head.appendChild(script);
-    } else {
-        initScanner();
-    }
-}
-
-let html5QrCode = null;
-
-function initScanner() {
-    const readerContainer = document.getElementById('qr-reader');
-    readerContainer.innerHTML = ''; // تفريغ المحتوى السابق
-    
-    if (html5QrCode) {
-        try {
-            html5QrCode.stop().then(() => {
-                html5QrCode.clear();
-            });
-        } catch(e) {}
-        html5QrCode = null;
-    }
-
-    html5QrCode = new Html5Qrcode("qr-reader");
-    const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-    };
-
-    html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess,
-        onScanError
-    );
-}
-
-function onScanSuccess(decodedText, decodedResult) {
-    // إيقاف الماسح بعد نجاح المسح
-    if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-        });
-    }
-    
-    document.getElementById('qr-reader-results').innerHTML = '✅ جاري معالجة الكود...';
-    
-    // إرسال النص إلى الخادم
-    fetchWithAuth('/api/students/scan-qr', {
-        method: 'POST',
-        body: JSON.stringify({ qrText: decodedText })
-    })
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById('qr-reader-results').innerHTML = '✅ ' + (data.message || 'تم تغيير الحالة بنجاح');
-        // تحديث القوائم
-        if (currentUser.role === 'admin') {
-            loadAdminStudents();
-            loadAdminLogs();
-        } else {
-            loadParentStudents();
-            loadParentLogs();
-        }
-        // إغلاق الماسح بعد 2 ثانية
-        setTimeout(() => {
-            document.getElementById('closeScannerBtn').click();
-        }, 2000);
-    })
-    .catch(err => {
-        document.getElementById('qr-reader-results').innerHTML = '❌ ' + err.message;
-    });
-}
-
-function onScanError(errorMessage) {
-    // لا تفعل شيئاً، فقط تجاهل الأخطاء المتكررة
-    // console.warn(errorMessage);
-}
-
-// إغلاق الماسح الضوئي
-function closeScanner() {
-    if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-        }).catch(() => {});
-        html5QrCode = null;
-    }
-    document.getElementById('scannerModal').style.display = 'none';
-    document.getElementById('qr-reader').innerHTML = '';
-    document.getElementById('qr-reader-results').innerHTML = '';
-}
 
 // ==========================================
-// 12. دوال السجل (مع التصحيح الكامل للأزرار)
+// 13. دوال السجل
 // ==========================================
 function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
@@ -750,7 +747,6 @@ function addLog(message, date, containerId) {
 }
 
 async function loadAdminLogs() {
-    // إعادة عرض السجلات الموجودة (بدون جلب من API)
     renderAdminLogs(adminShowOldLogs);
 }
 
@@ -758,7 +754,6 @@ function renderAdminLogs(showOld) {
     const container = document.getElementById('adminLogContainer');
     if (!container) return;
 
-    // إخفاء الأزرار بشكل افتراضي
     document.getElementById('adminShowOldLogsBtn').style.display = 'none';
     document.getElementById('adminHideOldLogsBtn').style.display = 'none';
 
@@ -767,7 +762,6 @@ function renderAdminLogs(showOld) {
         return;
     }
 
-    // ترتيب تنازلي (الأحدث أولاً)
     const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const todayLogs = sortedLogs.filter(log => isToday(log.date));
@@ -813,7 +807,7 @@ function toggleAdminOldLogs(show) {
 }
 
 // ==========================================
-// 13. دوال ولي الأمر
+// 14. دوال ولي الأمر
 // ==========================================
 async function loadParentStudents() {
     try {
@@ -906,7 +900,7 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 14. أحداث المصادقة وربط الأحداث
+// 15. أحداث المصادقة وربط الأحداث
 // ==========================================
 function setupAuthEvents() {
     document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -988,18 +982,17 @@ function setupAuthEvents() {
     document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
         toggleOldNotifications(false);
     });
-    document.getElementById('openScannerBtn').addEventListener('click', openScanner);
-    document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
 }
 
 // ==========================================
-// 15. بدء التطبيق
+// 16. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
 
+    loadSchoolSettings();
     setupAuthEvents();
 
     if (token) {
