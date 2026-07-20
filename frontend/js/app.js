@@ -331,9 +331,23 @@ document.getElementById('settingsLogoUpload').addEventListener('change', functio
 
 // تحميل QR Code للطالب
 window.downloadQR = function(studentId) {
+    // إظهار مؤشر تحميل (اختياري)
+    const btn = document.querySelector(`[onclick="downloadQR('${studentId}')"]`);
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري...';
+        btn.disabled = true;
+    }
+
     fetchWithAuth('/api/students/' + studentId + '/qr')
-        .then(res => res.blob())
+        .then(res => {
+            if (!res.ok) throw new Error('فشل تحميل QR');
+            return res.blob();
+        })
         .then(blob => {
+            // التحقق من أن الـ blob هو صورة PNG
+            if (!blob.type.includes('image/png')) {
+                throw new Error('الملف المستلم ليس صورة PNG');
+            }
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -343,9 +357,18 @@ window.downloadQR = function(studentId) {
             a.remove();
             window.URL.revokeObjectURL(url);
         })
-        .catch(err => alert('فشل تحميل QR: ' + err.message));
+        .catch(err => {
+            alert('فشل تحميل QR: ' + err.message);
+            console.error(err);
+        })
+        .finally(() => {
+            // إعادة الزر إلى حالته الأصلية
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-qrcode"></i> QR';
+                btn.disabled = false;
+            }
+        });
 };
-
 // فتح الماسح الضوئي
 function openScanner() {
     const modal = document.getElementById('scannerModal');
