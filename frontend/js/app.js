@@ -48,7 +48,6 @@ function saveAuth(data) {
     currentUser = data.user;
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(currentUser));
-    // تحديد اللوحة المناسبة حسب الدور
     if (currentUser.role === 'admin') {
         showAdminDashboard();
     } else {
@@ -107,22 +106,20 @@ function connectSocket() {
     socket.on('connect', () => console.log('✅ Socket متصل'));
 
     socket.on('status-changed', (data) => {
-        // تحديث القوائم حسب الدور
         if (currentUser.role === 'admin') {
             loadAdminStudents();
-        } else {
-            loadParentStudents();
-        }
-        // إضافة إشعار للسجل
-        if (currentUser.role === 'parent' && data.parentId === currentUser.id) {
-            addLog('🔔 ' + data.message, new Date(), 'parentLogContainer');
-            showBrowserNotification('تحديث حالة ابنك', data.message);
-        } else if (currentUser.role === 'admin') {
             addLog('🔔 ' + data.message, new Date(), 'adminLogContainer');
+        } else {
+            // إذا كان ولي أمر وتخصه هذه الرسالة
+            if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
+                loadParentStudents();
+                addLog('🔔 ' + data.message, new Date(), 'parentLogContainer');
+                showBrowserNotification('تحديث حالة ابنك', data.message);
+            }
         }
     });
 
-    // استقبال الإشعارات العامة من المدير
+    // استقبال الإشعارات العامة والخاصة
     socket.on('notification', (data) => {
         if (currentUser.role === 'parent') {
             const list = document.getElementById('notificationList');
@@ -130,7 +127,19 @@ function connectSocket() {
             li.textContent = data.message + ' (وقت: ' + new Date().toLocaleString() + ')';
             list.prepend(li);
             showBrowserNotification('📢 إشعار من المدرسة', data.message);
+        } else if (currentUser.role === 'admin') {
+            addLog('📢 إشعار عام تم إرساله', new Date(), 'adminLogContainer');
         }
+    });
+
+    // أخطاء الإشعارات
+    socket.on('notification-error', (data) => {
+        alert(data.message);
+    });
+
+    // تأكيد إرسال الإشعار الخاص
+    socket.on('notification-sent', (data) => {
+        addLog('📩 تم إرسال إشعار خاص لـ ' + data.parentEmail, new Date(), 'adminLogContainer');
     });
 
     socket.on('disconnect', () => console.warn('⚠️ انقطع الاتصال'));
@@ -156,7 +165,7 @@ function fetchWithAuth(url, options = {}) {
 async function loadAdminStudents() {
     try {
         const res = await fetchWithAuth('/api/students');
-        if (!res.ok) throw new Error('فشل');
+        if (!res.ok) throw new Error('فشل جلب الطلاب');
         const students = await res.json();
         renderStudents(students, 'adminStudentsList', true);
     } catch (err) {
@@ -203,21 +212,21 @@ function renderStudents(students, containerId, showAdminControls) {
 window.adminToggle = function(id) {
     fetchWithAuth('/api/students/' + id + '/toggle', { method: 'PUT' })
         .then(res => {
-            if (!res.ok) throw new Error('فشل التبديل');
+            if (!res.ok) throw new Error('فشل تغيير الحالة');
             return res.json();
         })
         .then(() => {
             loadAdminStudents();
-            addLog('🔄 تم تبديل حالة الطالب', new Date(), 'adminLogContainer');
+            addLog('🔄 تم تغيير حالة الطالب', new Date(), 'adminLogContainer');
         })
-        .catch(err => alert('حدث خطأ: ' + err.message));
+        .catch(err => alert('خطأ: ' + err.message));
 };
 
 window.adminDelete = function(id) {
     if (!confirm('تأكيد الحذف؟')) return;
     fetchWithAuth('/api/students/' + id, { method: 'DELETE' })
         .then(() => loadAdminStudents())
-        .catch(err => alert('خطأ'));
+        .catch(err => alert('خطأ في الحذف'));
 };
 
 async function adminAddStudent() {
@@ -248,32 +257,41 @@ async function adminAddStudent() {
     }
 }
 
-function adminSendNotification() {
+function adminSendGeneralNotification() {
     const msg = document.getElementById('adminNotificationMsg').value.trim();
-    const targetEmail = document.getElementById('adminTargetEmail').value.trim();
     if (!msg) return alert('اكتب رسالة الإشعار');
     if (socket) {
-        socket.emit('admin-notification', { 
-            message: msg,
-            targetParentEmail: targetEmail || undefined
-        });
+        socket.emit('admin-notification', { message: msg });
         document.getElementById('adminNotificationMsg').value = '';
-        document.getElementById('adminTargetEmail').value = '';
-        addLog('📢 تم إرسال إشعار' + (targetEmail ? ' لـ ' + targetEmail : ' عام'), new Date(), 'adminLogContainer');
+        addLog('📢 تم إرسال إشعار عام', new Date(), 'adminLogContainer');
     } else {
         alert('Socket غير متصل');
     }
 }
+
+function adminSendParentNotification() {
+    const email = document.getElementById('adminParentEmailInput').value.trim();
+    const msg = document.getElementById('adminParentNotificationMsg').value.trim();
+    if (!email || !msg) return alert('املأ جميع الحقول');
+    if (socket) {
+        socket.emit('admin-notification-to-parent', { parentEmail: email, message: msg });
+        document.getElementById('adminParentEmailInput').value = '';
+        document.getElementById('adminParentNotificationMsg').value = '';
+        // سيتم إضافة سجل عند تأكيد الإرسال عبر حدث notification-sent
+    } else {
+        alert('Socket غير متصل');
+    }
+}
+
 // ==========================================
 // دوال ولي الأمر
 // ==========================================
 async function loadParentStudents() {
     try {
         const res = await fetchWithAuth('/api/students');
-        if (!res.ok) throw new Error('فشل');
+        if (!res.ok) throw new Error('فشل جلب بيانات أبنائك');
         const students = await res.json();
         renderStudents(students, 'parentStudentsList', false);
-        // جلب سجل الحضور لأول طالب (مثلاً)
         if (students.length > 0) {
             loadAttendance(students[0]._id);
         }
@@ -285,7 +303,7 @@ async function loadParentStudents() {
 async function loadAttendance(studentId) {
     try {
         const res = await fetchWithAuth('/api/students/' + studentId + '/attendance');
-        if (!res.ok) throw new Error('فشل');
+        if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
         const container = document.getElementById('parentLogContainer');
         if (records.length === 0) {
@@ -370,7 +388,8 @@ function setupAuthEvents() {
 
     // أحداث المدير
     document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
-    document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendNotification);
+    document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
+    document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
 }
 
 // ==========================================
