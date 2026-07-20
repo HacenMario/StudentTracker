@@ -69,12 +69,11 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: 'غير موجود' });
 
-    // تغيير الحالة
     student.isInside = !student.isInside;
     student.lastUpdate = new Date();
     await student.save();
 
-    // تسجيل في سجل الحضور
+    // تسجيل الحضور
     const attendance = new Attendance({
       student: student._id,
       status: student.isInside ? 'in' : 'out',
@@ -82,13 +81,20 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     });
     await attendance.save();
 
-    // إرسال إشعار عبر Socket.io (سنقوم ببثه من server.js)
+    // إرسال إشعار عبر Socket.io
+    const io = req.app.get('io');
     const message = `التلميذ ${student.name} أصبح ${student.isInside ? 'داخل 🏫' : 'خارج 🚪'}`;
-    req.app.get('io').emit('status-changed', {
+    io.emit('status-changed', {
       student: student,
       message: message,
       parentId: student.parent.toString(),
     });
+
+    res.json(student);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
     res.json(student);
   } catch (err) {
