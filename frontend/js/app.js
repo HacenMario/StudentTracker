@@ -37,7 +37,6 @@ function formatFullTime(dateString) {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-// دالة لمعرفة إذا كان التاريخ اليوم
 function isToday(dateString) {
     const today = new Date();
     const date = new Date(dateString);
@@ -80,8 +79,85 @@ document.getElementById('modalCancelBtn').addEventListener('click', function() {
 });
 
 // ==========================================
-// 5. دوال المصادقة
+// 5. دوال المصادقة والإعدادات
 // ==========================================
+async function loadSettings() {
+    try {
+        const res = await fetch(API_BASE_URL + '/api/settings');
+        if (!res.ok) throw new Error('فشل جلب الإعدادات');
+        const settings = await res.json();
+        document.getElementById('schoolName').textContent = settings.schoolName || '🏫 مدرسة النور الابتدائية';
+        document.getElementById('schoolAddress').textContent = '📍 ' + (settings.address || 'العنوان غير محدد');
+        document.getElementById('schoolContact').textContent = '📞 ' + (settings.phone || 'رقم الهاتف غير محدد') + ' | ✉️ ' + (settings.email || 'البريد الإلكتروني غير محدد');
+        
+        // إذا كان هناك شعار، يمكن إضافته (اختياري)
+        if (settings.logoUrl) {
+            // يمكنك إضافة صورة الشعار هنا
+        }
+        
+        return settings;
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+async function saveSettings() {
+    const schoolName = document.getElementById('settingSchoolName').value.trim();
+    const address = document.getElementById('settingAddress').value.trim();
+    const phone = document.getElementById('settingPhone').value.trim();
+    const email = document.getElementById('settingEmail').value.trim();
+    const logoUrl = document.getElementById('settingLogoUrl').value.trim();
+
+    if (!schoolName || !address || !phone || !email) {
+        alert('جميع الحقول مطلوبة (ما عدا رابط الشعار)');
+        return;
+    }
+
+    const confirmed = await showConfirmModal('حفظ الإعدادات', 'هل أنت متأكد من حفظ إعدادات المؤسسة الجديدة؟');
+    if (!confirmed) return;
+
+    try {
+        const res = await fetchWithAuth('/api/settings', {
+            method: 'PUT',
+            body: JSON.stringify({ schoolName, address, phone, email, logoUrl })
+        });
+        if (!res.ok) throw new Error('فشل حفظ الإعدادات');
+        const settings = await res.json();
+        // تحديث الواجهة
+        document.getElementById('schoolName').textContent = settings.schoolName;
+        document.getElementById('schoolAddress').textContent = '📍 ' + settings.address;
+        document.getElementById('schoolContact').textContent = '📞 ' + settings.phone + ' | ✉️ ' + settings.email;
+        alert('تم حفظ الإعدادات بنجاح');
+        document.getElementById('settingsForm').style.display = 'none';
+        loadSettings(); // إعادة تحميل للتأكد
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+function toggleSettingsForm() {
+    const form = document.getElementById('settingsForm');
+    if (form.style.display === 'none') {
+        // تعبئة الحقول بالقيم الحالية
+        const schoolName = document.getElementById('schoolName').textContent.replace('🏫 ', '');
+        const address = document.getElementById('schoolAddress').textContent.replace('📍 ', '');
+        const contact = document.getElementById('schoolContact').textContent;
+        const phone = contact.split('|')[0].replace('📞 ', '').trim();
+        const email = contact.split('|')[1]?.replace('✉️ ', '').trim() || '';
+        
+        document.getElementById('settingSchoolName').value = schoolName;
+        document.getElementById('settingAddress').value = address;
+        document.getElementById('settingPhone').value = phone;
+        document.getElementById('settingEmail').value = email;
+        document.getElementById('settingLogoUrl').value = '';
+        
+        form.style.display = 'block';
+    } else {
+        form.style.display = 'none';
+    }
+}
+
 function saveAuth(data) {
     token = data.token;
     currentUser = data.user;
@@ -185,6 +261,13 @@ function connectSocket() {
         loadAdminLogs();
     });
 
+    // حدث تغيير حالة جميع الطلاب
+    socket.on('toggle-all-done', (data) => {
+        loadAdminStudents();
+        loadAdminLogs();
+        alert(data.message);
+    });
+
     socket.on('disconnect', () => console.warn('⚠️ انقطع الاتصال'));
 }
 
@@ -203,7 +286,7 @@ function fetchWithAuth(url, options = {}) {
 }
 
 // ==========================================
-// 8. دوال الإشعارات (مع التقسيم جديد/قديم)
+// 8. دوال الإشعارات
 // ==========================================
 async function loadAdminNotifications() {
     try {
@@ -318,8 +401,6 @@ function toggleOldNotifications(show) {
 let adminLogs = [];
 
 async function loadAdminLogs() {
-    // جلب سجل النشاطات من قاعدة البيانات عبر API (نحن نستخدم السجل المحلي في addLog)
-    // ولكننا سنحاكي ذلك باستخدام المصفوفة adminLogs التي تمتلئ عند كل عملية
     renderAdminLogs(adminShowOldLogs);
 }
 
@@ -334,7 +415,7 @@ function renderAdminLogs(showOld) {
         return;
     }
 
-    // تصفية أحداث اليوم
+    // عرض آخر 5 أحداث حديثة فقط افتراضياً، والباقي يظهر عند الضغط على زر "عرض السجل السابق"
     const todayLogs = adminLogs.filter(log => isToday(log.date));
     const oldLogs = adminLogs.filter(log => !isToday(log.date));
 
@@ -346,13 +427,22 @@ function renderAdminLogs(showOld) {
         document.getElementById('adminShowOldLogsBtn').style.display = 'none';
         document.getElementById('adminHideOldLogsBtn').style.display = 'block';
     } else {
-        logsToShow = todayLogs;
-        if (oldLogs.length > 0) {
-            document.getElementById('adminShowOldLogsBtn').style.display = 'inline-flex';
-            document.getElementById('adminHideOldLogsBtn').style.display = 'none';
-        } else {
+        // عرض أحداث اليوم فقط، وإذا كانت أكثر من 5 نعرض 5 فقط مع زر "عرض المزيد"
+        if (todayLogs.length <= 5) {
+            logsToShow = todayLogs;
             document.getElementById('adminShowOldLogsBtn').style.display = 'none';
             document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+        } else {
+            logsToShow = todayLogs.slice(0, 5);
+            document.getElementById('adminShowOldLogsBtn').style.display = 'inline-flex';
+            document.getElementById('adminShowOldLogsBtn').textContent = '📜 عرض باقي سجل اليوم (' + (todayLogs.length - 5) + ' حدث)';
+            document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+        }
+
+        // إذا كان هناك سجل سابق (أيام سابقة)، نظهر زر "عرض السجل السابق" أيضاً
+        if (oldLogs.length > 0 && todayLogs.length <= 5) {
+            document.getElementById('adminShowOldLogsBtn').style.display = 'inline-flex';
+            document.getElementById('adminShowOldLogsBtn').textContent = '📜 عرض السجل السابق (' + oldLogs.length + ' حدث)';
         }
     }
 
@@ -363,12 +453,21 @@ function renderAdminLogs(showOld) {
         container.appendChild(item);
     });
 
-    if (showOld && oldLogs.length > 0) {
-        const divider = document.createElement('div');
-        divider.className = 'log-item';
-        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-        divider.textContent = '📜 السجل السابق';
-        container.appendChild(divider);
+    // إذا كان showOld = true، نظهر كل السجل مع فاصل للسجل القديم
+    if (showOld) {
+        if (todayLogs.length > 0 && oldLogs.length > 0) {
+            const divider = document.createElement('div');
+            divider.className = 'log-item';
+            divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
+            divider.textContent = '📜 السجل السابق';
+            container.appendChild(divider);
+        }
+        oldLogs.forEach(log => {
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+            container.appendChild(item);
+        });
     }
 }
 
@@ -377,26 +476,7 @@ function toggleAdminOldLogs(show) {
     renderAdminLogs(adminShowOldLogs);
 }
 
-// دالة addLog المعدلة لتخزين السجلات في مصفوفة
-function addLog(message, date, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    const time = formatFullTime(date || new Date());
-    const logEntry = { message, time, date: date || new Date() };
-
-    // إضافة إلى المصفوفة المناسبة
-    if (containerId === 'adminLogContainer') {
-        adminLogs.unshift(logEntry);
-        renderAdminLogs(adminShowOldLogs);
-    } else if (containerId === 'parentLogContainer') {
-        parentLogs.unshift(logEntry);
-        renderParentLogs(parentShowOldLogs);
-    }
-}
-
-// ==========================================
-// دوال المدير الأخرى
-// ==========================================
+// دوال المدير الأساسية
 async function loadAdminStudents() {
     try {
         const res = await fetchWithAuth('/api/students');
@@ -444,6 +524,7 @@ function renderStudents(students, containerId, showAdminControls) {
     container.innerHTML = html;
 }
 
+// أحداث المدير مع التأكيد
 window.adminToggle = async function(id) {
     const confirmed = await showConfirmModal('تغيير حالة الطالب', 'هل أنت متأكد من تغيير حالة هذا الطالب؟');
     if (!confirmed) return;
@@ -498,7 +579,6 @@ async function adminAddStudent() {
         document.getElementById('adminAddress').value = '';
         loadAdminStudents();
         addLog('➕ تم إضافة الطالب ' + name, new Date(), 'adminLogContainer');
-        // إخفاء النموذج بعد الإضافة
         document.getElementById('addStudentForm').style.display = 'none';
         document.getElementById('toggleAddStudentBtn').textContent = '➕ إضافة طالب جديد';
     } else {
@@ -519,6 +599,21 @@ function toggleAddStudentForm() {
     }
 }
 
+// تغيير حالة جميع الطلاب
+async function toggleAllStudents(targetStatus) {
+    const statusText = targetStatus ? 'داخل' : 'خارج';
+    const confirmed = await showConfirmModal('تغيير حالة جميع الطلاب', `هل أنت متأكد من تغيير حالة جميع الطلاب إلى "${statusText}"؟`);
+    if (!confirmed) return;
+
+    if (socket) {
+        socket.emit('toggle-all-status', targetStatus);
+        addLog(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`, new Date(), 'adminLogContainer');
+    } else {
+        alert('Socket غير متصل');
+    }
+}
+
+// إرسال الإشعارات
 async function adminSendGeneralNotification() {
     const msg = document.getElementById('adminNotificationMsg').value.trim();
     if (!msg) return alert('اكتب رسالة الإشعار');
@@ -583,13 +678,20 @@ function renderParentLogs(showOld) {
         document.getElementById('parentShowOldLogsBtn').style.display = 'none';
         document.getElementById('parentHideOldLogsBtn').style.display = 'block';
     } else {
-        logsToShow = todayLogs;
-        if (oldLogs.length > 0) {
-            document.getElementById('parentShowOldLogsBtn').style.display = 'inline-flex';
-            document.getElementById('parentHideOldLogsBtn').style.display = 'none';
-        } else {
+        if (todayLogs.length <= 5) {
+            logsToShow = todayLogs;
             document.getElementById('parentShowOldLogsBtn').style.display = 'none';
             document.getElementById('parentHideOldLogsBtn').style.display = 'none';
+        } else {
+            logsToShow = todayLogs.slice(0, 5);
+            document.getElementById('parentShowOldLogsBtn').style.display = 'inline-flex';
+            document.getElementById('parentShowOldLogsBtn').textContent = '📜 عرض باقي سجل اليوم (' + (todayLogs.length - 5) + ' حدث)';
+            document.getElementById('parentHideOldLogsBtn').style.display = 'none';
+        }
+
+        if (oldLogs.length > 0 && todayLogs.length <= 5) {
+            document.getElementById('parentShowOldLogsBtn').style.display = 'inline-flex';
+            document.getElementById('parentShowOldLogsBtn').textContent = '📜 عرض السجل السابق (' + oldLogs.length + ' حدث)';
         }
     }
 
@@ -600,12 +702,20 @@ function renderParentLogs(showOld) {
         container.appendChild(item);
     });
 
-    if (showOld && oldLogs.length > 0) {
-        const divider = document.createElement('div');
-        divider.className = 'log-item';
-        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-        divider.textContent = '📜 السجل السابق';
-        container.appendChild(divider);
+    if (showOld) {
+        if (todayLogs.length > 0 && oldLogs.length > 0) {
+            const divider = document.createElement('div');
+            divider.className = 'log-item';
+            divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
+            divider.textContent = '📜 السجل السابق';
+            container.appendChild(divider);
+        }
+        oldLogs.forEach(log => {
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+            container.appendChild(item);
+        });
     }
 }
 
@@ -633,7 +743,6 @@ async function loadAttendance(studentId) {
         const res = await fetchWithAuth('/api/students/' + studentId + '/attendance');
         if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
-        // تخزين السجلات في مصفوفة parentLogs
         parentLogs = records.map(r => ({
             message: r.status === 'in' ? 'دخول' : 'خروج',
             time: formatFullTime(r.timestamp),
@@ -646,7 +755,25 @@ async function loadAttendance(studentId) {
 }
 
 // ==========================================
-// 11. ربط الأحداث
+// 11. دوال السجل المشتركة
+// ==========================================
+function addLog(message, date, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const time = formatFullTime(date || new Date());
+    const logEntry = { message, time, date: date || new Date() };
+
+    if (containerId === 'adminLogContainer') {
+        adminLogs.unshift(logEntry);
+        renderAdminLogs(adminShowOldLogs);
+    } else if (containerId === 'parentLogContainer') {
+        parentLogs.unshift(logEntry);
+        renderParentLogs(parentShowOldLogs);
+    }
+}
+
+// ==========================================
+// 12. ربط الأحداث
 // ==========================================
 function setupAuthEvents() {
     document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -700,6 +827,21 @@ function setupAuthEvents() {
     document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
     document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
     
+    // أزرار تغيير حالة جميع الطلاب
+    document.getElementById('toggleAllInBtn').addEventListener('click', function() {
+        toggleAllStudents(true);
+    });
+    document.getElementById('toggleAllOutBtn').addEventListener('click', function() {
+        toggleAllStudents(false);
+    });
+
+    // أزرار إعدادات المؤسسة
+    document.getElementById('openSettingsBtn').addEventListener('click', toggleSettingsForm);
+    document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+    document.getElementById('closeSettingsBtn').addEventListener('click', function() {
+        document.getElementById('settingsForm').style.display = 'none';
+    });
+
     // أزرار عرض/إخفاء السجل القديم للمدير
     document.getElementById('adminShowOldLogsBtn').addEventListener('click', function() {
         toggleAdminOldLogs(true);
@@ -726,12 +868,15 @@ function setupAuthEvents() {
 }
 
 // ==========================================
-// 12. بدء التطبيق
+// 13. بدء التطبيق
 // ==========================================
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
+
+    // تحميل إعدادات المؤسسة
+    await loadSettings();
 
     setupAuthEvents();
 
