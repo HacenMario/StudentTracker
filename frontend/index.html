@@ -3,39 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الحضور المدرسي - احترافي</title>
+    <title>نظام الحضور المدرسي</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </head>
 <body>
     <div class="app-wrapper">
-        <div class="container">
-            <header>
-                <h1><span>🏫</span> نظام الحضور المدرسي</h1>
-                <span class="live-badge">🟢 مباشر</span>
-            </header>
+        <div class="container" id="appContainer">
+            <!-- شاشة تسجيل الدخول -->
+            <div id="loginScreen">
+                <h2>🔐 تسجيل الدخول</h2>
+                <input type="email" id="loginEmail" placeholder="البريد الإلكتروني">
+                <input type="password" id="loginPassword" placeholder="كلمة المرور">
+                <button id="loginBtn">دخول</button>
+                <p>ليس لديك حساب؟ <a href="#" id="showRegister">سجل الآن</a></p>
+            </div>
 
-            <!-- نموذج إضافة طالب (موسع) -->
-            <div class="add-section">
-                <div class="form-grid">
-                    <input type="text" id="studentName" placeholder="اسم التلميذ *">
-                    <input type="text" id="parentName" placeholder="اسم ولي الأمر *">
-                    <input type="tel" id="phone" placeholder="رقم الهاتف *">
-                    <input type="text" id="address" placeholder="العنوان *">
-                    <input type="email" id="email" placeholder="البريد الإلكتروني *">
+            <!-- شاشة التسجيل -->
+            <div id="registerScreen" style="display:none;">
+                <h2>📝 إنشاء حساب</h2>
+                <input type="text" id="regName" placeholder="الاسم الكامل">
+                <input type="email" id="regEmail" placeholder="البريد الإلكتروني">
+                <input type="password" id="regPassword" placeholder="كلمة المرور (6 أحرف على الأقل)">
+                <input type="text" id="regPhone" placeholder="رقم الهاتف">
+                <button id="registerBtn">تسجيل</button>
+                <p>لديك حساب؟ <a href="#" id="showLogin">سجل دخول</a></p>
+            </div>
+
+            <!-- لوحة الطلاب (تظهر بعد تسجيل الدخول) -->
+            <div id="dashboardScreen" style="display:none;">
+                <header>
+                    <h1>🏫 نظام الحضور</h1>
+                    <span class="live-badge">🟢 مباشر</span>
+                    <button id="logoutBtn" style="background:#f0f0f0;border:none;padding:6px 16px;border-radius:20px;cursor:pointer;">🚪 خروج</button>
+                </header>
+
+                <div class="add-section">
+                    <input type="text" id="studentNameInput" placeholder="اسم التلميذ">
+                    <input type="text" id="parentNameInput" placeholder="اسم ولي الأمر">
+                    <input type="text" id="parentPhoneInput" placeholder="هاتف ولي الأمر">
+                    <input type="email" id="parentEmailInput" placeholder="بريد ولي الأمر (نفس بريدك)">
+                    <input type="text" id="addressInput" placeholder="العنوان (اختياري)">
+                    <button id="addBtn">إضافة</button>
                 </div>
-                <button id="addBtn">إضافة <i class="fas fa-plus"></i></button>
-            </div>
 
-            <!-- قائمة التلاميذ -->
-            <div id="studentsContainer" class="students-grid">
-                <div class="loading-state">جاري تحميل البيانات...</div>
-            </div>
+                <div id="studentsContainer" class="students-grid">
+                    <div class="loading-state">جاري تحميل البيانات...</div>
+                </div>
 
-            <!-- سجل النشاطات -->
-            <div class="log-section">
-                <h3>📋 آخر النشاطات</h3>
-                <div id="logContainer"></div>
+                <div class="log-section">
+                    <h3>📋 آخر النشاطات</h3>
+                    <div id="logContainer"></div>
+                </div>
             </div>
         </div>
     </div>
