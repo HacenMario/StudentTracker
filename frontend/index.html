@@ -41,29 +41,36 @@
                     <span class="live-badge">🟢 مباشر</span>
                     <button id="logoutBtnAdmin" style="background:#f0f0f0;border:none;padding:6px 16px;border-radius:20px;cursor:pointer;">🚪 خروج</button>
                 </header>
-                <div class="add-section">
-                    <input type="text" id="adminStudentName" placeholder="اسم التلميذ">
-                    <input type="email" id="adminParentEmail" placeholder="بريد ولي الأمر">
-                    <input type="text" id="adminParentName" placeholder="اسم ولي الأمر">
-                    <input type="text" id="adminParentPhone" placeholder="هاتف ولي الأمر">
-                    <input type="text" id="adminAddress" placeholder="العنوان">
-                    <button id="adminAddBtn">إضافة طالب</button>
+
+                <div class="add-section" style="flex-wrap:wrap; gap:8px;">
+                    <input type="text" id="adminStudentName" placeholder="اسم التلميذ" style="flex:1; min-width:140px;">
+                    <input type="email" id="adminParentEmail" placeholder="بريد ولي الأمر" style="flex:1; min-width:140px;">
+                    <input type="text" id="adminParentName" placeholder="اسم ولي الأمر" style="flex:1; min-width:140px;">
+                    <input type="text" id="adminParentPhone" placeholder="هاتف ولي الأمر" style="flex:1; min-width:140px;">
+                    <input type="text" id="adminAddress" placeholder="العنوان" style="flex:1; min-width:140px;">
+                    <button id="adminAddBtn" style="padding: 12px 24px;">إضافة طالب</button>
                 </div>
+
                 <div id="adminStudentsList" class="students-grid"></div>
+
                 <div class="log-section">
-                    <h3>📋 سجل الحضور</h3>
+                    <h3>📋 سجل النشاطات</h3>
                     <div id="adminLogContainer"></div>
                 </div>
-                <div style="margin-top:20px;">
-                    <h4>📢 إرسال إشعار لجميع أولياء الأمور</h4>
-                    <textarea id="adminNotificationMsg" placeholder="اكتب رسالة الإشعار..."></textarea>
-                    <div style="margin-top:20px;">
-    <h4>📢 إرسال إشعار</h4>
-    <input type="email" id="adminTargetEmail" placeholder="بريد ولي الأمر المستهدف (اختياري، اتركه فارغاً للجميع)" style="width:100%; padding:10px; margin-bottom:10px; border-radius:60px; border:2px solid #e2eaf2;">
-    <textarea id="adminNotificationMsg" placeholder="اكتب رسالة الإشعار..."></textarea>
-    <button id="adminSendNotificationBtn">إرسال الإشعار</button>
-</div>
-                    <button id="adminSendNotificationBtn">إرسال الإشعار</button>
+
+                <!-- إرسال إشعار عام -->
+                <div style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+                    <h4>📢 إرسال إشعار عام لجميع أولياء الأمور</h4>
+                    <textarea id="adminNotificationMsg" placeholder="اكتب رسالة الإشعار العام..." style="width:100%; padding:12px; border-radius:16px; border:2px solid #e2eaf2; min-height:60px; font-family: 'Tajawal', sans-serif;"></textarea>
+                    <button id="adminSendNotificationBtn" style="background:#e67e22; color:white; border:none; padding:10px 24px; border-radius:60px; font-weight:700; cursor:pointer; margin-top:8px;">إرسال الإشعار العام</button>
+                </div>
+
+                <!-- إرسال إشعار خاص لولي أمر -->
+                <div style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+                    <h4>📩 إرسال إشعار لولي أمر معين</h4>
+                    <input type="email" id="adminParentEmailInput" placeholder="بريد ولي الأمر المستهدف" style="width:100%; padding:12px; border-radius:16px; border:2px solid #e2eaf2; margin-bottom:10px; font-family: 'Tajawal', sans-serif;">
+                    <textarea id="adminParentNotificationMsg" placeholder="اكتب رسالة الإشعار الخاص..." style="width:100%; padding:12px; border-radius:16px; border:2px solid #e2eaf2; min-height:60px; font-family: 'Tajawal', sans-serif;"></textarea>
+                    <button id="adminSendParentNotificationBtn" style="background:#2ecc71; color:white; border:none; padding:10px 24px; border-radius:60px; font-weight:700; cursor:pointer; margin-top:8px;">إرسال الإشعار لولي الأمر</button>
                 </div>
             </div>
 
@@ -74,15 +81,18 @@
                     <span class="live-badge">🟢 مباشر</span>
                     <button id="logoutBtnParent" style="background:#f0f0f0;border:none;padding:6px 16px;border-radius:20px;cursor:pointer;">🚪 خروج</button>
                 </header>
+
                 <div id="parentStudentsList" class="students-grid"></div>
+
                 <div class="log-section">
                     <h3>📋 سجل دخول/خروج أبنائي</h3>
                     <div id="parentLogContainer"></div>
                 </div>
-                <!-- استقبال الإشعارات من المؤسسة -->
-                <div id="notificationContainer" style="margin-top:20px; background:#f0f8ff; padding:15px; border-radius:20px;">
+
+                <!-- استقبال الإشعارات -->
+                <div id="notificationContainer" style="margin-top:20px; background:#f0f8ff; padding:15px; border-radius:20px; border:1px solid #d6e8f5;">
                     <h4>📩 الإشعارات الواردة</h4>
-                    <ul id="notificationList"></ul>
+                    <ul id="notificationList" style="list-style:none; padding:0; margin:0;"></ul>
                 </div>
             </div>
         </div>
