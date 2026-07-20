@@ -23,14 +23,22 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  // الطلاب المرتبطين بهذا ولي الأمر (سيتم جلبهم عن طريق الـ email)
+  role: {
+    type: String,
+    enum: ['admin', 'parent'],
+    default: 'parent',
+  },
+  // الطلاب المرتبطين به (إذا كان ولي أمر)
+  students: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student',
+  }],
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-// تشفير كلمة المرور قبل الحفظ
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
@@ -38,7 +46,6 @@ UserSchema.pre('save', async function(next) {
   next();
 });
 
-// دالة للتحقق من كلمة المرور
 UserSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
