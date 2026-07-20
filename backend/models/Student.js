@@ -48,25 +48,42 @@ const StudentSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  // حقل جديد لتخزين نص QR (فريد)
-  qrCode: {
-    type: String,
-    unique: true,
-    sparse: true, // يسمح بقيم null أو فريدة فقط عند وجود قيمة
-  },
 });
 
+// ==========================================
+// حل مشكلة تكرار studentId باستخدام عداد منفصل
+// ==========================================
+
+// إنشاء نموذج منفصل للعداد (سيتم إنشاؤه تلقائياً)
+const CounterSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, default: 0 },
+});
+const Counter = mongoose.model('Counter', CounterSchema);
+
+// دالة للحصول على الرقم التسلسلي التالي
+async function getNextSequence(name) {
+  const counter = await Counter.findByIdAndUpdate(
+    name,
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  return counter.seq;
+}
+
+// قبل حفظ الطالب، قم بتوليد studentId فريد
 StudentSchema.pre('save', async function(next) {
   if (this.isNew && !this.studentId) {
-    const count = await mongoose.model('Student').countDocuments();
-    this.studentId = 'STU-' + String(count + 1).padStart(4, '0');
+    try {
+      const seq = await getNextSequence('studentId');
+      this.studentId = 'STU-' + String(seq).padStart(4, '0');
+      next();
+    } catch (err) {
+      next(err);
+    }
+  } else {
+    next();
   }
-  // إذا لم يكن هناك QR Code، قم بتوليده تلقائياً (يعتمد على _id)
-  if (!this.qrCode) {
-    // استخدم studentId أو _id كنص فريد
-    this.qrCode = 'QR-' + (this.studentId || this._id.toString());
-  }
-  next();
 });
 
 module.exports = mongoose.model('Student', StudentSchema);
