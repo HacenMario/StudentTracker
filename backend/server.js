@@ -11,11 +11,13 @@ const Student = require('./models/Student');
 const User = require('./models/User');
 const Attendance = require('./models/Attendance');
 const Notification = require('./models/Notification');
+const Setting = require('./models/Setting'); // <-- جديد
 
 // استيراد المسارات
 const studentRoutes = require('./routes/studentRoutes');
 const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const settingRoutes = require('./routes/settingRoutes'); // <-- جديد
 
 const app = express();
 const server = http.createServer(app);
@@ -26,7 +28,6 @@ const io = socketIo(server, {
   }
 });
 
-// جعل io متاحاً في req.app للاستخدام في Routes
 app.set('io', io);
 
 app.use(cors());
@@ -36,11 +37,12 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/settings', settingRoutes); // <-- جديد
 
 // ==========================================
 // Socket.io مع التحقق من التوكن وتخزين المستخدمين
 // ==========================================
-const userSockets = new Map(); // تخزين socket.id لكل مستخدم (بالبريد الإلكتروني)
+const userSockets = new Map();
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -89,7 +91,6 @@ io.on('connection', (socket) => {
       const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
       const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-      // بث التحديث لجميع العملاء
       io.emit('status-changed', {
         student: student,
         message: message,
@@ -103,21 +104,73 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ==========================================
+  // 2. تبديل حالة جميع الطلاب (دفعة واحدة)
+  // ==========================================
+  socket.on('toggle-all-status', async (targetStatus) => {
+    if (socket.user.role !== 'admin') {
+      socket.emit('error', { message: 'غير مصرح لك' });
+      return;
+    }
+
+    try {
+      // العثور على جميع الطلاب
+      const students = await Student.find();
+      if (students.length === 0) {
+        socket.emit('error', { message: 'لا يوجد طلاب لتغيير حالتهم' });
+        return;
+      }
+
+      // تحديث حالة كل طالب
+      const updates = students.map(async (student) => {
+        student.isInside = targetStatus; // true = داخل, false = خارج
+        student.lastUpdate = new Date();
+        await student.save();
+
+        // تسجيل حضور لكل طالب
+        const attendance = new Attendance({
+          student: student._id,
+          status: targetStatus ? 'in' : 'out',
+          method: 'manual',
+        });
+        await attendance.save();
+
+        const statusText = targetStatus ? 'داخل 🏫' : 'خارج 🚪';
+        const message = `التلميذ ${student.name} أصبح ${statusText}`;
+
+        // إرسال إشعار لكل طالب (يمكن تحسينه ليكون إشعاراً واحداً)
+        io.emit('status-changed', {
+          student: student,
+          message: message,
+          parentId: student.parent ? student.parent.toString() : null,
+          parentEmail: student.parentEmail,
+        });
+      });
+
+      await Promise.all(updates);
+
+      // إشعار للمدير بنجاح العملية
+      socket.emit('toggle-all-done', { message: 'تم تحديث حالة جميع الطلاب بنجاح' });
+
+    } catch (error) {
+      console.error(error);
+      socket.emit('error', { message: 'حدث خطأ أثناء تغيير حالة جميع الطلاب' });
+    }
+  });
+
   // ----------------------
-  // 2. إشعار عام من المدير (مع الحفظ في DB)
+  // 3. إشعار عام من المدير (مع الحفظ في DB)
   // ----------------------
   socket.on('admin-notification', async (data) => {
     if (socket.user.role !== 'admin') return;
 
     try {
-      // حفظ الإشعار في قاعدة البيانات
       const notification = new Notification({
         target: 'all',
         message: data.message,
       });
       await notification.save();
 
-      // إرسال الإشعار لجميع العملاء المتصلين حالياً
       io.emit('notification', { 
         message: data.message, 
         notificationId: notification._id,
@@ -131,7 +184,7 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 3. إشعار خاص لولي أمر معين (مع الحفظ في DB)
+  // 4. إشعار خاص لولي أمر معين (مع الحفظ في DB)
   // ----------------------
   socket.on('admin-notification-to-parent', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -146,14 +199,12 @@ io.on('connection', (socket) => {
     }
 
     try {
-      // حفظ الإشعار في قاعدة البيانات
       const notification = new Notification({
         target: parentEmail,
         message: message,
       });
       await notification.save();
 
-      // محاولة إرسال الإشعار فوراً إذا كان ولي الأمر متصلاً
       const targetSocketId = userSockets.get(parentEmail);
       if (targetSocketId) {
         io.to(targetSocketId).emit('notification', { 
@@ -179,7 +230,7 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 4. انقطاع الاتصال
+  // 5. انقطاع الاتصال
   // ----------------------
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
