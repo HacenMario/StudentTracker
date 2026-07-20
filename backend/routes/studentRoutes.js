@@ -141,5 +141,80 @@ router.get('/:id/attendance', auth, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// ==========================================
+// 6. توليد QR Code لطالب (للمدير فقط)
+// ==========================================
+router.get('/:id/qr', auth, isAdmin, async (req, res) => {
+  try {
+    const student = await Student.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: 'الطالب غير موجود' });
+
+    // إذا لم يكن هناك qrCode، قم بإنشائه
+    if (!student.qrCode) {
+      student.qrCode = 'QR-' + (student.studentId || student._id.toString());
+      await student.save();
+    }
+
+    // توليد صورة QR كـ Data URL
+    const QRCode = require('qrcode');
+    const qrImage = await QRCode.toDataURL(student.qrCode);
+
+    res.json({ qrCode: student.qrCode, qrImage });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// 7. مسح QR Code (تغيير حالة الطالب)
+// ==========================================
+router.post('/scan-qr', auth, async (req, res) => {
+  try {
+    const { qrText } = req.body;
+    if (!qrText) return res.status(400).json({ message: 'نص QR مطلوب' });
+
+    // البحث عن الطالب بواسطة qrCode
+    const student = await Student.findOne({ qrCode: qrText });
+    if (!student) {
+      return res.status(404).json({ message: 'QR Code غير صالح' });
+    }
+
+    // التحقق من الصلاحية: المدير يمكنه مسح أي طالب، ولي الأمر فقط أبناءه
+    if (req.user.role === 'parent') {
+      if (student.parent.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'غير مصرح لك بمسح هذا الطالب' });
+      }
+    }
+
+    // تغيير الحالة
+    student.isInside = !student.isInside;
+    student.lastUpdate = new Date();
+    await student.save();
+
+    // تسجيل في سجل الحضور
+    const Attendance = require('../models/Attendance');
+    const attendance = new Attendance({
+      student: student._id,
+      status: student.isInside ? 'in' : 'out',
+      method: 'qr', // تمييز طريقة الدخول
+    });
+    await attendance.save();
+
+    // إرسال إشعار عبر Socket.io
+    const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
+    const message = `التلميذ ${student.name} أصبح ${statusText} (عبر QR)`;
+    const io = req.app.get('io');
+    io.emit('status-changed', {
+      student: student,
+      message: message,
+      parentId: student.parent.toString(),
+      parentEmail: student.parentEmail,
+    });
+
+    res.json({ student, message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;
