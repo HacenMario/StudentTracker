@@ -1,18 +1,20 @@
 // ==========================================
-// رابط الخادم
+// 1. رابط الخادم
 // ==========================================
 const API_BASE_URL = 'https://studenttracker-zgom.onrender.com';
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
-// إدارة التوكن والمستخدم
+// 2. إدارة التوكن والمستخدم
 // ==========================================
 let token = localStorage.getItem('token');
 let currentUser = null;
 let socket = null;
+let allNotifications = []; // تخزين جميع الإشعارات
+let showOldNotifications = false; // حالة عرض الإشعارات القديمة
 
 // ==========================================
-// دوال مساعدة
+// 3. دوال مساعدة
 // ==========================================
 function getStatusText(isInside) {
     return isInside ? 'داخل 🏫' : 'خارج 🚪';
@@ -41,7 +43,7 @@ function showBrowserNotification(title, body) {
 }
 
 // ==========================================
-// دوال المصادقة
+// 4. دوال المصادقة
 // ==========================================
 function saveAuth(data) {
     token = data.token;
@@ -85,7 +87,7 @@ function showAdminDashboard() {
     document.getElementById('parentDashboard').style.display = 'none';
     connectSocket();
     loadAdminStudents();
-    loadAdminNotifications(); // جلب الإشعارات المخزنة للمدير
+    loadAdminNotifications();
 }
 
 function showParentDashboard() {
@@ -95,11 +97,11 @@ function showParentDashboard() {
     document.getElementById('parentDashboard').style.display = 'block';
     connectSocket();
     loadParentStudents();
-    loadParentNotifications(); // جلب الإشعارات المخزنة لولي الأمر
+    loadParentNotifications();
 }
 
 // ==========================================
-// Socket.io
+// 5. Socket.io
 // ==========================================
 function connectSocket() {
     if (socket) { socket.disconnect(); socket = null; }
@@ -123,8 +125,20 @@ function connectSocket() {
     // استقبال الإشعارات الجديدة (من Socket)
     socket.on('notification', (data) => {
         if (currentUser.role === 'parent') {
-            // إضافة الإشعار الجديد إلى الواجهة
-            addNotificationToUI(data.message, data.createdAt);
+            // إضافة الإشعار الجديد إلى القائمة (في الأعلى)
+            const newNotification = {
+                message: data.message,
+                createdAt: data.createdAt || new Date().toISOString(),
+                isRead: false,
+                _id: data.notificationId || 'temp_' + Date.now()
+            };
+            
+            // إضافة إلى بداية المصفوفة
+            allNotifications.unshift(newNotification);
+            
+            // إعادة عرض الإشعارات مع الحفاظ على حالة الزر
+            renderNotifications(showOldNotifications);
+            
             showBrowserNotification('📢 إشعار من المدرسة', data.message);
         } else if (currentUser.role === 'admin') {
             addLog('📢 إشعار عام تم إرساله', new Date(), 'adminLogContainer');
@@ -143,7 +157,7 @@ function connectSocket() {
 }
 
 // ==========================================
-// دوال API مع التوكن
+// 6. دوال API مع التوكن
 // ==========================================
 function fetchWithAuth(url, options = {}) {
     return fetch(API_BASE_URL + url, {
@@ -157,14 +171,13 @@ function fetchWithAuth(url, options = {}) {
 }
 
 // ==========================================
-// دوال الإشعارات (جلب وعرض)
+// 7. دوال الإشعارات (جلب وعرض مع ترتيب وتقسيم)
 // ==========================================
 async function loadAdminNotifications() {
     try {
         const res = await fetchWithAuth('/api/notifications');
         if (!res.ok) throw new Error('فشل جلب الإشعارات');
         const notifications = await res.json();
-        // يمكن عرضها في سجل المدير أو في مكان مخصص
         notifications.forEach(n => {
             addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', n.createdAt, 'adminLogContainer');
         });
@@ -177,16 +190,71 @@ async function loadParentNotifications() {
     try {
         const res = await fetchWithAuth('/api/notifications');
         if (!res.ok) throw new Error('فشل جلب الإشعارات');
-        const notifications = await res.json();
-        const list = document.getElementById('notificationList');
-        list.innerHTML = ''; // تفريغ القائمة
-
-        notifications.forEach(n => {
-            addNotificationToUI(n.message, n.createdAt, n.isRead, n._id);
-        });
-
+        allNotifications = await res.json();
+        
+        // ترتيب تنازلي (الأحدث أولاً)
+        allNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        renderNotifications(showOldNotifications);
     } catch (err) {
         console.error(err);
+    }
+}
+
+// دالة لعرض الإشعارات مع التحكم في القديمة والجديدة
+function renderNotifications(showOld) {
+    const list = document.getElementById('notificationList');
+    list.innerHTML = '';
+
+    if (allNotifications.length === 0) {
+        list.innerHTML = '<li style="color:#8a9aaa; text-align:center; padding:20px;">📭 لا توجد إشعارات حالياً</li>';
+        document.getElementById('showOldNotificationsBtn').style.display = 'none';
+        document.getElementById('hideOldNotificationsBtn').style.display = 'none';
+        return;
+    }
+
+    // تحديد عدد الإشعارات الجديدة (غير المقروءة + آخر 3 مقروءة)
+    const unreadCount = allNotifications.filter(n => !n.isRead).length;
+    const recentCount = Math.max(unreadCount, 3);
+    
+    let newNotifications = [];
+    let oldNotifications = [];
+
+    if (showOld) {
+        // إذا كان زر "عرض الكل" مفعّلاً، نعرض جميع الإشعارات
+        newNotifications = allNotifications;
+        oldNotifications = [];
+        document.getElementById('showOldNotificationsBtn').style.display = 'none';
+        document.getElementById('hideOldNotificationsBtn').style.display = 'block';
+    } else {
+        // الإشعارات الجديدة: غير المقروءة + عدد محدود من الحديثة
+        newNotifications = allNotifications.slice(0, recentCount);
+        oldNotifications = allNotifications.slice(recentCount);
+        
+        if (oldNotifications.length > 0) {
+            document.getElementById('showOldNotificationsBtn').style.display = 'block';
+            document.getElementById('hideOldNotificationsBtn').style.display = 'none';
+        } else {
+            document.getElementById('showOldNotificationsBtn').style.display = 'none';
+            document.getElementById('hideOldNotificationsBtn').style.display = 'none';
+        }
+    }
+
+    // عرض الإشعارات الجديدة
+    newNotifications.forEach(n => {
+        addNotificationToUI(n.message, n.createdAt, n.isRead, n._id);
+    });
+
+    // عرض الإشعارات القديمة (إذا كانت موجودة والمستخدم طلبها)
+    if (showOld && oldNotifications.length > 0) {
+        const divider = document.createElement('li');
+        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
+        divider.textContent = '📜 الإشعارات القديمة';
+        list.appendChild(divider);
+        
+        oldNotifications.forEach(n => {
+            addNotificationToUI(n.message, n.createdAt, n.isRead, n._id);
+        });
     }
 }
 
@@ -196,28 +264,47 @@ function addNotificationToUI(message, createdAt, isRead = false, id = null) {
     const li = document.createElement('li');
     const time = formatFullTime(createdAt);
     li.textContent = message + ' (وقت: ' + time + ')';
+    li.style.cssText = 'padding:10px 16px; margin:4px 0; border-radius:12px; transition:0.3s;';
     
-    // تمييز الإشعارات غير المقروءة
     if (!isRead) {
         li.style.fontWeight = 'bold';
         li.style.backgroundColor = '#d4e6ff';
         li.style.borderRight = '4px solid #1c7ed6';
+        li.style.boxShadow = '0 2px 8px rgba(28,126,214,0.1)';
         
-        // تحديث حالة القراءة تلقائياً بعد العرض (اختياري)
         if (id) {
             fetchWithAuth('/api/notifications/' + id + '/read', { method: 'PUT' })
                 .catch(err => console.error('فشل تحديث حالة القراءة'));
         }
     } else {
-        li.style.backgroundColor = '#f0f8ff';
-        li.style.borderRight = '4px solid #ccc';
+        li.style.backgroundColor = '#f8fcff';
+        li.style.borderRight = '4px solid #d6e8f5';
+        li.style.color = '#4a5a6e';
     }
     
-    list.prepend(li);
+    list.appendChild(li);
 }
 
 // ==========================================
-// دوال المدير (جلب الطلاب وعرضهم)
+// 8. دوال التحكم في عرض الإشعارات القديمة
+// ==========================================
+function toggleOldNotifications(show) {
+    showOldNotifications = show;
+    renderNotifications(showOldNotifications);
+}
+
+function setupNotificationEvents() {
+    document.getElementById('showOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(true);
+    });
+    
+    document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(false);
+    });
+}
+
+// ==========================================
+// 9. دوال المدير
 // ==========================================
 async function loadAdminStudents() {
     try {
@@ -340,7 +427,7 @@ function adminSendParentNotification() {
 }
 
 // ==========================================
-// دوال ولي الأمر (جلب الطلاب وسجل الحضور)
+// 10. دوال ولي الأمر
 // ==========================================
 async function loadParentStudents() {
     try {
@@ -378,7 +465,7 @@ async function loadAttendance(studentId) {
 }
 
 // ==========================================
-// دوال السجل المشتركة
+// 11. دوال السجل المشتركة
 // ==========================================
 function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
@@ -394,7 +481,7 @@ function addLog(message, date, containerId) {
 }
 
 // ==========================================
-// أحداث المصادقة
+// 12. أحداث المصادقة
 // ==========================================
 function setupAuthEvents() {
     document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -442,14 +529,13 @@ function setupAuthEvents() {
     document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
     document.getElementById('logoutBtnParent').addEventListener('click', logout);
 
-    // أحداث المدير
     document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
     document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
     document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
 }
 
 // ==========================================
-// بدء التطبيق
+// 13. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -457,6 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     setupAuthEvents();
+    setupNotificationEvents();
 
     if (token) {
         try {
