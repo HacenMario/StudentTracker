@@ -18,6 +18,8 @@ let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
 let html5QrCode = null;
+let currentCameraId = null;
+let availableCameras = [];
 
 // ==========================================
 // 3. دوال مساعدة
@@ -370,46 +372,52 @@ function openScanner() {
 
     Html5Qrcode.getCameras().then(devices => {
         if (devices && devices.length > 0) {
-            // ==========================================
-            // 🔧 تحسين اختيار الكاميرا الخلفية
-            // ==========================================
-            let cameraId = devices[0].id; // افتراضي (أول كاميرا)
+            availableCameras = devices;
             
-            // 1. محاولة العثور على كاميرا خلفية (back/rear/environment)
-            const backCamera = devices.find(d => 
-                d.label.toLowerCase().includes('back') || 
-                d.label.toLowerCase().includes('rear') ||
-                d.label.toLowerCase().includes('environment') ||
-                d.label.toLowerCase().includes('خلفية')
-            );
-            
+            // محاولة اختيار الكاميرا الخلفية بشكل ذكي
+            let cameraId = devices[0].id;
+            let cameraLabel = devices[0].label;
+
+            // البحث عن كاميرا خلفية (back/rear/environment/خلفية)
+            const backCamera = devices.find(d => {
+                const label = d.label.toLowerCase();
+                return label.includes('back') || 
+                       label.includes('rear') || 
+                       label.includes('environment') ||
+                       label.includes('خلفية') ||
+                       label.includes('camera 1');
+            });
+
             if (backCamera) {
                 cameraId = backCamera.id;
-                console.log('📷 تم اختيار الكاميرا الخلفية:', backCamera.label);
+                cameraLabel = backCamera.label;
             } else {
-                // 2. إذا لم نجد كاميرا خلفية، نبحث عن كاميرا ليست أمامية
-                const notFront = devices.find(d => 
-                    !d.label.toLowerCase().includes('front') && 
-                    !d.label.toLowerCase().includes('selfie') &&
-                    !d.label.toLowerCase().includes('أمامية')
-                );
+                // إذا لم نجد خلفية، نأخذ أي كاميرا غير أمامية
+                const notFront = devices.find(d => {
+                    const label = d.label.toLowerCase();
+                    return !label.includes('front') && 
+                           !label.includes('selfie') &&
+                           !label.includes('أمامية');
+                });
                 if (notFront) {
                     cameraId = notFront.id;
-                    console.log('📷 تم اختيار كاميرا (غير أمامية):', notFront.label);
-                } else {
-                    console.log('📷 تم اختيار الكاميرا الافتراضية:', devices[0].label);
+                    cameraLabel = notFront.label;
                 }
             }
 
-            html5QrCode.start(
-                cameraId,
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                },
-                onScanSuccess,
-                onScanError
-            );
+            currentCameraId = cameraId;
+            console.log('📷 تم اختيار الكاميرا:', cameraLabel);
+
+            // إضافة زر تبديل الكاميرا إذا كان هناك أكثر من كاميرا
+            const switchBtn = document.getElementById('switchCameraBtn');
+            if (devices.length > 1) {
+                switchBtn.style.display = 'inline-block';
+                switchBtn.textContent = '🔄 تبديل الكاميرا';
+            } else {
+                switchBtn.style.display = 'none';
+            }
+
+            startScanner(cameraId);
         } else {
             resultsContainer.innerHTML = '❌ لا توجد كاميرا متاحة.';
         }
@@ -418,13 +426,60 @@ function openScanner() {
     });
 }
 
+function startScanner(cameraId) {
+    const resultsContainer = document.getElementById('qr-reader-results');
+    resultsContainer.innerHTML = '✅ جاري تشغيل الكاميرا...';
+
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+        }).catch(err => console.warn(err));
+        html5QrCode = null;
+    }
+
+    html5QrCode = new Html5Qrcode('qr-reader');
+
+    html5QrCode.start(
+        cameraId,
+        {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+        },
+        onScanSuccess,
+        onScanError
+    ).then(() => {
+        resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
+        currentCameraId = cameraId;
+    }).catch(err => {
+        resultsContainer.innerHTML = '❌ فشل تشغيل الكاميرا: ' + err.message;
+    });
+}
+
+function switchCamera() {
+    if (availableCameras.length < 2) {
+        alert('لا توجد كاميرات أخرى');
+        return;
+    }
+
+    // اختيار الكاميرا التالية في القائمة
+    const currentIndex = availableCameras.findIndex(d => d.id === currentCameraId);
+    const nextIndex = (currentIndex + 1) % availableCameras.length;
+    const nextCamera = availableCameras[nextIndex];
+    
+    console.log('🔄 تبديل الكاميرا إلى:', nextCamera.label);
+    startScanner(nextCamera.id);
+}
+
 function onScanSuccess(decodedText, decodedResult) {
     const resultsContainer = document.getElementById('qr-reader-results');
     resultsContainer.innerHTML = '✅ جاري معالجة الكود...';
 
+    // تنظيف البيانات (إزالة المسافات والأحرف غير المرغوب فيها)
+    const cleanData = decodedText.trim();
+
     fetchWithAuth('/api/students/scan-qr', {
         method: 'POST',
-        body: JSON.stringify({ qrData: decodedText })
+        body: JSON.stringify({ qrData: cleanData })
     })
     .then(res => res.json())
     .then(data => {
@@ -461,10 +516,12 @@ function closeScanner() {
     }
     document.getElementById('scannerModal').style.display = 'none';
     document.getElementById('qr-reader-results').innerHTML = '';
+    document.getElementById('switchCameraBtn').style.display = 'none';
 }
 
 document.getElementById('openScannerBtn').addEventListener('click', openScanner);
 document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
+document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
 
 // ==========================================
 // 10. دوال التغيير الجماعي
