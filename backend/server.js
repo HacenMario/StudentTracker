@@ -14,17 +14,20 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "*", // استبدل برابط Vercel في الإنتاج
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
+
+// جعل io متاحاً في req.app للاستخدام في Routes
+app.set('io', io);
 
 app.use(cors());
 app.use(express.json());
 
 // مسارات المصادقة
 app.use('/api/auth', authRoutes);
-// مسارات الطلاب (محمية بـ auth)
+// مسارات الطلاب (محمية)
 app.use('/api/students', studentRoutes);
 
 // ==========================================
@@ -32,12 +35,10 @@ app.use('/api/students', studentRoutes);
 // ==========================================
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
-  if (!token) {
-    return next(new Error('Authentication error'));
-  }
+  if (!token) return next(new Error('Authentication error'));
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = decoded; // حفظ معلومات المستخدم في الـ socket
+    socket.user = decoded;
     next();
   } catch (err) {
     next(new Error('Invalid token'));
@@ -45,29 +46,13 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-  console.log('🟢 عميل متصل:', socket.user.email);
+  console.log('🟢 عميل متصل:', socket.user.email, socket.user.role);
 
-  socket.on('toggle-status', async (studentId) => {
-    try {
-      // التأكد من أن الطالب يخص هذا المستخدم
-      const student = await Student.findOne({ _id: studentId, parentEmail: socket.user.email });
-      if (!student) return;
-
-      student.isInside = !student.isInside;
-      student.lastUpdate = new Date();
-      await student.save();
-
-      // إرسال التحديث لجميع العملاء (أو يمكن تخصيصه للآباء المرتبطين)
-      const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
-      const message = `التلميذ ${student.name} أصبح ${statusText}`;
-
-      io.emit('status-changed', {
-        student: student,
-        message: message,
-        parentEmail: student.parentEmail // يمكن استخدامه للتصفية لاحقاً
-      });
-    } catch (error) {
-      console.error(error);
+  // يمكن للمدير بث إشعارات عامة
+  socket.on('admin-notification', (data) => {
+    // data: { message, parentId (اختياري) }
+    if (socket.user.role === 'admin') {
+      io.emit('notification', data);
     }
   });
 
