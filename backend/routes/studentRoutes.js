@@ -189,9 +189,8 @@ router.post('/scan-qr', auth, async (req, res) => {
 // 7. تحميل QR Code كصورة (للمدير وولي الأمر) - النسخة المُعدّلة
 // ==========================================
 router.get('/:id/qr', auth, async (req, res) => {
-  // 1. نضع try-catch حول كل الكود
   try {
-    // 2. نتحقق من وجود المكتبة بشكل صريح
+    // 1. التحقق من وجود المكتبة
     let QRCode;
     try {
       QRCode = require('qrcode');
@@ -203,21 +202,21 @@ router.get('/:id/qr', auth, async (req, res) => {
       });
     }
 
-    // 3. نبحث عن الطالب
+    // 2. البحث عن الطالب
     const student = await Student.findById(req.params.id);
     if (!student) {
       return res.status(404).json({ message: 'الطالب غير موجود' });
     }
 
-    // 4. نتحقق من الصلاحية
+    // 3. التحقق من الصلاحية
     if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
       return res.status(403).json({ message: 'غير مصرح لك بتحميل QR لهذا الطالب' });
     }
 
-    // 5. نجهز البيانات (نتأكد من أنها نص)
+    // 4. تجهيز البيانات
     const qrData = String(student.studentId || student._id.toString());
 
-    // 6. نولد QR Code
+    // 5. توليد QR Code
     console.log(`🔄 جاري توليد QR للطالب: ${student.name} (${qrData})`);
     const qrCodeBuffer = await QRCode.toBuffer(qrData, {
       type: 'png',
@@ -230,24 +229,25 @@ router.get('/:id/qr', auth, async (req, res) => {
       errorCorrectionLevel: 'H',
     });
 
-    // 7. نرسل الصورة
+    // 6. إعداد اسم الملف مع التشفير لتجنب الأحرف غير الصالحة
+    const fileName = `QR_${student.name}_${student.studentId}.png`;
+    // استخدام encodeURIComponent لتأمين الاسم
+    const encodedFileName = encodeURIComponent(fileName);
+    
+    // 7. إرسال الصورة مع Header صحيح
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Content-Disposition', `attachment; filename=QR_${student.name}_${student.studentId}.png`);
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFileName}`);
     res.send(qrCodeBuffer);
 
   } catch (err) {
-    // 8. نطبع الخطأ في Console (سيظهر في Logs على Render)
     console.error('❌ خطأ في توليد QR Code:', err);
     console.error('❌ تفاصيل الخطأ:', err.stack);
     
-    // 9. نرسل رد واضح للمستخدم
     res.status(500).json({ 
       message: 'فشل توليد QR Code', 
       error: err.message,
-      // نرسل تفاصيل إضافية فقط في بيئة التطوير
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
   }
 });
-
 module.exports = router;
