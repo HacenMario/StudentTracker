@@ -138,25 +138,43 @@ router.get('/:id/attendance', auth, async (req, res) => {
 // 6. توليد QR Code لطالب (للمدير فقط)
 // ==========================================
 router.get('/:id/qr', auth, isAdmin, async (req, res) => {
-  try {
-    const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: 'الطالب غير موجود' });
+    try {
+        const student = await Student.findById(req.params.id);
+        if (!student) {
+            return res.status(404).json({ message: 'الطالب غير موجود' });
+        }
 
-    // النص الذي سيتم ترميزه في QR (يمكن أن يكون معرف الطالب أو رابط)
-    const qrData = JSON.stringify({
-      studentId: student._id,
-      name: student.name,
-      school: 'SchoolName' // يمكنك إضافة اسم المدرسة من الإعدادات
-    });
+        // التأكد من وجود qrCode، وإن لم يوجد نولده
+        let qrData = student.qrCode;
+        if (!qrData) {
+            // إنشاء نص فريد للـ QR (مثلاً studentId + timestamp)
+            qrData = `STU-${student.studentId}-${Date.now()}`;
+            student.qrCode = qrData;
+            await student.save();
+        }
 
-    // توليد QR كـ Data URL (صورة بصيغة PNG)
-    const qrImage = await QRCode.toDataURL(qrData);
+        // توليد صورة QR Code كـ Buffer
+        const QRCode = require('qrcode');
+        const qrBuffer = await QRCode.toBuffer(qrData, {
+            type: 'png',
+            width: 300,
+            margin: 2,
+            color: {
+                dark: '#1a365d',  // لون النقاط (أزرق غامق)
+                light: '#ffffff'  // لون الخلفية (أبيض)
+            }
+        });
 
-    res.json({ qrImage, studentName: student.name, studentId: student._id });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'فشل توليد QR Code' });
-  }
+        // تعيين الـ Headers المناسبة لتحميل الملف
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Disposition', `attachment; filename="QR_${student.studentId || student._id}.png"`);
+        res.setHeader('Content-Length', qrBuffer.length);
+        res.send(qrBuffer);
+
+    } catch (err) {
+        console.error('خطأ في توليد QR:', err);
+        res.status(500).json({ message: 'فشل توليد QR Code' });
+    }
 });
 
 // ==========================================
