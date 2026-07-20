@@ -1,16 +1,19 @@
 const mongoose = require('mongoose');
 
 const StudentSchema = new mongoose.Schema({
-  // studentId غير مطلوب، سيتم توليده آلياً
   studentId: {
     type: String,
     unique: true,
-    // إزالة required: true
   },
   name: {
     type: String,
     required: true,
     trim: true,
+  },
+  parent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true, // كل طالب مرتبط بولي أمر
   },
   parentName: {
     type: String,
@@ -33,6 +36,7 @@ const StudentSchema = new mongoose.Schema({
     trim: true,
     default: '',
   },
+  // الحالة الحالية (آخر حالة مسجلة)
   isInside: {
     type: Boolean,
     default: false,
@@ -47,16 +51,10 @@ const StudentSchema = new mongoose.Schema({
   },
 });
 
-// قبل الحفظ، إذا لم يكن studentId موجوداً، قم بإنشائه
 StudentSchema.pre('save', async function(next) {
   if (this.isNew && !this.studentId) {
-    try {
-      // الحصول على عدد الطلاب الحاليين لتوليد رقم تسلسلي
-      const count = await mongoose.model('Student').countDocuments();
-      this.studentId = 'STU-' + String(count + 1).padStart(4, '0');
-    } catch (err) {
-      return next(err);
-    }
+    const count = await mongoose.model('Student').countDocuments();
+    this.studentId = 'STU-' + String(count + 1).padStart(4, '0');
   }
   next();
 });
