@@ -5,7 +5,7 @@ const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
-const QRCode = require('qrcode'); // تأكد من تثبيت هذه المكتبة
+const QRCode = require('qrcode');
 
 // ==========================================
 // 1. جلب الطلاب (حسب الدور)
@@ -115,23 +115,48 @@ router.delete('/:id', auth, isAdmin, async (req, res) => {
 // ==========================================
 // 5. جلب سجل الحضور لطالب معين (لولي الأمر أو المدير)
 // ==========================================
-router.get('/:id/attendance', auth, async (req, res) => {
-  try {
-    const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: 'غير موجود' });
+router.get('/:id/qr', auth, async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+        if (!student) {
+            return res.status(404).json({ message: 'الطالب غير موجود' });
+        }
 
-    if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'غير مصرح لك برؤية هذا السجل' });
+        // التحقق من الصلاحية: المدير يرى الكل، ولي الأمر يرى فقط أبناءه
+        if (req.user.role === 'parent') {
+            // التأكد من أن هذا الطالب مرتبط بهذا المستخدم (ولي الأمر)
+            if (student.parent.toString() !== req.user.id) {
+                return res.status(403).json({ message: 'غير مصرح لك برؤية هذا الطالب' });
+            }
+        } else if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'غير مصرح لك' });
+        }
+
+        // التحقق من وجود QR Code، وإن لم يكن موجوداً نقوم بتوليده
+        let qrCodeData = student.qrCode;
+        if (!qrCodeData) {
+            // توليد QR جديد
+            const QRCode = require('qrcode');
+            const qrText = student.studentId; // أو أي معرف فريد
+            qrCodeData = await QRCode.toDataURL(qrText);
+            student.qrCode = qrCodeData;
+            await student.save();
+        }
+
+        // تحويل base64 إلى buffer وإرسال الصورة
+        const base64Data = qrCodeData.replace(/^data:image\/png;base64,/, '');
+        const imgBuffer = Buffer.from(base64Data, 'base64');
+
+        res.writeHead(200, {
+            'Content-Type': 'image/png',
+            'Content-Length': imgBuffer.length,
+            'Content-Disposition': `attachment; filename=QR_${student.studentId}.png`,
+        });
+        res.end(imgBuffer);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: err.message });
     }
-
-    const records = await Attendance.find({ student: student._id })
-      .sort({ timestamp: -1 })
-      .limit(30);
-
-    res.json(records);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
 });
 
 // ==========================================
