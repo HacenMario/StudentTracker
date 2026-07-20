@@ -335,6 +335,14 @@ let currentCameraId = null;
 let availableCameras = [];
 let isScannerRunning = false;
 
+// ==========================================
+// دوال QR Code (المسح والتحميل) - النسخة النهائية المُعاد كتابتها
+// ==========================================
+
+// تعريف المتغير مرة واحدة فقط (في الأعلى مع المتغيرات العامة)
+// تأكد من وجود هذا السطر في أعلى الملف مع بقية المتغيرات:
+// let html5QrCode = null;
+
 window.downloadQR = function(studentId) {
     fetchWithAuth('/api/students/' + studentId + '/qr')
         .then(res => {
@@ -368,29 +376,48 @@ function openScanner() {
         return;
     }
 
-    // إغلاق أي ماسح سابق بشكل آمن
-    closeScanner(true); // true = silent close (لا تظهر رسائل)
+    // إيقاف أي ماسح سابق بشكل آمن
+    if (html5QrCode) {
+        html5QrCode.stop()
+            .then(() => {
+                html5QrCode.clear();
+                html5QrCode = null;
+                startScannerProcess();
+            })
+            .catch(() => {
+                // إذا فشل الإيقاف، نُعيد تعيين الكائن ونبدأ من جديد
+                html5QrCode = null;
+                startScannerProcess();
+            });
+    } else {
+        startScannerProcess();
+    }
+}
+
+function startScannerProcess() {
+    const resultsContainer = document.getElementById('qr-reader-results');
+    resultsContainer.innerHTML = '📷 جاري الوصول للكاميرا...';
 
     // إنشاء كائن الماسح الجديد
     html5QrCode = new Html5Qrcode('qr-reader');
-    isScannerRunning = false;
 
     Html5Qrcode.getCameras()
         .then(devices => {
             if (devices && devices.length > 0) {
                 availableCameras = devices;
-                
                 let selectedCamera = devices[0];
                 const backCamera = devices.find(d => {
                     const label = d.label.toLowerCase();
-                    return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('خلفية');
+                    return label.includes('back') || label.includes('rear') || 
+                           label.includes('environment') || label.includes('خلفية');
                 });
                 if (backCamera) {
                     selectedCamera = backCamera;
                 } else {
                     const nonFront = devices.find(d => {
                         const label = d.label.toLowerCase();
-                        return !label.includes('front') && !label.includes('selfie') && !label.includes('أمامية');
+                        return !label.includes('front') && !label.includes('selfie') && 
+                               !label.includes('أمامية');
                     });
                     if (nonFront) selectedCamera = nonFront;
                 }
@@ -405,7 +432,7 @@ function openScanner() {
                     switchBtn.style.display = 'none';
                 }
 
-                startScanner(currentCameraId);
+                startNewScanner(currentCameraId);
             } else {
                 resultsContainer.innerHTML = '❌ لا توجد كاميرات متاحة على هذا الجهاز.';
             }
@@ -420,38 +447,11 @@ function openScanner() {
         });
 }
 
-// تشغيل الماسح باستخدام كاميرا محددة
-function startScanner(cameraId) {
+function startNewScanner(cameraId) {
     const resultsContainer = document.getElementById('qr-reader-results');
     resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
 
-    if (html5QrCode) {
-        // إذا كان الماسح قيد التشغيل، نوقفه أولاً
-        if (isScannerRunning) {
-            html5QrCode.stop()
-                .then(() => {
-                    html5QrCode.clear();
-                    isScannerRunning = false;
-                    startNewScanner(cameraId);
-                })
-                .catch(() => {
-                    // في حال فشل الإيقاف، نعيد تعيين الكائن ونبدأ من جديد
-                    html5QrCode = null;
-                    isScannerRunning = false;
-                    startNewScanner(cameraId);
-                });
-        } else {
-            // إذا لم يكن قيد التشغيل، نبدأ فوراً
-            startNewScanner(cameraId);
-        }
-    } else {
-        startNewScanner(cameraId);
-    }
-}
-
-function startNewScanner(cameraId) {
-    const resultsContainer = document.getElementById('qr-reader-results');
-    // تأكد من أن الكائن قد تم إنشاؤه
+    // التأكد من وجود كائن الماسح
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode('qr-reader');
     }
@@ -465,20 +465,16 @@ function startNewScanner(cameraId) {
     .then(() => {
         resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
         currentCameraId = cameraId;
-        isScannerRunning = true;
     })
     .catch(err => {
         console.error('فشل تشغيل الكاميرا:', err);
+        resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
         if (err.message && err.message.includes('NotAllowedError')) {
             resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح.';
-        } else {
-            resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
         }
-        isScannerRunning = false;
     });
 }
 
-// تبديل الكاميرا
 function switchCamera() {
     if (availableCameras.length < 2) {
         alert('لا توجد كاميرات أخرى');
@@ -490,17 +486,33 @@ function switchCamera() {
     const nextCamera = availableCameras[nextIndex];
     
     console.log('🔄 تبديل الكاميرا إلى:', nextCamera.label || 'غير معروف');
-    startScanner(nextCamera.id);
+    
+    // إيقاف الماسح الحالي ثم تشغيل الجديد
+    if (html5QrCode) {
+        html5QrCode.stop()
+            .then(() => {
+                html5QrCode.clear();
+                html5QrCode = null;
+                // نعيد تشغيل الماسح بالكاميرا الجديدة
+                startScannerProcess();
+            })
+            .catch(() => {
+                // إذا فشل الإيقاف، نُعيد تعيين الكائن ونبدأ من جديد
+                html5QrCode = null;
+                startScannerProcess();
+            });
+    } else {
+        startScannerProcess();
+    }
 }
 
-// دالة نجاح المسح
 function onScanSuccess(decodedText, decodedResult) {
     const resultsContainer = document.getElementById('qr-reader-results');
     resultsContainer.innerHTML = '✅ جاري معالجة الكود...';
 
-    if (html5QrCode && isScannerRunning) {
+    // إيقاف الماسح مؤقتاً لمنع تكرار المسح
+    if (html5QrCode) {
         html5QrCode.pause();
-        isScannerRunning = false;
     }
 
     const cleanData = decodedText.trim();
@@ -523,64 +535,42 @@ function onScanSuccess(decodedText, decodedResult) {
             setTimeout(closeScanner, 2000);
         } else {
             resultsContainer.innerHTML = '❌ ' + data.message;
-            if (html5QrCode) {
-                html5QrCode.resume();
-                isScannerRunning = true;
-            }
+            if (html5QrCode) html5QrCode.resume();
         }
     })
     .catch(err => {
         resultsContainer.innerHTML = '❌ خطأ في الاتصال بالخادم';
         console.error(err);
-        if (html5QrCode) {
-            html5QrCode.resume();
-            isScannerRunning = true;
-        }
+        if (html5QrCode) html5QrCode.resume();
     });
 }
 
 function onScanError(error) {
-    // تجاهل الأخطاء العادية
+    // نتجاهل الأخطاء العادية
 }
 
-// إغلاق الماسح بشكل آمن (مع خيار silent)
-function closeScanner(silent = false) {
+function closeScanner() {
     if (html5QrCode) {
-        if (isScannerRunning) {
-            html5QrCode.stop()
-                .then(() => {
-                    html5QrCode.clear();
-                    html5QrCode = null;
-                    isScannerRunning = false;
-                })
-                .catch(err => {
-                    console.warn('خطأ في إيقاف الماسح:', err);
-                    html5QrCode = null;
-                    isScannerRunning = false;
-                });
-        } else {
-            // إذا كان الماسح متوقفاً بالفعل، نقوم فقط بمسح الكائن
-            try {
+        html5QrCode.stop()
+            .then(() => {
                 html5QrCode.clear();
-            } catch (e) {}
-            html5QrCode = null;
-            isScannerRunning = false;
-        }
-    } else {
-        isScannerRunning = false;
+                html5QrCode = null;
+            })
+            .catch(err => {
+                console.warn('خطأ في إيقاف الماسح:', err);
+                html5QrCode = null;
+            });
     }
-
-    if (!silent) {
-        document.getElementById('scannerModal').style.display = 'none';
-        document.getElementById('qr-reader-results').innerHTML = '';
-        document.getElementById('switchCameraBtn').style.display = 'none';
-    }
+    document.getElementById('scannerModal').style.display = 'none';
+    document.getElementById('qr-reader-results').innerHTML = '';
+    document.getElementById('switchCameraBtn').style.display = 'none';
 }
 
-// ربط الأحداث (تأكد من عدم تكرار الربط)
-document.getElementById('openScannerBtn')?.addEventListener('click', openScanner);
-document.getElementById('closeScannerBtn')?.addEventListener('click', () => closeScanner(false));
-document.getElementById('switchCameraBtn')?.addEventListener('click', switchCamera);
+// ربط الأحداث
+document.getElementById('openScannerBtn').addEventListener('click', openScanner);
+document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
+document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
+
 // ==========================================
 // 10. دوال التغيير الجماعي
 // ==========================================
