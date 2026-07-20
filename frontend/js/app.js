@@ -85,6 +85,7 @@ function showAdminDashboard() {
     document.getElementById('parentDashboard').style.display = 'none';
     connectSocket();
     loadAdminStudents();
+    loadAdminNotifications(); // جلب الإشعارات المخزنة للمدير
 }
 
 function showParentDashboard() {
@@ -94,6 +95,7 @@ function showParentDashboard() {
     document.getElementById('parentDashboard').style.display = 'block';
     connectSocket();
     loadParentStudents();
+    loadParentNotifications(); // جلب الإشعارات المخزنة لولي الأمر
 }
 
 // ==========================================
@@ -110,7 +112,6 @@ function connectSocket() {
             loadAdminStudents();
             addLog('🔔 ' + data.message, new Date(), 'adminLogContainer');
         } else {
-            // إذا كان ولي أمر وتخصه هذه الرسالة
             if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
                 loadParentStudents();
                 addLog('🔔 ' + data.message, new Date(), 'parentLogContainer');
@@ -119,27 +120,23 @@ function connectSocket() {
         }
     });
 
-    // استقبال الإشعارات العامة والخاصة
+    // استقبال الإشعارات الجديدة (من Socket)
     socket.on('notification', (data) => {
         if (currentUser.role === 'parent') {
-            const list = document.getElementById('notificationList');
-            const li = document.createElement('li');
-            li.textContent = data.message + ' (وقت: ' + new Date().toLocaleString() + ')';
-            list.prepend(li);
+            // إضافة الإشعار الجديد إلى الواجهة
+            addNotificationToUI(data.message, data.createdAt);
             showBrowserNotification('📢 إشعار من المدرسة', data.message);
         } else if (currentUser.role === 'admin') {
             addLog('📢 إشعار عام تم إرساله', new Date(), 'adminLogContainer');
         }
     });
 
-    // أخطاء الإشعارات
     socket.on('notification-error', (data) => {
         alert(data.message);
     });
 
-    // تأكيد إرسال الإشعار الخاص
     socket.on('notification-sent', (data) => {
-        addLog('📩 تم إرسال إشعار خاص لـ ' + data.parentEmail, new Date(), 'adminLogContainer');
+        addLog('📩 ' + data.message, new Date(), 'adminLogContainer');
     });
 
     socket.on('disconnect', () => console.warn('⚠️ انقطع الاتصال'));
@@ -160,7 +157,67 @@ function fetchWithAuth(url, options = {}) {
 }
 
 // ==========================================
-// دوال المدير
+// دوال الإشعارات (جلب وعرض)
+// ==========================================
+async function loadAdminNotifications() {
+    try {
+        const res = await fetchWithAuth('/api/notifications');
+        if (!res.ok) throw new Error('فشل جلب الإشعارات');
+        const notifications = await res.json();
+        // يمكن عرضها في سجل المدير أو في مكان مخصص
+        notifications.forEach(n => {
+            addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', n.createdAt, 'adminLogContainer');
+        });
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function loadParentNotifications() {
+    try {
+        const res = await fetchWithAuth('/api/notifications');
+        if (!res.ok) throw new Error('فشل جلب الإشعارات');
+        const notifications = await res.json();
+        const list = document.getElementById('notificationList');
+        list.innerHTML = ''; // تفريغ القائمة
+
+        notifications.forEach(n => {
+            addNotificationToUI(n.message, n.createdAt, n.isRead, n._id);
+        });
+
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// دالة لإضافة إشعار إلى واجهة ولي الأمر (مع تمييز الجديد)
+function addNotificationToUI(message, createdAt, isRead = false, id = null) {
+    const list = document.getElementById('notificationList');
+    const li = document.createElement('li');
+    const time = formatFullTime(createdAt);
+    li.textContent = message + ' (وقت: ' + time + ')';
+    
+    // تمييز الإشعارات غير المقروءة
+    if (!isRead) {
+        li.style.fontWeight = 'bold';
+        li.style.backgroundColor = '#d4e6ff';
+        li.style.borderRight = '4px solid #1c7ed6';
+        
+        // تحديث حالة القراءة تلقائياً بعد العرض (اختياري)
+        if (id) {
+            fetchWithAuth('/api/notifications/' + id + '/read', { method: 'PUT' })
+                .catch(err => console.error('فشل تحديث حالة القراءة'));
+        }
+    } else {
+        li.style.backgroundColor = '#f0f8ff';
+        li.style.borderRight = '4px solid #ccc';
+    }
+    
+    list.prepend(li);
+}
+
+// ==========================================
+// دوال المدير (جلب الطلاب وعرضهم)
 // ==========================================
 async function loadAdminStudents() {
     try {
@@ -277,14 +334,13 @@ function adminSendParentNotification() {
         socket.emit('admin-notification-to-parent', { parentEmail: email, message: msg });
         document.getElementById('adminParentEmailInput').value = '';
         document.getElementById('adminParentNotificationMsg').value = '';
-        // سيتم إضافة سجل عند تأكيد الإرسال عبر حدث notification-sent
     } else {
         alert('Socket غير متصل');
     }
 }
 
 // ==========================================
-// دوال ولي الأمر
+// دوال ولي الأمر (جلب الطلاب وسجل الحضور)
 // ==========================================
 async function loadParentStudents() {
     try {
