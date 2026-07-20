@@ -207,8 +207,7 @@ window.adminToggle = function(id) {
             return res.json();
         })
         .then(() => {
-            loadAdminStudents(); // تحديث القائمة
-            // إضافة سجل
+            loadAdminStudents();
             addLog('🔄 تم تبديل حالة الطالب', new Date(), 'adminLogContainer');
         })
         .catch(err => alert('حدث خطأ: ' + err.message));
