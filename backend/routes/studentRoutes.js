@@ -189,28 +189,36 @@ router.post('/scan-qr', auth, async (req, res) => {
 // 7. تحميل QR Code كصورة (للمدير وولي الأمر) - النسخة المُعدّلة
 // ==========================================
 router.get('/:id/qr', auth, async (req, res) => {
+  // 1. نضع try-catch حول كل الكود
   try {
-    // 1. التحقق من وجود المكتبة
-    if (!QRCode) {
-      console.error('❌ مكتبة qrcode غير مثبتة');
-      return res.status(500).json({ message: 'مكتبة QR Code غير مثبتة على الخادم' });
+    // 2. نتحقق من وجود المكتبة بشكل صريح
+    let QRCode;
+    try {
+      QRCode = require('qrcode');
+    } catch (requireError) {
+      console.error('❌ فشل تحميل مكتبة qrcode:', requireError);
+      return res.status(500).json({ 
+        message: 'مكتبة QR Code غير مثبتة على الخادم',
+        error: requireError.message 
+      });
     }
 
-    // 2. البحث عن الطالب
+    // 3. نبحث عن الطالب
     const student = await Student.findById(req.params.id);
     if (!student) {
       return res.status(404).json({ message: 'الطالب غير موجود' });
     }
 
-    // 3. التحقق من الصلاحية
+    // 4. نتحقق من الصلاحية
     if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
       return res.status(403).json({ message: 'غير مصرح لك بتحميل QR لهذا الطالب' });
     }
 
-    // 4. تجهيز البيانات
-    const qrData = student.studentId || student._id.toString();
+    // 5. نجهز البيانات (نتأكد من أنها نص)
+    const qrData = String(student.studentId || student._id.toString());
 
-    // 5. توليد QR Code كـ Buffer
+    // 6. نولد QR Code
+    console.log(`🔄 جاري توليد QR للطالب: ${student.name} (${qrData})`);
     const qrCodeBuffer = await QRCode.toBuffer(qrData, {
       type: 'png',
       width: 300,
@@ -219,21 +227,25 @@ router.get('/:id/qr', auth, async (req, res) => {
         dark: '#1a365d',
         light: '#ffffff',
       },
-      errorCorrectionLevel: 'H', // مستوى تصحيح أخطاء عالي
+      errorCorrectionLevel: 'H',
     });
 
-    // 6. إرسال الصورة
+    // 7. نرسل الصورة
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Disposition', `attachment; filename=QR_${student.name}_${student.studentId}.png`);
     res.send(qrCodeBuffer);
 
   } catch (err) {
+    // 8. نطبع الخطأ في Console (سيظهر في Logs على Render)
     console.error('❌ خطأ في توليد QR Code:', err);
-    // إرسال رسالة خطأ مفصلة للتصحيح
+    console.error('❌ تفاصيل الخطأ:', err.stack);
+    
+    // 9. نرسل رد واضح للمستخدم
     res.status(500).json({ 
       message: 'فشل توليد QR Code', 
       error: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      // نرسل تفاصيل إضافية فقط في بيئة التطوير
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
   }
 });
