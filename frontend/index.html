@@ -10,11 +10,14 @@
 </head>
 <body>
     <!-- ========================================== -->
-    <!-- قسم اسم المؤسسة (يتم تحديثه عبر JavaScript) -->
+    <!-- قسم اسم المؤسسة مع الشعار -->
     <!-- ========================================== -->
     <div class="school-header" id="schoolHeader">
         <div class="school-info">
-            <h1 id="schoolName">🏫 مدرسة النور الابتدائية</h1>
+            <div class="school-logo-container">
+                <img id="schoolLogo" src="" alt="شعار المدرسة" style="display:none; max-height:60px; border-radius:12px;">
+                <h1 id="schoolName">🏫 مدرسة النور الابتدائية</h1>
+            </div>
             <p id="schoolAddress">📍 العنوان: شارع السلام، المدينة التعليمية</p>
             <p id="schoolContact">📞 الهاتف: 0555 123 456 | ✉️ info@school.edu</p>
         </div>
@@ -61,23 +64,25 @@
                     <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
                 </header>
 
-                <!-- أزرار الإجراءات السريعة -->
-                <div class="quick-actions">
-                    <button id="toggleAllInBtn" class="btn-success"><i class="fas fa-arrow-right"></i> تغيير الكل إلى داخل</button>
-                    <button id="toggleAllOutBtn" class="btn-danger"><i class="fas fa-arrow-left"></i> تغيير الكل إلى خارج</button>
-                    <button id="openSettingsBtn" class="btn-primary"><i class="fas fa-cog"></i> إعدادات المؤسسة</button>
-                </div>
+                <!-- إعدادات المدرسة -->
+                <button id="toggleSettingsBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483);">
+                    <i class="fas fa-cog"></i> إعدادات المؤسسة
+                </button>
 
-                <!-- نافذة إعدادات المؤسسة (مخفية) -->
-                <div id="settingsForm" style="display:none;" class="settings-panel">
-                    <h3><i class="fas fa-building"></i> إعدادات المؤسسة</h3>
-                    <input type="text" id="settingSchoolName" placeholder="اسم المدرسة">
-                    <input type="text" id="settingAddress" placeholder="العنوان">
-                    <input type="text" id="settingPhone" placeholder="رقم الهاتف">
-                    <input type="email" id="settingEmail" placeholder="البريد الإلكتروني">
-                    <input type="text" id="settingLogoUrl" placeholder="رابط الشعار (اختياري)">
-                    <button id="saveSettingsBtn" class="btn-primary"><i class="fas fa-save"></i> حفظ الإعدادات</button>
-                    <button id="closeSettingsBtn" class="btn-secondary"><i class="fas fa-times"></i> إغلاق</button>
+                <div id="settingsForm" style="display:none;" class="add-student-form">
+                    <h4 style="margin-bottom:12px;">تعديل معلومات المدرسة</h4>
+                    <div class="form-grid">
+                        <input type="text" id="settingsSchoolName" placeholder="اسم المدرسة">
+                        <input type="text" id="settingsAddress" placeholder="العنوان">
+                        <input type="text" id="settingsPhone" placeholder="الهاتف">
+                        <input type="email" id="settingsEmail" placeholder="البريد الإلكتروني">
+                        <div style="grid-column: 1 / -1;">
+                            <label for="settingsLogoUpload" style="display:block; margin-bottom:6px; font-weight:600;">تحميل شعار المدرسة:</label>
+                            <input type="file" id="settingsLogoUpload" accept="image/*" style="padding:8px; border:2px solid #e2eaf2; border-radius:12px; width:100%;">
+                            <div id="logoPreview" style="margin-top:10px;"></div>
+                        </div>
+                        <button id="saveSettingsBtn" class="btn-primary" style="grid-column: 1 / -1;"><i class="fas fa-save"></i> حفظ الإعدادات</button>
+                    </div>
                 </div>
 
                 <!-- زر إضافة طالب جديد -->
@@ -95,6 +100,16 @@
                         <input type="text" id="adminAddress" placeholder="العنوان (اختياري)">
                         <button id="adminAddBtn" class="btn-primary"><i class="fas fa-save"></i> حفظ</button>
                     </div>
+                </div>
+
+                <!-- زر تغيير حالة جميع الطلاب -->
+                <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap;">
+                    <button id="toggleAllInsideBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #27ae60, #1e8449);">
+                        <i class="fas fa-arrow-right"></i> تغيير الكل إلى داخل
+                    </button>
+                    <button id="toggleAllOutsideBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                        <i class="fas fa-arrow-left"></i> تغيير الكل إلى خارج
+                    </button>
                 </div>
 
                 <!-- قائمة الطلاب -->
