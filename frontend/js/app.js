@@ -17,6 +17,8 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
+
+// متغيرات الماسح الضوئي (معرفة مرة واحدة فقط)
 let html5QrCode = null;
 let currentCameraId = null;
 let availableCameras = [];
@@ -327,21 +329,8 @@ document.getElementById('settingsLogoUpload').addEventListener('change', functio
 });
 
 // ==========================================
-// 9. دوال QR Code (المسح والتحميل)
+// 9. دوال QR Code (المسح والتحميل) - النسخة المُصحَّحة
 // ==========================================
-
-let html5QrCode = null;
-let currentCameraId = null;
-let availableCameras = [];
-let isScannerRunning = false;
-
-// ==========================================
-// دوال QR Code (المسح والتحميل) - النسخة النهائية المُعاد كتابتها
-// ==========================================
-
-// تعريف المتغير مرة واحدة فقط (في الأعلى مع المتغيرات العامة)
-// تأكد من وجود هذا السطر في أعلى الملف مع بقية المتغيرات:
-// let html5QrCode = null;
 
 window.downloadQR = function(studentId) {
     fetchWithAuth('/api/students/' + studentId + '/qr')
@@ -364,7 +353,6 @@ window.downloadQR = function(studentId) {
         .catch(err => alert('فشل تحميل QR: ' + err.message));
 };
 
-// فتح الماسح الضوئي
 function openScanner() {
     const modal = document.getElementById('scannerModal');
     modal.style.display = 'flex';
@@ -385,7 +373,7 @@ function openScanner() {
                 startScannerProcess();
             })
             .catch(() => {
-                // إذا فشل الإيقاف، نُعيد تعيين الكائن ونبدأ من جديد
+                // في حال فشل الإيقاف، نُعيد تعيين الكائن
                 html5QrCode = null;
                 startScannerProcess();
             });
@@ -451,7 +439,7 @@ function startNewScanner(cameraId) {
     const resultsContainer = document.getElementById('qr-reader-results');
     resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
 
-    // التأكد من وجود كائن الماسح
+    // التأكد من وجود كائن الماسح (قد يكون null إذا لم يتم إنشاؤه)
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode('qr-reader');
     }
@@ -493,11 +481,9 @@ function switchCamera() {
             .then(() => {
                 html5QrCode.clear();
                 html5QrCode = null;
-                // نعيد تشغيل الماسح بالكاميرا الجديدة
                 startScannerProcess();
             })
             .catch(() => {
-                // إذا فشل الإيقاف، نُعيد تعيين الكائن ونبدأ من جديد
                 html5QrCode = null;
                 startScannerProcess();
             });
@@ -566,7 +552,7 @@ function closeScanner() {
     document.getElementById('switchCameraBtn').style.display = 'none';
 }
 
-// ربط الأحداث
+// ربط الأحداث الخاصة بالماسح
 document.getElementById('openScannerBtn').addEventListener('click', openScanner);
 document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
 document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
