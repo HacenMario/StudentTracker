@@ -148,7 +148,17 @@ router.post('/scan-qr', auth, async (req, res) => {
     const { qrData } = req.body;
     if (!qrData) return res.status(400).json({ success: false, message: 'بيانات QR مطلوبة' });
 
-    const student = await Student.findOne({ studentId: qrData });
+    // تنظيف البيانات
+    const cleanData = qrData.trim();
+
+    // البحث باستخدام studentId
+    let student = await Student.findOne({ studentId: cleanData });
+    
+    // إذا لم يتم العثور، حاول البحث باستخدام _id (في حال كان QR يحتوي على _id)
+    if (!student && cleanData.match(/^[0-9a-fA-F]{24}$/)) {
+      student = await Student.findById(cleanData);
+    }
+
     if (!student) {
       return res.status(404).json({ success: false, message: 'الطالب غير موجود' });
     }
