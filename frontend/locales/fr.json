@@ -33,6 +33,11 @@
     "super_admin": "Tableau de bord Super Admin"
   },
   "student": {
+    "edit_title": "Modifier l'étudiant",
+    "confirm_edit": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
+    "inside": "À l'intérieur 🏫",
+    "outside": "À l'extérieur 🚪",
+    "added": "Étudiant ajouté",
     "add": "Ajouter un étudiant",
     "edit": "Modifier l'étudiant",
     "delete": "Supprimer l'étudiant",
@@ -81,6 +86,9 @@
     "message_required": "Écrivez le message de notification"
   },
   "attendance": {
+    "exit": "Sortie",
+    "old_logs": "📜 Anciens enregistrements",
+    "hide_old_logs": "Masquer les anciens enregistrements",
     "log": "Journal de présence",
     "in": "Entrée",
     "out": "Sortie",
