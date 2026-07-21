@@ -63,6 +63,7 @@
     "confirm_toggle": "Êtes-vous sûr de vouloir changer le statut de cet étudiant ?",
     "confirm_edit": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
     "edit_title": "✏️ Modifier les informations de l'étudiant",
+    "not_found": "Étudiant non trouvé",
     "for_parent": "pour le parent",
     "confirm_add": "Confirmation d'ajout de l'étudiant"
   },
