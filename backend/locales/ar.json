@@ -1,0 +1,80 @@
+{
+  "auth": {
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "confirm_password": "تأكيد كلمة المرور",
+    "forgot_password": "نسيت كلمة المرور؟",
+    "logout": "تسجيل الخروج"
+  },
+  "dashboard": {
+    "admin": "لوحة المدير",
+    "parent": "لوحة ولي الأمر",
+    "students": "الطلاب",
+    "attendance": "الحضور",
+    "notifications": "الإشعارات",
+    "settings": "الإعدادات"
+  },
+  "student": {
+    "add": "إضافة طالب",
+    "edit": "تعديل طالب",
+    "delete": "حذف طالب",
+    "name": "اسم التلميذ",
+    "parent_name": "اسم ولي الأمر",
+    "parent_phone": "هاتف ولي الأمر",
+    "parent_email": "بريد ولي الأمر",
+    "address": "العنوان",
+    "status": "الحالة",
+    "inside": "داخل",
+    "outside": "خارج",
+    "toggle": "تغيير الحالة",
+    "student_id": "رقم التلميذ"
+  },
+  "notification": {
+    "title": "إشعار جديد",
+    "general": "إشعار عام",
+    "private": "إشعار خاص",
+    "send": "إرسال",
+    "message": "الرسالة",
+    "target": "المستهدف",
+    "all_parents": "جميع أولياء الأمور"
+  },
+  "attendance": {
+    "log": "سجل الحضور",
+    "in": "دخول",
+    "out": "خروج",
+    "method": "طريقة التسجيل",
+    "manual": "يدوي",
+    "qr": "QR Code"
+  },
+  "tenant": {
+    "title": "إدارة المؤسسات",
+    "add": "إضافة مؤسسة",
+    "edit": "تعديل مؤسسة",
+    "name": "اسم المؤسسة",
+    "subdomain": "النطاق الفرعي",
+    "admin": "المدير",
+    "status": "الحالة",
+    "active": "نشط",
+    "inactive": "غير نشط"
+  },
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "close": "إغلاق",
+    "search": "بحث",
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "success": "تم بنجاح",
+    "yes": "نعم",
+    "no": "لا",
+    "back": "رجوع",
+    "next": "التالي",
+    "submit": "إرسال",
+    "reset": "إعادة تعيين"
+  }
+}
