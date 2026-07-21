@@ -19,7 +19,7 @@ const Subscription = require('./models/Subscription');
 const studentRoutes = require('./routes/studentRoutes');
 const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-const settingsRoutes = require('./routes/settingsRoutes'); // تأكد من الاسم الصحيح
+const settingsRoutes = require('./routes/settingsRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 const app = express();
@@ -62,7 +62,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
 }
 
 // ==========================================
-// دالة إرسال إشعارات Web Push (محسّنة للبحث بالبريد)
+// دالة إرسال إشعارات Web Push (محسّنة مع تشخيص)
 // ==========================================
 async function sendPushNotification(title, body, data = {}, targetEmail = null) {
   try {
@@ -71,18 +71,37 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
       return;
     }
 
-    // بناء الفلتر: الأولوية للبريد الإلكتروني (الأكثر دقة)
+    // بناء الفلتر
     let filter = {};
+    let logMessage = '';
+
     if (targetEmail) {
+      // ✅ البحث بالبريد الإلكتروني (أولوية)
       filter.userEmail = targetEmail;
+      logMessage = `للبريد: ${targetEmail}`;
     } else {
-      // إذا لم يتم تحديد بريد، نرسل للجميع (للإشعارات العامة)
-      filter = {}; 
+      // بدون فلتر -> الإشعار العام للجميع
+      filter = {};
+      logMessage = 'لجميع المشتركين';
     }
 
+    console.log(`📨 [بدء] إرسال إشعار: "${title}" - ${logMessage}`);
+
     const subscriptions = await Subscription.find(filter);
+    
+    // ✅ تشخيص إضافي: عرض عدد المشتركين الذين تم العثور عليهم
+    console.log(`🔍 تم العثور على ${subscriptions.length} مشترك ${targetEmail ? 'لهذا البريد' : 'في النظام'}`);
+
     if (subscriptions.length === 0) {
-      console.log(`📭 لا يوجد مشتركين للبريد: ${targetEmail || 'جميع المستخدمين'}`);
+      // ❌ لم نجد مشتركين، نعرض معلومات إضافية
+      if (targetEmail) {
+        // نتحقق من وجود أي اشتراك في النظام للمساعدة في التشخيص
+        const allSubs = await Subscription.find();
+        console.log(`📊 إجمالي المشتركين في النظام: ${allSubs.length}`);
+        if (allSubs.length > 0) {
+          console.log('📊 بريد أول مشترك:', allSubs[0].userEmail);
+        }
+      }
       return;
     }
 
@@ -95,8 +114,7 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
       url: data.url || '/',
     });
 
-    console.log(`📨 جاري إرسال الإشعار إلى ${subscriptions.length} مشترك (للبريد: ${targetEmail || 'الكل'})`);
-
+    // ✅ إرسال لكل مشترك
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
         const pushSubscription = {
@@ -104,10 +122,11 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
           keys: sub.keys,
         };
         await webpush.sendNotification(pushSubscription, payload);
-        console.log(`✅ تم إرسال الإشعار إلى ${sub.endpoint.substring(0, 30)}...`);
+        console.log(`✅ تم إرسال الإشعار إلى مشترك (بريد: ${sub.userEmail})`);
       })
     );
 
+    // معالجة النتائج
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
         const error = result.reason;
@@ -124,13 +143,16 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
         }
       }
     });
+
+    console.log(`✅ [انتهى] إرسال الإشعارات لـ ${logMessage}`);
+
   } catch (err) {
     console.error('❌ خطأ في إرسال الإشعارات:', err);
   }
 }
 
 // ==========================================
-// Socket.io مع التحقق من التوكن وتخزين المستخدمين
+// Socket.io
 // ==========================================
 const userSockets = new Map();
 
@@ -189,15 +211,30 @@ io.on('connection', (socket) => {
         parentEmail: student.parentEmail,
       });
 
-      // ✅ إرسال إشعار Web Push لولي الأمر (باستخدام البريد الإلكتروني فقط)
+      // ✅ إرسال إشعار Web Push لولي الأمر
       if (student.parentEmail) {
-        console.log(`📤 محاولة إرسال إشعار تغيير حالة إلى: ${student.parentEmail}`);
+        console.log(`📤 محاولة إرسال إشعار تغيير حالة إلى البريد: "${student.parentEmail}"`);
+        
+        // ✅ نرسل الإشعار مع تحديد البريد الإلكتروني
         await sendPushNotification(
           'تحديث حالة ابنك',
           message,
           { url: '/parent-dashboard' },
-          student.parentEmail // نرسل فقط للبريد، دون تحديد دور
+          student.parentEmail
         );
+        
+        // ✅ كحل احتياطي: إذا لم يكن هناك اشتراك، نرسل للجميع (اختياري)
+        // جلب الاشتراكات للتحقق
+        const subs = await Subscription.find({ userEmail: student.parentEmail });
+        if (subs.length === 0) {
+          console.warn(`⚠️ لا يوجد اشتراك للبريد "${student.parentEmail}"، سيتم إرسال الإشعار لجميع المشتركين كحل بديل.`);
+          await sendPushNotification(
+            'تحديث حالة ابنك (بديل)',
+            message,
+            { url: '/parent-dashboard' },
+            null // إرسال للجميع
+          );
+        }
       } else {
         console.warn(`⚠️ الطالب ${student.name} ليس له بريد ولي أمر، لم يتم إرسال إشعار`);
       }
@@ -209,7 +246,7 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 2. إشعار عام من المدير (مع الحفظ في DB)
+  // 2. إشعار عام من المدير
   // ----------------------
   socket.on('admin-notification', async (data) => {
     if (socket.user.role !== 'admin') return;
@@ -227,12 +264,12 @@ io.on('connection', (socket) => {
         createdAt: notification.createdAt 
       });
 
-      // إرسال إشعار Web Push لكل المشتركين (لأننا لم نحدد بريداً)
+      // إرسال للجميع
       await sendPushNotification(
         '📢 إشعار من المدرسة',
         data.message,
         { url: '/' },
-        null // إرسال للجميع
+        null
       );
 
       console.log(`📢 تم إرسال إشعار عام: ${data.message}`);
@@ -244,7 +281,7 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 3. إشعار خاص لولي أمر معين (مع الحفظ في DB)
+  // 3. إشعار خاص لولي أمر
   // ----------------------
   socket.on('admin-notification-to-parent', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -283,7 +320,6 @@ io.on('connection', (socket) => {
         });
       }
 
-      // إرسال إشعار Web Push لولي الأمر المحدد
       await sendPushNotification(
         '📩 إشعار خاص من المدرسة',
         message,
@@ -298,7 +334,7 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 4. تغيير حالة جميع الطلاب دفعة واحدة (للمدير)
+  // 4. تغيير حالة جميع الطلاب
   // ----------------------
   socket.on('toggle-all-status', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -334,7 +370,7 @@ io.on('connection', (socket) => {
         isBulk: true,
       });
 
-      // إرسال إشعار Web Push لكل ولي أمر (بالبريد الإلكتروني)
+      // إرسال إشعار لكل ولي أمر
       for (const email of updatedParents) {
         await sendPushNotification(
           'تحديث جماعي',
@@ -350,9 +386,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ----------------------
-  // 5. انقطاع الاتصال
-  // ----------------------
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
     console.log(`🔴 عميل غير متصل: ${userEmail}`);
@@ -360,7 +393,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// الاتصال بقاعدة البيانات وبدء الخادم
+// الاتصال بقاعدة البيانات
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
