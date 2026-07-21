@@ -67,7 +67,6 @@ function t(key, params = {}) {
         if (value && value[k] !== undefined) {
             value = value[k];
         } else {
-            // العودة إلى العربية
             let fallback = window.translations.ar;
             for (const k2 of keys) {
                 if (fallback && fallback[k2] !== undefined) {
@@ -115,6 +114,46 @@ function applyTranslationsToAll() {
             }
         }
     });
+    updateDynamicTexts();
+}
+
+// تحديث النصوص الديناميكية
+function updateDynamicTexts() {
+    // زر تسجيل الدخول
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        const text = t('auth.login');
+        if (text && text !== 'auth.login') {
+            loginBtn.innerHTML = `${text} <i class="fas fa-arrow-left"></i>`;
+        }
+    }
+    
+    // زر التسجيل
+    const registerBtn = document.getElementById('registerBtn');
+    if (registerBtn) {
+        const text = t('auth.register');
+        if (text && text !== 'auth.register') {
+            registerBtn.innerHTML = `${text} <i class="fas fa-user-plus"></i>`;
+        }
+    }
+    
+    // زر إضافة طالب
+    const addBtn = document.getElementById('adminAddBtn');
+    if (addBtn) {
+        const text = t('student.save');
+        if (text && text !== 'student.save') {
+            addBtn.innerHTML = `<i class="fas fa-save"></i> ${text}`;
+        }
+    }
+    
+    // زر حفظ الإعدادات
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    if (saveSettingsBtn) {
+        const text = t('settings.save');
+        if (text && text !== 'settings.save') {
+            saveSettingsBtn.innerHTML = `<i class="fas fa-save"></i> ${text}`;
+        }
+    }
 }
 
 // دالة مساعدة للترجمة في JavaScript
@@ -1484,7 +1523,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         Notification.requestPermission();
     }
 
-    // تحميل الترجمات (مع await)
     await loadTranslations();
     applyTranslationsToAll();
 
@@ -1503,9 +1541,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 return;
             }
-        } catch(e) {
-            console.error('خطأ في قراءة المستخدم:', e);
-        }
+        } catch(e) {}
     }
     showLogin();
 });
