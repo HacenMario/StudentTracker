@@ -8,6 +8,40 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+    .lang-switcher {
+        display: flex;
+        gap: 8px;
+        margin: 0 15px;
+    }
+    .lang-btn {
+        background: transparent;
+        border: 2px solid rgba(255,255,255,0.2);
+        color: #1a365d;
+        padding: 4px 12px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: 0.3s;
+        font-family: 'Tajawal', sans-serif;
+    }
+    .lang-btn:hover {
+        background: rgba(43, 108, 176, 0.1);
+    }
+    .lang-btn.active {
+        background: #2b6cb0;
+        color: white;
+        border-color: #2b6cb0;
+    }
+    html[dir="ltr"] .app-wrapper {
+        direction: ltr;
+    }
+    html[dir="rtl"] .app-wrapper {
+        direction: rtl;
+    }
+</style>
 </head>
 <body>
     <!-- ========================================== -->
@@ -59,6 +93,10 @@
                     <h1><i class="fas fa-user-cog"></i> لوحة المدير</h1>
                     <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
                     <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
+                    <div class="lang-switcher">
+    <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
+    <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
+</div>
                 </header>
 
                 <!-- إعدادات المدرسة -->
@@ -155,6 +193,10 @@
                     <h1><i class="fas fa-user-friends"></i> لوحة ولي الأمر</h1>
                     <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
                     <button id="logoutBtnParent" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
+                    <div class="lang-switcher">
+    <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
+    <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
+</div>
                 </header>
 
                 <div id="parentStudentsList" class="students-grid"></div>
