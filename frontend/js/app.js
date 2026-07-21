@@ -1588,16 +1588,146 @@ if (addTenantModal) {
     });
 }
 
+// ==========================================
+// تعديل مؤسسة - فتح النافذة
+// ==========================================
+window.editTenant = async function(tenantId) {
+    console.log('📝 جاري فتح تعديل المؤسسة:', tenantId);
+    try {
+        // جلب جميع المؤسسات
+        const res = await fetchWithAuth('/api/tenants');
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل جلب بيانات المؤسسات');
+        }
+        const allTenants = await res.json();
+        const tenant = allTenants.find(t => t._id === tenantId);
+        if (!tenant) {
+            alert('المؤسسة غير موجودة');
+            return;
+        }
+
+        console.log('✅ تم جلب بيانات المؤسسة:', tenant);
+
+        // تعبئة الحقول
+        const editId = document.getElementById('editTenantId');
+        const editName = document.getElementById('editTenantName');
+        const editAddr = document.getElementById('editTenantAddress');
+        const editPhone = document.getElementById('editTenantPhone');
+        const editEmail = document.getElementById('editTenantEmail');
+        const modal = document.getElementById('editTenantModal');
+
+        if (editId) editId.value = tenant._id;
+        if (editName) editName.value = tenant.name || '';
+        if (editAddr) editAddr.value = tenant.address || '';
+        if (editPhone) editPhone.value = tenant.phone || '';
+        if (editEmail) editEmail.value = tenant.email || '';
+        if (modal) modal.style.display = 'flex';
+
+    } catch (err) {
+        console.error('❌ خطأ في فتح تعديل المؤسسة:', err);
+        alert('خطأ في جلب بيانات المؤسسة: ' + err.message);
+    }
+};
+
+// ==========================================
+// إغلاق نافذة تعديل المؤسسة
+// ==========================================
+const closeEditTenantBtn = document.getElementById('closeEditTenantBtn');
+if (closeEditTenantBtn) {
+    closeEditTenantBtn.addEventListener('click', function() {
+        const modal = document.getElementById('editTenantModal');
+        if (modal) modal.style.display = 'none';
+        console.log('🔴 تم إغلاق نافذة تعديل المؤسسة');
+    });
+}
+
+// إغلاق النافذة عند الضغط خارجها
+const editTenantModal = document.getElementById('editTenantModal');
+if (editTenantModal) {
+    editTenantModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+            console.log('🔴 تم إغلاق نافذة تعديل المؤسسة (خارج)');
+        }
+    });
+}
+
+// ==========================================
+// حفظ تعديلات المؤسسة
+// ==========================================
+const saveEditTenantBtn = document.getElementById('saveEditTenantBtn');
+if (saveEditTenantBtn) {
+    saveEditTenantBtn.addEventListener('click', async function() {
+        console.log('💾 محاولة حفظ تعديلات المؤسسة...');
+        
+        const id = document.getElementById('editTenantId')?.value;
+        const name = document.getElementById('editTenantName')?.value.trim();
+        const address = document.getElementById('editTenantAddress')?.value.trim();
+        const phone = document.getElementById('editTenantPhone')?.value.trim();
+        const email = document.getElementById('editTenantEmail')?.value.trim();
+
+        console.log('📦 البيانات المرسلة:', { id, name, address, phone, email });
+
+        if (!id) {
+            alert('خطأ: لم يتم العثور على معرف المؤسسة');
+            return;
+        }
+
+        if (!name) {
+            alert('اسم المؤسسة مطلوب');
+            return;
+        }
+
+        const confirmed = await showConfirmModal(
+            'تعديل المؤسسة',
+            `هل أنت متأكد من حفظ التعديلات للمؤسسة "${name}"؟`
+        );
+        if (!confirmed) {
+            console.log('❌ تم إلغاء التعديل');
+            return;
+        }
+
+        try {
+            const res = await fetchWithAuth('/api/tenants/' + id, {
+                method: 'PUT',
+                body: JSON.stringify({ name, address, phone, email })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'فشل تحديث المؤسسة');
+            
+            console.log('✅ تم تحديث المؤسسة بنجاح:', data);
+            alert('✅ تم تحديث المؤسسة بنجاح');
+            
+            // إغلاق النافذة
+            const modal = document.getElementById('editTenantModal');
+            if (modal) modal.style.display = 'none';
+            
+            // إعادة تحميل قائمة المؤسسات
+            loadTenants();
+        } catch (err) {
+            console.error('❌ خطأ في حفظ تعديلات المؤسسة:', err);
+            alert('❌ ' + err.message);
+        }
+    });
+}
+
+// ==========================================
 // إضافة مؤسسة جديدة
+// ==========================================
 const saveNewTenantBtn = document.getElementById('saveNewTenantBtn');
 if (saveNewTenantBtn) {
     saveNewTenantBtn.addEventListener('click', async function() {
+        console.log('💾 محاولة إضافة مؤسسة جديدة...');
+        
         const name = document.getElementById('newTenantName')?.value.trim();
         const subdomain = document.getElementById('newTenantSubdomain')?.value.trim();
         const address = document.getElementById('newTenantAddress')?.value.trim();
         const phone = document.getElementById('newTenantPhone')?.value.trim();
         const email = document.getElementById('newTenantEmail')?.value.trim();
         const adminEmail = document.getElementById('newTenantAdminEmail')?.value.trim();
+
+        console.log('📦 بيانات المؤسسة الجديدة:', { name, subdomain, address, phone, email, adminEmail });
 
         if (!name || !subdomain || !adminEmail) {
             alert('اسم المؤسسة، النطاق الفرعي، وبريد المدير مطلوبة');
@@ -1608,7 +1738,10 @@ if (saveNewTenantBtn) {
             'إضافة مؤسسة جديدة',
             `هل أنت متأكد من إضافة المؤسسة "${name}" بالنطاق الفرعي "${subdomain}"؟`
         );
-        if (!confirmed) return;
+        if (!confirmed) {
+            console.log('❌ تم إلغاء الإضافة');
+            return;
+        }
 
         try {
             const res = await fetchWithAuth('/api/tenants', {
@@ -1618,9 +1751,13 @@ if (saveNewTenantBtn) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'فشل إضافة المؤسسة');
             
+            console.log('✅ تم إضافة المؤسسة بنجاح:', data);
             alert('✅ تم إضافة المؤسسة بنجاح');
+            
+            // إغلاق النافذة
             const modal = document.getElementById('addTenantModal');
             if (modal) modal.style.display = 'none';
+            
             // تفريغ الحقول
             const nameInput = document.getElementById('newTenantName');
             const subInput = document.getElementById('newTenantSubdomain');
@@ -1634,94 +1771,11 @@ if (saveNewTenantBtn) {
             if (phoneInput) phoneInput.value = '';
             if (emailInput) emailInput.value = '';
             if (adminInput) adminInput.value = '';
-            loadTenants();
-        } catch (err) {
-            alert('❌ ' + err.message);
-        }
-    });
-}
-
-// ==========================================
-// تعديل مؤسسة
-// ==========================================
-window.editTenant = async function(tenantId) {
-    try {
-        const res = await fetchWithAuth('/api/tenants');
-        if (!res.ok) throw new Error('فشل جلب بيانات المؤسسات');
-        const allTenants = await res.json();
-        const tenant = allTenants.find(t => t._id === tenantId);
-        if (!tenant) {
-            alert('المؤسسة غير موجودة');
-            return;
-        }
-
-        const editId = document.getElementById('editTenantId');
-        const editName = document.getElementById('editTenantName');
-        const editAddr = document.getElementById('editTenantAddress');
-        const editPhone = document.getElementById('editTenantPhone');
-        const editEmail = document.getElementById('editTenantEmail');
-        const modal = document.getElementById('editTenantModal');
-        if (editId) editId.value = tenant._id;
-        if (editName) editName.value = tenant.name || '';
-        if (editAddr) editAddr.value = tenant.address || '';
-        if (editPhone) editPhone.value = tenant.phone || '';
-        if (editEmail) editEmail.value = tenant.email || '';
-        if (modal) modal.style.display = 'flex';
-    } catch (err) {
-        alert('خطأ في جلب بيانات المؤسسة: ' + err.message);
-    }
-};
-
-const closeEditTenantBtn = document.getElementById('closeEditTenantBtn');
-if (closeEditTenantBtn) {
-    closeEditTenantBtn.addEventListener('click', function() {
-        const modal = document.getElementById('editTenantModal');
-        if (modal) modal.style.display = 'none';
-    });
-}
-
-const editTenantModal = document.getElementById('editTenantModal');
-if (editTenantModal) {
-    editTenantModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-        }
-    });
-}
-
-const saveEditTenantBtn = document.getElementById('saveEditTenantBtn');
-if (saveEditTenantBtn) {
-    saveEditTenantBtn.addEventListener('click', async function() {
-        const id = document.getElementById('editTenantId')?.value;
-        const name = document.getElementById('editTenantName')?.value.trim();
-        const address = document.getElementById('editTenantAddress')?.value.trim();
-        const phone = document.getElementById('editTenantPhone')?.value.trim();
-        const email = document.getElementById('editTenantEmail')?.value.trim();
-
-        if (!name) {
-            alert('اسم المؤسسة مطلوب');
-            return;
-        }
-
-        const confirmed = await showConfirmModal(
-            'تعديل المؤسسة',
-            `هل أنت متأكد من حفظ التعديلات للمؤسسة "${name}"؟`
-        );
-        if (!confirmed) return;
-
-        try {
-            const res = await fetchWithAuth('/api/tenants/' + id, {
-                method: 'PUT',
-                body: JSON.stringify({ name, address, phone, email })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'فشل تحديث المؤسسة');
             
-            alert('✅ تم تحديث المؤسسة بنجاح');
-            const modal = document.getElementById('editTenantModal');
-            if (modal) modal.style.display = 'none';
+            // إعادة تحميل قائمة المؤسسات
             loadTenants();
         } catch (err) {
+            console.error('❌ خطأ في إضافة المؤسسة:', err);
             alert('❌ ' + err.message);
         }
     });
@@ -1731,9 +1785,13 @@ if (saveEditTenantBtn) {
 // تبديل حالة المؤسسة (تفعيل/تعطيل)
 // ==========================================
 window.toggleTenantStatus = async function(tenantId) {
+    console.log('🔄 محاولة تغيير حالة المؤسسة:', tenantId);
     try {
         const res = await fetchWithAuth('/api/tenants');
-        if (!res.ok) throw new Error('فشل جلب بيانات المؤسسات');
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل جلب بيانات المؤسسات');
+        }
         const allTenants = await res.json();
         const tenant = allTenants.find(t => t._id === tenantId);
         if (!tenant) {
@@ -1747,7 +1805,10 @@ window.toggleTenantStatus = async function(tenantId) {
             `${statusText} المؤسسة`,
             `هل أنت متأكد من ${statusText} المؤسسة "${tenant.name}"؟`
         );
-        if (!confirmed) return;
+        if (!confirmed) {
+            console.log('❌ تم إلغاء تغيير الحالة');
+            return;
+        }
 
         const updateRes = await fetchWithAuth('/api/tenants/' + tenantId, {
             method: 'PUT',
@@ -1756,9 +1817,11 @@ window.toggleTenantStatus = async function(tenantId) {
         const data = await updateRes.json();
         if (!updateRes.ok) throw new Error(data.message || 'فشل تغيير الحالة');
         
+        console.log(`✅ تم ${statusText} المؤسسة بنجاح`);
         alert(`✅ تم ${statusText} المؤسسة بنجاح`);
         loadTenants();
     } catch (err) {
+        console.error('❌ خطأ في تغيير حالة المؤسسة:', err);
         alert('❌ ' + err.message);
     }
 };
