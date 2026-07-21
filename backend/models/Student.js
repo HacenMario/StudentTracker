@@ -4,6 +4,7 @@ const StudentSchema = new mongoose.Schema({
   studentId: {
     type: String,
     unique: true,
+    // لا نضع required: true لمنع أخطاء التحديث
   },
   name: {
     type: String,
@@ -50,40 +51,17 @@ const StudentSchema = new mongoose.Schema({
   },
 });
 
-// ==========================================
-// حل مشكلة تكرار studentId باستخدام عداد منفصل
-// ==========================================
-
-// إنشاء نموذج منفصل للعداد (سيتم إنشاؤه تلقائياً)
-const CounterSchema = new mongoose.Schema({
-  _id: { type: String, required: true },
-  seq: { type: Number, default: 0 },
-});
-const Counter = mongoose.model('Counter', CounterSchema);
-
-// دالة للحصول على الرقم التسلسلي التالي
-async function getNextSequence(name) {
-  const counter = await Counter.findByIdAndUpdate(
-    name,
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true }
-  );
-  return counter.seq;
-}
-
-// قبل حفظ الطالب، قم بتوليد studentId فريد
+// توليد studentId تلقائياً قبل الحفظ
 StudentSchema.pre('save', async function(next) {
   if (this.isNew && !this.studentId) {
     try {
-      const seq = await getNextSequence('studentId');
-      this.studentId = 'STU-' + String(seq).padStart(4, '0');
-      next();
+      const count = await mongoose.model('Student').countDocuments();
+      this.studentId = 'STU-' + String(count + 1).padStart(4, '0');
     } catch (err) {
-      next(err);
+      return next(err);
     }
-  } else {
-    next();
   }
+  next();
 });
 
 module.exports = mongoose.model('Student', StudentSchema);
