@@ -93,12 +93,33 @@ function switchLanguage(lang) {
     if (lang === currentLanguage) return;
     currentLanguage = lang;
     localStorage.setItem('language', lang);
-    applyTranslationsToAll();
+    
+    // تحديث الاتجاه
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
+    
+    // تحديث الأزرار النشطة
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
     });
+    
+    // ✅ تطبيق الترجمات على العناصر الثابتة
+    applyTranslationsToAll();
+    
+    // ✅ إعادة تحميل المحتوى الديناميكي (الطلاب، السجلات، الإشعارات)
+    if (currentUser) {
+        if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+            loadAdminStudents();
+            loadAdminLogs();
+            loadAdminNotifications();
+        } else {
+            loadParentStudents();
+            loadParentLogs();
+            loadParentNotifications();
+        }
+    }
+    
+    console.log(`🌍 تم تغيير اللغة إلى: ${lang}`);
 }
 
 // تطبيق الترجمات على جميع العناصر
@@ -1019,7 +1040,8 @@ function renderStudents(students, containerId, showAdminControls) {
     }
     let html = '';
     students.forEach(s => {
-        const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
+        // ✅ استخدام translate للحصول على النص المترجم
+        const statusText = s.isInside ? translate('student.inside') : translate('student.outside');
         const statusClass = s.isInside ? 'inside' : 'outside';
         const toggleText = s.isInside ? translate('student.toggle_exit') : translate('student.entry');
         const toggleClass = s.isInside ? 'exit' : 'enter';
@@ -1241,12 +1263,13 @@ async function adminAddStudent() {
 function toggleAddStudentForm() {
     const form = document.getElementById('addStudentForm');
     const btn = document.getElementById('toggleAddStudentBtn');
+    if (!form || !btn) return;
     if (form.style.display === 'none') {
         form.style.display = 'block';
-        btn.innerHTML = '<i class="fas fa-times"></i> إغلاق نموذج الإضافة';
+        btn.innerHTML = `<i class="fas fa-times"></i> ${translate('student.close_form')}`;
     } else {
         form.style.display = 'none';
-        btn.innerHTML = '<i class="fas fa-plus-circle"></i> إضافة طالب جديد';
+        btn.innerHTML = `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
     }
 }
 
@@ -1298,8 +1321,11 @@ function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const time = formatFullTime(date || new Date());
+    
     // ✅ ترجمة الرسالة إذا كانت قابلة للترجمة
     let translatedMessage = message;
+    
+    // التحقق من الرسائل المعروفة وترجمتها
     if (message.includes('تم تغيير حالة جميع الطلاب إلى داخل')) {
         translatedMessage = translate('attendance.all_students_inside');
     } else if (message.includes('تم تغيير حالة جميع الطلاب إلى خارج')) {
@@ -1310,6 +1336,20 @@ function addLog(message, date, containerId) {
     } else if (message.includes('التلميذ') && message.includes('أصبح خارج')) {
         const name = message.match(/التلميذ (.*?) أصبح/)?.[1] || '';
         translatedMessage = translate('attendance.student_became_outside', { name });
+    } else if (message.includes('تم حذف تلميذ')) {
+        translatedMessage = translate('attendance.student_deleted');
+    } else if (message.includes('تم إضافة الطالب')) {
+        const name = message.match(/تم إضافة الطالب (.*)/)?.[1] || '';
+        translatedMessage = translate('attendance.student_added', { name });
+    } else if (message.includes('تم تعديل معلومات الطالب')) {
+        const name = message.match(/تم تعديل معلومات الطالب (.*)/)?.[1] || '';
+        translatedMessage = translate('attendance.student_updated', { name });
+    } else if (message.includes('تم تغيير حالة الطالب')) {
+        translatedMessage = translate('attendance.student_toggled');
+    } else if (message.includes('تم إرسال إشعار عام')) {
+        translatedMessage = translate('notification.sent_general');
+    } else if (message.includes('تم إرسال إشعار خاص')) {
+        translatedMessage = translate('notification.sent_private');
     }
 
     const logEntry = { message: translatedMessage, time, date: date || new Date() };
@@ -1336,7 +1376,7 @@ function renderAdminLogs(showOld) {
     document.getElementById('adminShowAllLogsBtn').style.display = 'none';
 
     if (adminLogs.length === 0) {
-        container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد نشاطات بعد</div>';
+        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center;">${translate('attendance.no_logs')}</div>`;
         return;
     }
 
@@ -1437,7 +1477,7 @@ function renderParentLogs(showOld) {
     document.getElementById('parentHideOldLogsBtn').style.display = 'none';
 
     if (parentLogs.length === 0) {
-        container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد سجلات بعد</div>';
+        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center;">${translate('attendance.no_logs')}</div>`;
         return;
     }
 
@@ -1467,17 +1507,15 @@ function renderParentLogs(showOld) {
     logsToShow.forEach(log => {
         const item = document.createElement('div');
         item.className = 'log-item';
-        const displayMessage = log.studentName ? `${log.studentName}: ${log.message}` : log.message;
-        item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${log.time}</span>`;
+        item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
         container.appendChild(item);
     });
-}
 
     if (showOld && oldLogs.length > 0) {
         const divider = document.createElement('div');
         divider.className = 'log-item';
         divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-        divider.textContent = '📜 السجل السابق';
+        divider.textContent = translate('attendance.old_logs');
         container.appendChild(divider);
     }
 }
