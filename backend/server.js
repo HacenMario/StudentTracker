@@ -62,7 +62,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
 }
 
 // ==========================================
-// دالة إرسال إشعارات Web Push (محسّنة مع تشخيص)
+// دالة إرسال إشعارات Web Push
 // ==========================================
 async function sendPushNotification(title, body, data = {}, targetEmail = null) {
   try {
@@ -71,37 +71,16 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
       return;
     }
 
-    // بناء الفلتر
     let filter = {};
-    let logMessage = '';
-
     if (targetEmail) {
-      // ✅ البحث بالبريد الإلكتروني (أولوية)
-      filter.userEmail = targetEmail;
-      logMessage = `للبريد: ${targetEmail}`;
+      filter = { userEmail: targetEmail };
     } else {
-      // بدون فلتر -> الإشعار العام للجميع
       filter = {};
-      logMessage = 'لجميع المشتركين';
     }
 
-    console.log(`📨 [بدء] إرسال إشعار: "${title}" - ${logMessage}`);
-
     const subscriptions = await Subscription.find(filter);
-    
-    // ✅ تشخيص إضافي: عرض عدد المشتركين الذين تم العثور عليهم
-    console.log(`🔍 تم العثور على ${subscriptions.length} مشترك ${targetEmail ? 'لهذا البريد' : 'في النظام'}`);
-
     if (subscriptions.length === 0) {
-      // ❌ لم نجد مشتركين، نعرض معلومات إضافية
-      if (targetEmail) {
-        // نتحقق من وجود أي اشتراك في النظام للمساعدة في التشخيص
-        const allSubs = await Subscription.find();
-        console.log(`📊 إجمالي المشتركين في النظام: ${allSubs.length}`);
-        if (allSubs.length > 0) {
-          console.log('📊 بريد أول مشترك:', allSubs[0].userEmail);
-        }
-      }
+      console.log(`📭 لا يوجد مشتركين ${targetEmail ? 'للبريد: ' + targetEmail : ''}`);
       return;
     }
 
@@ -114,7 +93,8 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
       url: data.url || '/',
     });
 
-    // ✅ إرسال لكل مشترك
+    console.log(`📨 جاري إرسال الإشعار إلى ${subscriptions.length} مشترك`);
+
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
         const pushSubscription = {
@@ -122,11 +102,10 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
           keys: sub.keys,
         };
         await webpush.sendNotification(pushSubscription, payload);
-        console.log(`✅ تم إرسال الإشعار إلى مشترك (بريد: ${sub.userEmail})`);
+        console.log(`✅ تم إرسال الإشعار إلى ${sub.endpoint.substring(0, 30)}...`);
       })
     );
 
-    // معالجة النتائج
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
         const error = result.reason;
@@ -143,16 +122,13 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
         }
       }
     });
-
-    console.log(`✅ [انتهى] إرسال الإشعارات لـ ${logMessage}`);
-
   } catch (err) {
     console.error('❌ خطأ في إرسال الإشعارات:', err);
   }
 }
 
 // ==========================================
-// Socket.io
+// Socket.io مع التحقق من التوكن وتخزين المستخدمين
 // ==========================================
 const userSockets = new Map();
 
@@ -174,25 +150,29 @@ io.on('connection', (socket) => {
   console.log(`🟢 عميل متصل: ${userEmail} (الدور: ${socket.user.role})`);
 
   // ----------------------
-  // 1. تبديل حالة الطالب (للمدير)
+  // 1. تبديل حالة الطالب (للمدير) - مع إرسال الإشعار للجميع مؤقتاً
   // ----------------------
   socket.on('toggle-status', async (studentId) => {
+    // التحقق من صلاحية المدير
     if (socket.user.role !== 'admin') {
       socket.emit('error', { message: 'غير مصرح لك' });
       return;
     }
 
     try {
+      // 1. جلب الطالب
       const student = await Student.findById(studentId);
       if (!student) {
         socket.emit('error', { message: 'الطالب غير موجود' });
         return;
       }
 
+      // 2. تغيير الحالة
       student.isInside = !student.isInside;
       student.lastUpdate = new Date();
       await student.save();
 
+      // 3. تسجيل الحضور
       const attendance = new Attendance({
         student: student._id,
         status: student.isInside ? 'in' : 'out',
@@ -200,10 +180,11 @@ io.on('connection', (socket) => {
       });
       await attendance.save();
 
+      // 4. تحضير الرسالة
       const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
       const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-      // بث التحديث لجميع العملاء عبر Socket
+      // 5. بث التحديث عبر Socket
       io.emit('status-changed', {
         student: student,
         message: message,
@@ -211,34 +192,29 @@ io.on('connection', (socket) => {
         parentEmail: student.parentEmail,
       });
 
-      // ✅ إرسال إشعار Web Push لولي الأمر
+      // 6. إرسال إشعار Web Push (للجميع مؤقتاً للاختبار)
+      console.log(`📤 محاولة إرسال إشعار تغيير حالة (للجميع) للطالب: ${student.name}`);
+      await sendPushNotification(
+        'تحديث حالة ابنك (اختبار)',
+        message,
+        { url: '/parent-dashboard' },
+        null // إرسال للجميع
+      );
+
+      // (يمكنك إعادة تفعيل الإرسال للبريد المحدد بعد التأكد من عمل الإشعارات)
+      /*
       if (student.parentEmail) {
-        console.log(`📤 محاولة إرسال إشعار تغيير حالة إلى البريد: "${student.parentEmail}"`);
-        
-        // ✅ نرسل الإشعار مع تحديد البريد الإلكتروني
         await sendPushNotification(
           'تحديث حالة ابنك',
           message,
           { url: '/parent-dashboard' },
           student.parentEmail
         );
-        
-        // ✅ كحل احتياطي: إذا لم يكن هناك اشتراك، نرسل للجميع (اختياري)
-        // جلب الاشتراكات للتحقق
-console.log(`📤 محاولة إرسال إشعار تغيير حالة (للجميع) للطالب: ${student.name}`);
-await sendPushNotification(
-  'تحديث حالة ابنك (اختبار)',
-  message,
-  { url: '/parent-dashboard' },
-  null // ✅ إرسال للجميع بدلاً من البريد المحدد
-);
-        }
-      } else {
-        console.warn(`⚠️ الطالب ${student.name} ليس له بريد ولي أمر، لم يتم إرسال إشعار`);
       }
+      */
 
     } catch (error) {
-      console.error(error);
+      console.error('❌ خطأ في تغيير حالة الطالب:', error);
       socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
     }
   });
@@ -256,13 +232,12 @@ await sendPushNotification(
       });
       await notification.save();
 
-      io.emit('notification', { 
-        message: data.message, 
+      io.emit('notification', {
+        message: data.message,
         notificationId: notification._id,
-        createdAt: notification.createdAt 
+        createdAt: notification.createdAt
       });
 
-      // إرسال للجميع
       await sendPushNotification(
         '📢 إشعار من المدرسة',
         data.message,
@@ -271,7 +246,6 @@ await sendPushNotification(
       );
 
       console.log(`📢 تم إرسال إشعار عام: ${data.message}`);
-
     } catch (err) {
       console.error(err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار العام' });
@@ -302,19 +276,19 @@ await sendPushNotification(
 
       const targetSocketId = userSockets.get(parentEmail);
       if (targetSocketId) {
-        io.to(targetSocketId).emit('notification', { 
-          message, 
+        io.to(targetSocketId).emit('notification', {
+          message,
           notificationId: notification._id,
-          createdAt: notification.createdAt 
+          createdAt: notification.createdAt
         });
-        socket.emit('notification-sent', { 
-          parentEmail, 
-          message: message + ' (تم الإرسال فوراً)' 
+        socket.emit('notification-sent', {
+          parentEmail,
+          message: message + ' (تم الإرسال فوراً)'
         });
       } else {
-        socket.emit('notification-sent', { 
-          parentEmail, 
-          message: message + ' (تم الحفظ، سيظهر عند تسجيل الدخول)' 
+        socket.emit('notification-sent', {
+          parentEmail,
+          message: message + ' (تم الحفظ، سيظهر عند تسجيل الدخول)'
         });
       }
 
@@ -324,7 +298,6 @@ await sendPushNotification(
         { url: '/parent-dashboard' },
         parentEmail
       );
-
     } catch (err) {
       console.error(err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار الخاص' });
@@ -362,7 +335,7 @@ await sendPushNotification(
 
       const statusText = newStatus ? 'داخل 🏫' : 'خارج 🚪';
       const message = `تم تغيير حالة جميع الطلاب إلى ${statusText}`;
-      
+
       io.emit('status-changed', {
         message: message,
         isBulk: true,
@@ -377,13 +350,15 @@ await sendPushNotification(
           email
         );
       }
-
     } catch (error) {
       console.error(error);
       socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
     }
   });
 
+  // ----------------------
+  // 5. انقطاع الاتصال
+  // ----------------------
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
     console.log(`🔴 عميل غير متصل: ${userEmail}`);
@@ -391,7 +366,7 @@ await sendPushNotification(
 });
 
 // ==========================================
-// الاتصال بقاعدة البيانات
+// الاتصال بقاعدة البيانات وبدء الخادم
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
