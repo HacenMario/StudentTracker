@@ -24,6 +24,8 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 const app = express();
 const server = http.createServer(app);
+
+// ✅ تعريف io هنا (يجب أن يكون قبل أي استخدام له)
 const io = socketIo(server, {
   cors: {
     origin: "*",
@@ -150,29 +152,25 @@ io.on('connection', (socket) => {
   console.log(`🟢 عميل متصل: ${userEmail} (الدور: ${socket.user.role})`);
 
   // ----------------------
-  // 1. تبديل حالة الطالب (للمدير) - مع إرسال الإشعار للجميع مؤقتاً
+  // 1. تبديل حالة الطالب (للمدير)
   // ----------------------
   socket.on('toggle-status', async (studentId) => {
-    // التحقق من صلاحية المدير
     if (socket.user.role !== 'admin') {
       socket.emit('error', { message: 'غير مصرح لك' });
       return;
     }
 
     try {
-      // 1. جلب الطالب
       const student = await Student.findById(studentId);
       if (!student) {
         socket.emit('error', { message: 'الطالب غير موجود' });
         return;
       }
 
-      // 2. تغيير الحالة
       student.isInside = !student.isInside;
       student.lastUpdate = new Date();
       await student.save();
 
-      // 3. تسجيل الحضور
       const attendance = new Attendance({
         student: student._id,
         status: student.isInside ? 'in' : 'out',
@@ -180,11 +178,10 @@ io.on('connection', (socket) => {
       });
       await attendance.save();
 
-      // 4. تحضير الرسالة
       const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
       const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-      // 5. بث التحديث عبر Socket
+      // ✅ استخدام io هنا (متاح من النطاق الأعلى)
       io.emit('status-changed', {
         student: student,
         message: message,
@@ -192,29 +189,16 @@ io.on('connection', (socket) => {
         parentEmail: student.parentEmail,
       });
 
-      // 6. إرسال إشعار Web Push (للجميع مؤقتاً للاختبار)
-      console.log(`📤 محاولة إرسال إشعار تغيير حالة (للجميع) للطالب: ${student.name}`);
+      console.log(`📤 محاولة إرسال إشعار تغيير حالة للطالب: ${student.name}`);
       await sendPushNotification(
-        'تحديث حالة ابنك (اختبار)',
+        'تحديث حالة ابنك',
         message,
         { url: '/parent-dashboard' },
-        null // إرسال للجميع
+        student.parentEmail || null
       );
 
-      // (يمكنك إعادة تفعيل الإرسال للبريد المحدد بعد التأكد من عمل الإشعارات)
-      /*
-      if (student.parentEmail) {
-        await sendPushNotification(
-          'تحديث حالة ابنك',
-          message,
-          { url: '/parent-dashboard' },
-          student.parentEmail
-        );
-      }
-      */
-
     } catch (error) {
-      console.error('❌ خطأ في تغيير حالة الطالب:', error);
+      console.error(error);
       socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
     }
   });
@@ -341,7 +325,6 @@ io.on('connection', (socket) => {
         isBulk: true,
       });
 
-      // إرسال إشعار لكل ولي أمر
       for (const email of updatedParents) {
         await sendPushNotification(
           'تحديث جماعي',
@@ -356,9 +339,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ----------------------
-  // 5. انقطاع الاتصال
-  // ----------------------
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
     console.log(`🔴 عميل غير متصل: ${userEmail}`);
@@ -366,7 +346,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// الاتصال بقاعدة البيانات وبدء الخادم
+// الاتصال بقاعدة البيانات
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
