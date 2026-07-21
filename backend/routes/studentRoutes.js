@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
+const { sendPushNotificationToAll } = require('../utils/notifications');
 
 // استيراد مكتبة QR Code مع التحقق من وجودها
 let QRCode;
@@ -84,7 +85,7 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     });
     await attendance.save();
 
-    // **إرسال الإشعارات (بثلاث طرق)**
+    // **إرسال الإشعارات (بنفس طريقة الإشعارات العامة)**
     const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
     const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
@@ -107,9 +108,7 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       parentEmail: student.parentEmail,
     });
 
-    // 3. إرسال Web Push لجميع المشتركين (كما تفعل الإشعارات العامة)
-    // نستدعي الدالة التي تعمل بنجاح في الإشعارات العامة
-    const { sendPushNotificationToAll } = require('../server'); // أو ننقل الدالة إلى ملف منفصل
+    // 3. إرسال Web Push لجميع المشتركين (نفس طريقة الإشعارات العامة)
     await sendPushNotificationToAll(
       'تحديث حالة ابنك',
       message,
@@ -118,9 +117,12 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
 
     res.json(student);
   } catch (err) {
+    console.error('❌ خطأ في تغيير حالة الطالب:', err);
     res.status(500).json({ message: err.message });
   }
 });
+
+module.exports = router;
 
 // ==========================================
 // 4. حذف طالب (للمدير فقط)
