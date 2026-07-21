@@ -6,7 +6,7 @@ const Attendance = require('../models/Attendance');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
-const { sendPushNotificationToParent } = require('../utils/notifications'); // ✅ استيراد الدالة الجديدة
+const { sendPushNotificationToAll } = require('../utils/notifications');
 const QRCode = require('qrcode');
 
 // ==========================================
@@ -58,7 +58,7 @@ router.post('/', auth, isAdmin, async (req, res) => {
 });
 
 // ==========================================
-// 3. تبديل حالة الطالب (للمدير فقط) - مع الإشعارات
+// 3. تبديل حالة الطالب (للمدير فقط)
 // ==========================================
 router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
   try {
@@ -67,12 +67,10 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       return res.status(404).json({ message: 'الطالب غير موجود' });
     }
 
-    // تغيير الحالة
     student.isInside = !student.isInside;
     student.lastUpdate = new Date();
     await student.save();
 
-    // تسجيل في Attendance
     const attendance = new Attendance({
       student: student._id,
       status: student.isInside ? 'in' : 'out',
@@ -83,7 +81,6 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
     const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-    // 1️⃣ حفظ الإشعار في قاعدة البيانات (موجه لولي الأمر)
     if (student.parentEmail) {
       const notification = new Notification({
         target: student.parentEmail,
@@ -93,7 +90,6 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       await notification.save();
     }
 
-    // 2️⃣ بث عبر Socket.io
     const io = req.app.get('io');
     io.emit('status-changed', {
       student: student,
@@ -102,15 +98,11 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       parentEmail: student.parentEmail,
     });
 
-    // 3️⃣ إرسال Web Push لولي الأمر فقط ✅ (تم التعديل هنا)
-    if (student.parentEmail) {
-      await sendPushNotificationToParent(
-        'تحديث حالة ابنك',
-        message,
-        { url: '/parent-dashboard' },
-        student.parentEmail // ✅ نرسل فقط لهذا البريد
-      );
-    }
+    await sendPushNotificationToAll(
+      'تحديث حالة ابنك',
+      message,
+      { url: '/parent-dashboard' }
+    );
 
     res.json(student);
   } catch (err) {
@@ -213,7 +205,7 @@ router.post('/scan-qr', auth, async (req, res) => {
 });
 
 // ==========================================
-// 7. تحميل QR Code كصورة (مع ترميز اسم الملف)
+// 7. تحميل QR Code كصورة
 // ==========================================
 router.get('/:id/qr', auth, async (req, res) => {
   try {
@@ -239,9 +231,8 @@ router.get('/:id/qr', auth, async (req, res) => {
       errorCorrectionLevel: 'H',
     });
 
-    // ✅ تصحيح اسم الملف الذي يحتوي على أحرف عربية
     const fileName = `QR_${student.name}_${student.studentId}.png`;
-    const encodedFileName = encodeURIComponent(fileName); // ترميز اسم الملف
+    const encodedFileName = encodeURIComponent(fileName);
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
@@ -253,6 +244,34 @@ router.get('/:id/qr', auth, async (req, res) => {
       message: 'فشل توليد QR Code', 
       error: err.message,
     });
+  }
+});
+
+// ==========================================
+// 8. تعديل معلومات الطالب (للمدير فقط) - ✅ تمت الإضافة
+// ==========================================
+router.put('/:id', auth, isAdmin, async (req, res) => {
+  try {
+    const { name, parentName, parentPhone, parentEmail, address } = req.body;
+
+    const student = await Student.findById(req.params.id);
+    if (!student) {
+      return res.status(404).json({ message: 'الطالب غير موجود' });
+    }
+
+    // تحديث الحقول
+    student.name = name || student.name;
+    student.parentName = parentName || student.parentName;
+    student.parentPhone = parentPhone || student.parentPhone;
+    student.parentEmail = parentEmail || student.parentEmail;
+    student.address = address || student.address;
+
+    await student.save();
+
+    res.json({ message: 'تم تحديث معلومات الطالب بنجاح', student });
+  } catch (err) {
+    console.error('❌ خطأ في تعديل الطالب:', err);
+    res.status(500).json({ message: err.message });
   }
 });
 
