@@ -183,3 +183,27 @@
     "toggle_exit": "تسجيل خروج"
   }
 }
+{
+  "student": {
+    "inside": "داخل 🏫",
+    "outside": "خارج 🚪",
+    "toggle_exit": "تسجيل خروج",
+    "entry": "دخول",
+    "parent_name": "ولي الأمر",
+    "no_students": "📭 لا يوجد تلاميذ",
+    "last_update": "آخر تحديث"
+  },
+  "attendance": {
+    "last_entry_exit": "آخر دخول/خروج"
+  },
+  "bulk": {
+    "all_inside": "تغيير الكل إلى داخل",
+    "confirm": "هل أنت متأكد من تغيير حالة جميع الطلاب إلى {status}؟"
+  },
+  "common": {
+    "delete": "حذف",
+    "edit": "تعديل",
+    "qr": "QR",
+    "error": "حدث خطأ"
+  }
+}
