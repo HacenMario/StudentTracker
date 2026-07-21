@@ -64,7 +64,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
 }
 
 // ==========================================
-// دالة إرسال إشعارات Web Push (محسّنة مع تشخيص متقدم)
+// دالة إرسال إشعارات Web Push (محسّنة)
 // ==========================================
 async function sendPushNotification(title, body, data = {}, targetEmail = null) {
   try {
@@ -74,23 +74,19 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
     }
 
     let filter = {};
-    let logMessage = '';
-
     if (targetEmail) {
-      // نبحث بالبريد أو بالدور 'parent' (مرونة أكبر)
+      // نبحث بالبريد أو بالدور 'parent'
       filter = {
         $or: [
           { userEmail: targetEmail },
           { role: 'parent' }
         ]
       };
-      logMessage = `للبريد: ${targetEmail} (أو لأولياء الأمور)`;
+      console.log(`📨 إرسال إشعار للبريد: ${targetEmail} (أو لأولياء الأمور)`);
     } else {
       filter = {};
-      logMessage = 'لجميع المشتركين';
+      console.log(`📨 إرسال إشعار لجميع المشتركين`);
     }
-
-    console.log(`📨 [بدء] إرسال إشعار: "${title}" - ${logMessage}`);
 
     const subscriptions = await Subscription.find(filter);
     console.log(`📊 عدد المشتركين الذين تم العثور عليهم: ${subscriptions.length}`);
@@ -98,7 +94,7 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
     if (subscriptions.length === 0) {
       console.warn(`⚠️ لا يوجد مشتركين ${targetEmail ? 'للبريد: ' + targetEmail : ''}`);
       
-      // كحل أخير: إذا كان هناك بريد محدد ولم نجد اشتراكاً، نرسل للجميع
+      // كحل أخير: نرسل للجميع
       if (targetEmail) {
         console.log(`🔄 محاولة إرسال الإشعار لجميع المشتركين (كحل بديل)`);
         const allSubs = await Subscription.find({});
@@ -126,7 +122,6 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
       url: data.url || '/',
     });
 
-    // إرسال الإشعار لكل مشترك
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
         const pushSubscription = {
@@ -138,7 +133,6 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
       })
     );
 
-    // معالجة النتائج وحذف الاشتراكات المنتهية
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
         const error = result.reason;
@@ -186,7 +180,7 @@ io.on('connection', (socket) => {
   console.log(`🟢 عميل متصل: ${userEmail} (الدور: ${socket.user.role})`);
 
   // ----------------------
-  // 1. تبديل حالة الطالب (للمدير)
+  // 1. تبديل حالة الطالب (للمدير) - الحل النهائي
   // ----------------------
   socket.on('toggle-status', async (studentId) => {
     if (socket.user.role !== 'admin') {
@@ -201,10 +195,12 @@ io.on('connection', (socket) => {
         return;
       }
 
+      // تغيير الحالة
       student.isInside = !student.isInside;
       student.lastUpdate = new Date();
       await student.save();
 
+      // تسجيل الحضور
       const attendance = new Attendance({
         student: student._id,
         status: student.isInside ? 'in' : 'out',
@@ -215,7 +211,7 @@ io.on('connection', (socket) => {
       const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
       const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-      // بث التحديث عبر Socket
+      // 1️⃣ بث التحديث عبر Socket (لجميع العملاء)
       io.emit('status-changed', {
         student: student,
         message: message,
@@ -223,36 +219,36 @@ io.on('connection', (socket) => {
         parentEmail: student.parentEmail,
       });
 
-      // ✅ إرسال إشعار Web Push (محاولة للبريد المحدد، ثم للجميع كحل احتياطي)
+      // 2️⃣ إنشاء إشعار في قاعدة البيانات (موجه لولي الأمر)
       if (student.parentEmail) {
-        console.log(`📤 محاولة إرسال إشعار تغيير حالة للبريد: ${student.parentEmail}`);
-        await sendPushNotification(
-          'تحديث حالة ابنك',
-          message,
-          { url: '/parent-dashboard' },
-          student.parentEmail
-        );
-      } else {
-        console.log(`📤 إرسال إشعار تغيير حالة لجميع المشتركين (بدون بريد محدد)`);
-        await sendPushNotification(
-          'تحديث حالة ابنك',
-          message,
-          { url: '/parent-dashboard' },
-          null
-        );
-      }
+        const notification = new Notification({
+          target: student.parentEmail, // الإشعار خاص بولي الأمر
+          message: message,
+          sender: 'Admin',
+        });
+        await notification.save();
 
-      // ✅ إرسال إشعار عبر Socket للمستخدم المتصل (إذا كان موجوداً)
-      if (student.parentEmail) {
+        // 3️⃣ إرسال الإشعار عبر Socket للمستخدم المتصل (إن وجد)
         const targetSocketId = userSockets.get(student.parentEmail);
         if (targetSocketId) {
           io.to(targetSocketId).emit('notification', {
             message: message,
-            notificationId: 'socket-' + Date.now(),
-            createdAt: new Date(),
+            notificationId: notification._id,
+            createdAt: notification.createdAt,
           });
           console.log(`✅ تم إرسال الإشعار عبر Socket إلى ${student.parentEmail}`);
         }
+
+        // 4️⃣ إرسال إشعار Web Push لولي الأمر
+        console.log(`📤 محاولة إرسال إشعار Web Push لولي الأمر: ${student.parentEmail}`);
+        await sendPushNotification(
+          'تحديث حالة ابنك',
+          message,
+          { url: '/parent-dashboard', notificationId: notification._id.toString() },
+          student.parentEmail
+        );
+      } else {
+        console.warn(`⚠️ الطالب ${student.name} ليس له بريد ولي أمر، لم يتم إنشاء إشعار`);
       }
 
     } catch (error) {
@@ -277,10 +273,9 @@ io.on('connection', (socket) => {
       io.emit('notification', {
         message: data.message,
         notificationId: notification._id,
-        createdAt: notification.createdAt
+        createdAt: notification.createdAt,
       });
 
-      // إرسال إشعار Web Push لجميع المشتركين
       await sendPushNotification(
         '📢 إشعار من المدرسة',
         data.message,
@@ -322,20 +317,19 @@ io.on('connection', (socket) => {
         io.to(targetSocketId).emit('notification', {
           message,
           notificationId: notification._id,
-          createdAt: notification.createdAt
+          createdAt: notification.createdAt,
         });
         socket.emit('notification-sent', {
           parentEmail,
-          message: message + ' (تم الإرسال فوراً)'
+          message: message + ' (تم الإرسال فوراً)',
         });
       } else {
         socket.emit('notification-sent', {
           parentEmail,
-          message: message + ' (تم الحفظ، سيظهر عند تسجيل الدخول)'
+          message: message + ' (تم الحفظ، سيظهر عند تسجيل الدخول)',
         });
       }
 
-      // إرسال إشعار Web Push لولي الأمر المحدد
       await sendPushNotification(
         '📩 إشعار خاص من المدرسة',
         message,
@@ -385,8 +379,15 @@ io.on('connection', (socket) => {
         isBulk: true,
       });
 
-      // إرسال إشعار لكل ولي أمر
+      // إنشاء إشعارات لكل ولي أمر وإرسالها
       for (const email of updatedParents) {
+        const notification = new Notification({
+          target: email,
+          message: message,
+          sender: 'Admin',
+        });
+        await notification.save();
+
         await sendPushNotification(
           'تحديث جماعي',
           message,
