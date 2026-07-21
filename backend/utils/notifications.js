@@ -54,7 +54,7 @@ async function sendPushNotificationToAll(title, body, data = {}) {
   }
 }
 
-// ✅ دالة جديدة لإرسال إشعار لولي أمر محدد فقط
+// دالة لإرسال إشعار لولي أمر محدد فقط
 async function sendPushNotificationToParent(title, body, data = {}, parentEmail) {
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
@@ -85,9 +85,6 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
       url: data.url || '/',
     });
 
-    console.log(`📨 جاري إرسال إشعار خاص لـ ${parentEmail}`);
-
-    let successCount = 0;
     for (const sub of subscriptions) {
       try {
         const pushSubscription = {
@@ -95,8 +92,7 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
           keys: sub.keys,
         };
         await webpush.sendNotification(pushSubscription, payload);
-        console.log(`✅ تم إرسال الإشعار إلى مشترك (بريد: ${sub.userEmail})`);
-        successCount++;
+        console.log(`✅ تم إرسال الإشعار إلى ${sub.userEmail}`);
       } catch (err) {
         console.error(`❌ فشل إرسال الإشعار:`, err.message);
         if (err.statusCode === 410 || err.statusCode === 404) {
@@ -105,9 +101,6 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
         }
       }
     }
-
-    console.log(`✅ انتهى إرسال الإشعار الخاص (نجح ${successCount} من ${subscriptions.length})`);
-
   } catch (err) {
     console.error('❌ خطأ في إرسال الإشعار الخاص:', err);
   }
