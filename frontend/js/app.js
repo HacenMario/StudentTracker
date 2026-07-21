@@ -1,7 +1,10 @@
 // ==========================================
-// 1. رابط الخادم
+// 1. رابط الخادم (تلقائي حسب البيئة)
 // ==========================================
-const API_BASE_URL = 'https://studenttracker-zgom.onrender.com';
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = isLocal 
+    ? 'http://localhost:5000' 
+    : 'https://studenttracker-zgom.onrender.com'; // رابط Render الخاص بك
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
@@ -87,11 +90,23 @@ document.getElementById('modalCancelBtn').addEventListener('click', function() {
 // ==========================================
 // 5. دوال المصادقة
 // ==========================================
+// ==========================================
+// 5. دوال المصادقة (مع إشعارات الهاتف)
+// ==========================================
 function saveAuth(data) {
     token = data.token;
     currentUser = data.user;
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(currentUser));
+    
+    // ✅ طلب إذن الإشعارات وتسجيل الاشتراك بعد تسجيل الدخول
+    if (currentUser) {
+        // ننتظر قليلاً حتى يتم تحميل الصفحة بالكامل
+        setTimeout(() => {
+            requestNotificationPermission();
+        }, 1500);
+    }
+
     if (currentUser.role === 'admin') {
         showAdminDashboard();
     } else {
@@ -100,13 +115,25 @@ function saveAuth(data) {
 }
 
 function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    token = null;
-    currentUser = null;
-    if (socket) { socket.disconnect(); socket = null; }
-    closeScanner();
-    showLogin();
+    // إلغاء الاشتراك أولاً (يحتاج توكن صالح)
+    unsubscribeFromPush()
+        .then(() => {
+            console.log('✅ تم إلغاء الاشتراك بنجاح');
+        })
+        .catch(err => {
+            // هذا الخطأ غير حرج، نستمر في عملية الخروج
+            console.warn('⚠️ فشل إلغاء الاشتراك (غير حرج):', err);
+        })
+        .finally(() => {
+            // تنظيف البيانات بغض النظر عن نتيجة إلغاء الاشتراك
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            token = null;
+            currentUser = null;
+            if (socket) { socket.disconnect(); socket = null; }
+            closeScanner();
+            showLogin();
+        });
 }
 
 function showLogin() {
@@ -114,6 +141,181 @@ function showLogin() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'none';
+}
+
+// ==========================================
+// دوال إشعارات الهاتف (Web Push)
+// ==========================================
+
+// طلب إذن الإشعارات وتسجيل الاشتراك
+async function requestNotificationPermission() {
+    // التحقق من توفر Service Worker
+    if (!('serviceWorker' in navigator)) {
+        console.warn('⚠️ Service Worker غير مدعوم في هذا المتصفح');
+        return false;
+    }
+
+    if (!('Notification' in window)) {
+        console.warn('⚠️ هذا المتصفح لا يدعم الإشعارات');
+        return false;
+    }
+
+    // التحقق من وجود مستخدم مسجل الدخول
+    if (!currentUser) {
+        console.warn('⚠️ لا يوجد مستخدم مسجل الدخول');
+        return false;
+    }
+
+    if (Notification.permission === 'granted') {
+        console.log('✅ الإذن موجود مسبقاً');
+        await subscribeToPush();
+        return true;
+    }
+
+    if (Notification.permission === 'denied') {
+        console.warn('⚠️ تم رفض إذن الإشعارات مسبقاً');
+        return false;
+    }
+
+    // طلب الإذن من المستخدم
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            console.log('✅ تم منح الإذن');
+            await subscribeToPush();
+            return true;
+        } else {
+            console.warn('⚠️ تم رفض الإذن');
+            return false;
+        }
+    } catch (err) {
+        console.error('❌ خطأ في طلب الإذن:', err);
+        return false;
+    }
+}
+
+// تسجيل الاشتراك في الخادم
+async function subscribeToPush() {
+    try {
+        // التأكد من جاهزية Service Worker
+        const registration = await navigator.serviceWorker.ready;
+        
+        // الحصول على المفتاح العام من VAPID
+        // ⚠️ استبدل هذا المفتاح بالمفتاح العام من ملف .env الخاص بك
+        const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
+        const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+        // محاولة الحصول على اشتراك موجود
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            console.log('✅ اشتراك موجود مسبقاً');
+            // يمكننا إعادة استخدامه أو تحديثه
+            // نتحقق من صحة المفاتيح
+            const existingKeys = subscription.toJSON();
+            if (existingKeys.keys && existingKeys.keys.p256dh) {
+                // الاشتراك صحيح، نرسله للخادم للتأكد من تسجيله
+                await sendSubscriptionToServer(subscription);
+                return subscription;
+            }
+            // إذا كان غير صحيح، نلغي الاشتراك القديم ونسجل جديداً
+            await subscription.unsubscribe();
+            console.log('🔄 تم إلغاء الاشتراك القديم، نسجل اشتراكاً جديداً');
+        }
+
+        // إنشاء اشتراك جديد
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedKey,
+        });
+
+        console.log('✅ اشتراك جديد تم إنشاؤه');
+
+        // إرسال الاشتراك إلى الخادم
+        await sendSubscriptionToServer(subscription);
+        
+        return subscription;
+    } catch (err) {
+        console.error('❌ فشل الاشتراك في Push:', err);
+        return null;
+    }
+}
+
+// إرسال الاشتراك إلى الخادم
+async function sendSubscriptionToServer(subscription) {
+    try {
+        const payload = {
+            subscription: {
+                endpoint: subscription.endpoint,
+                keys: {
+                    p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
+                    auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))),
+                },
+            },
+            userEmail: currentUser ? currentUser.email : null,
+            role: currentUser ? currentUser.role : null,
+        };
+
+        const res = await fetchWithAuth('/api/subscriptions/subscribe', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+            console.log('✅ تم تسجيل الاشتراك في الخادم');
+        } else {
+            const error = await res.json();
+            console.warn('❌ فشل تسجيل الاشتراك في الخادم:', error.message);
+        }
+    } catch (err) {
+        console.error('❌ خطأ في إرسال الاشتراك:', err);
+    }
+}
+
+// تحويل المفتاح العام من Base64 إلى Uint8Array
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+// إلغاء الاشتراك من الإشعارات
+async function unsubscribeFromPush() {
+    try {
+        // إذا لم يكن هناك توكن، لا نحتاج لإلغاء الاشتراك
+        if (!token) {
+            console.log('ℹ️ لا يوجد توكن، تخطي إلغاء الاشتراك');
+            return;
+        }
+
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            await subscription.unsubscribe();
+            console.log('✅ تم إلغاء الاشتراك من Push');
+            
+            // إعلام الخادم بحذف الاشتراك (فقط إذا كان هناك توكن)
+            await fetchWithAuth('/api/subscriptions/unsubscribe', {
+                method: 'DELETE',
+                body: JSON.stringify({ endpoint: subscription.endpoint }),
+            }).catch(err => {
+                // إذا فشل إعلام الخادم، لا نهتم كثيراً (الإشتراك ملغي محلياً)
+                console.warn('⚠️ فشل إعلام الخادم بحذف الاشتراك:', err);
+            });
+        }
+    } catch (err) {
+        console.error('❌ فشل إلغاء الاشتراك:', err);
+    }
 }
 
 function showRegister() {
@@ -196,16 +398,143 @@ function connectSocket() {
 }
 
 // ==========================================
+// دوال إشعارات الهاتف (Web Push)
+// ==========================================
+
+// طلب إذن الإشعارات وتسجيل الاشتراك
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    console.warn('⚠️ هذا المتصفح لا يدعم الإشعارات');
+    return false;
+  }
+
+  if (Notification.permission === 'granted') {
+    console.log('✅ الإذن موجود مسبقاً');
+    await subscribeToPush();
+    return true;
+  }
+
+  if (Notification.permission === 'denied') {
+    console.warn('⚠️ تم رفض إذن الإشعارات');
+    return false;
+  }
+
+  // طلب الإذن
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    console.log('✅ تم منح الإذن');
+    await subscribeToPush();
+    return true;
+  } else {
+    console.warn('⚠️ تم رفض الإذن');
+    return false;
+  }
+}
+
+// تسجيل الاشتراك في الخادم
+async function subscribeToPush() {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+
+    // التحقق من وجود اشتراك سابق
+    let subscription = await registration.pushManager.getSubscription();
+    if (subscription) {
+      console.log('✅ اشتراك موجود مسبقاً، يتم تحديثه');
+      // يمكن تحديثه أو إلغاؤه إذا أردت
+      // سنقوم بحذفه وإعادة تسجيله لتجديد المفاتيح (اختياري)
+      // await subscription.unsubscribe();
+    }
+
+    // إنشاء اشتراك جديد
+    const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
+    const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedKey,
+    });
+
+    console.log('✅ اشتراك جديد:', subscription);
+
+    // إرسال الاشتراك إلى الخادم
+    const payload = {
+      subscription: {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
+          auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))),
+        },
+      },
+      userEmail: currentUser ? currentUser.email : null,
+      role: currentUser ? currentUser.role : null,
+    };
+
+    const res = await fetchWithAuth('/api/subscriptions/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      console.log('✅ تم تسجيل الاشتراك في الخادم');
+    } else {
+      console.warn('❌ فشل تسجيل الاشتراك في الخادم');
+    }
+
+    return subscription;
+  } catch (err) {
+    console.error('❌ فشل الاشتراك في Push:', err);
+    return null;
+  }
+}
+
+// تحويل المفتاح العام من Base64 إلى Uint8Array (مطلوب لـ Push)
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// إلغاء الاشتراك (اختياري)
+async function unsubscribeFromPush() {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    if (subscription) {
+      await subscription.unsubscribe();
+      console.log('✅ تم إلغاء الاشتراك من Push');
+      
+      // إعلام الخادم بحذف الاشتراك
+      await fetchWithAuth('/api/subscriptions/unsubscribe', {
+        method: 'DELETE',
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+      });
+    }
+  } catch (err) {
+    console.error('❌ فشل إلغاء الاشتراك:', err);
+  }
+}
+
+// ==========================================
 // 7. دوال API مع التوكن
 // ==========================================
 function fetchWithAuth(url, options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    
+    // إضافة التوكن فقط إذا كان موجوداً
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    }
+
     return fetch(API_BASE_URL + url, {
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-            ...options.headers
-        }
+        headers: { ...headers, ...options.headers }
     });
 }
 
