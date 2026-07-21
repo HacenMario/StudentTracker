@@ -31,7 +31,7 @@ let currentTenantSubdomain = localStorage.getItem('tenantSubdomain') || 'demo';
 let tenants = [];
 
 // ==========================================
-// 3. نظام الترجمات (i18n)
+// 3. نظام الترجمات (i18n) - كامل
 // ==========================================
 let currentLanguage = localStorage.getItem('language') || 'ar';
 let translations = {};
@@ -485,7 +485,7 @@ if (settingsLogoUpload) {
 }
 
 // ==========================================
-// 10. دوال QR Code
+// 10. دوال QR Code (كاملة)
 // ==========================================
 window.downloadQR = function(studentId) {
     fetchWithAuth('/api/students/' + studentId + '/qr')
@@ -719,7 +719,7 @@ const switchCameraBtn = document.getElementById('switchCameraBtn');
 if (switchCameraBtn) switchCameraBtn.addEventListener('click', switchCamera);
 
 // ==========================================
-// 11. دوال الإشعارات (Web Push)
+// 11. دوال الإشعارات (Web Push) - كاملة
 // ==========================================
 async function requestNotificationPermission() {
     if (!('serviceWorker' in navigator)) {
@@ -867,7 +867,7 @@ async function unsubscribeFromPush() {
 }
 
 // ==========================================
-// 12. دوال الإشعارات (داخل التطبيق)
+// 12. دوال الإشعارات (داخل التطبيق) - كاملة
 // ==========================================
 async function loadAdminNotifications() {
     try {
@@ -999,8 +999,9 @@ async function toggleAllStudents(status) {
         alert('Socket غير متصل');
     }
 }
+
 // ==========================================
-// 14. دوال المدير (والمدير العام)
+// 14. دوال المدير (والمدير العام) - كاملة
 // ==========================================
 async function loadAdminStudents() {
     try {
@@ -1169,7 +1170,7 @@ if (editStudentModal) {
 }
 
 // ==========================================
-// 16. عرض جميع سجلات النشاطات في نافذة منبثقة
+// 16. عرض جميع سجلات النشاطات - كاملة
 // ==========================================
 const adminShowAllLogsBtn = document.getElementById('adminShowAllLogsBtn');
 if (adminShowAllLogsBtn) {
@@ -1312,7 +1313,7 @@ async function adminSendParentNotification() {
 }
 
 // ==========================================
-// 18. دوال السجل (مع عرض آخر 5 سجلات فقط)
+// 18. دوال السجل (Logs) - كاملة
 // ==========================================
 function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
@@ -1399,7 +1400,7 @@ function toggleAdminOldLogs(show) {
 }
 
 // ==========================================
-// 19. دوال ولي الأمر
+// 19. دوال ولي الأمر - كاملة
 // ==========================================
 async function loadParentStudents() {
     try {
@@ -1494,7 +1495,7 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 20. دوال المدير العام (Super Admin) - إدارة المؤسسات
+// 20. دوال المدير العام (Super Admin) - كاملة
 // ==========================================
 async function loadTenants() {
     try {
@@ -1549,7 +1550,7 @@ function renderTenants() {
 }
 
 // ==========================================
-// 21. دوال المدير العام - الأزرار (✅ تم الإصلاح الكامل)
+// 21. دوال المدير العام - الأزرار
 // ==========================================
 
 // فتح نافذة إضافة مؤسسة
@@ -1761,12 +1762,12 @@ window.toggleTenantStatus = async function(tenantId) {
 };
 
 // ==========================================
-// 24. ✅ إصلاح أزرار تسجيل الدخول والتسجيل
+// 24. وظيفة ربط أحداث المصادقة (المدخل الرئيسي)
 // ==========================================
 function setupAuthEvents() {
     console.log('🔧 جاري ربط أحداث المصادقة...');
 
-    // ---------- ✅ زر تسجيل الدخول ----------
+    // ---------- زر تسجيل الدخول ----------
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) {
         loginBtn.addEventListener('click', async function() {
@@ -1804,7 +1805,7 @@ function setupAuthEvents() {
         console.warn('⚠️ loginBtn غير موجود في الصفحة');
     }
 
-    // ---------- ✅ زر التسجيل ----------
+    // ---------- زر التسجيل ----------
     const registerBtn = document.getElementById('registerBtn');
     if (registerBtn) {
         registerBtn.addEventListener('click', async function() {
@@ -1882,7 +1883,6 @@ function setupAuthEvents() {
         toggleAllInsideBtn.addEventListener('click', function() { toggleAllStudents(true); });
         console.log('✅ ربط toggleAllInsideBtn');
     }
-
     const toggleAllOutsideBtn = document.getElementById('toggleAllOutsideBtn');
     if (toggleAllOutsideBtn) {
         toggleAllOutsideBtn.addEventListener('click', function() { toggleAllStudents(false); });
@@ -1895,7 +1895,6 @@ function setupAuthEvents() {
         adminSendNotificationBtn.addEventListener('click', adminSendGeneralNotification);
         console.log('✅ ربط adminSendNotificationBtn');
     }
-
     const adminSendParentNotificationBtn = document.getElementById('adminSendParentNotificationBtn');
     if (adminSendParentNotificationBtn) {
         adminSendParentNotificationBtn.addEventListener('click', adminSendParentNotification);
@@ -1913,30 +1912,56 @@ function setupAuthEvents() {
         adminHideOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(false); });
         console.log('✅ ربط adminHideOldLogsBtn');
     }
-    const adminShowAllLogsBtn = document.getElementById('adminShowAllLogsBtn');
-    if (adminShowAllLogsBtn) {
-        adminShowAllLogsBtn.addEventListener('click', function() {
-            const container = document.getElementById('allLogsContainer');
-            if (!container) return;
-            container.innerHTML = '';
-            const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
-            if (sortedLogs.length === 0) {
-                container.innerHTML = '<div style="text-align:center; color:#8a9aaa; padding:20px;">لا توجد سجلات</div>';
-            } else {
-                sortedLogs.forEach(log => {
-                    const item = document.createElement('div');
-                    item.className = 'log-item';
-                    item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
-                    container.appendChild(item);
-                });
-            }
-            const modal = document.getElementById('allLogsModal');
-            if (modal) modal.style.display = 'flex';
-        });
-        console.log('✅ ربط adminShowAllLogsBtn');
+
+    // ---------- أزرار الإشعارات القديمة ----------
+    const showOldNotificationsBtn = document.getElementById('showOldNotificationsBtn');
+    if (showOldNotificationsBtn) {
+        showOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(true); });
+        console.log('✅ ربط showOldNotificationsBtn');
+    }
+    const hideOldNotificationsBtn = document.getElementById('hideOldNotificationsBtn');
+    if (hideOldNotificationsBtn) {
+        hideOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(false); });
+        console.log('✅ ربط hideOldNotificationsBtn');
     }
 
-    console.log('🔧 تم ربط جميع أحداث المصادقة بنجاح!');
+    // ---------- أزرار ولي الأمر ----------
+    const parentShowOldLogsBtn = document.getElementById('parentShowOldLogsBtn');
+    if (parentShowOldLogsBtn) {
+        parentShowOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(true); });
+        console.log('✅ ربط parentShowOldLogsBtn');
+    }
+    const parentHideOldLogsBtn = document.getElementById('parentHideOldLogsBtn');
+    if (parentHideOldLogsBtn) {
+        parentHideOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(false); });
+        console.log('✅ ربط parentHideOldLogsBtn');
+    }
+
+    // ---------- أزرار إعدادات المدرسة ----------
+    const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
+    if (toggleSettingsBtn) {
+        toggleSettingsBtn.addEventListener('click', toggleSettingsForm);
+        console.log('✅ ربط toggleSettingsBtn');
+    }
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', saveSchoolSettings);
+        console.log('✅ ربط saveSettingsBtn');
+    }
+
+    // ---------- أزرار إضافة طالب ----------
+    const toggleAddStudentBtn = document.getElementById('toggleAddStudentBtn');
+    if (toggleAddStudentBtn) {
+        toggleAddStudentBtn.addEventListener('click', toggleAddStudentForm);
+        console.log('✅ ربط toggleAddStudentBtn');
+    }
+    const adminAddBtn = document.getElementById('adminAddBtn');
+    if (adminAddBtn) {
+        adminAddBtn.addEventListener('click', adminAddStudent);
+        console.log('✅ ربط adminAddBtn');
+    }
+
+    console.log('🔧 تم ربط جميع الأحداث بنجاح!');
 }
 
 // ==========================================
