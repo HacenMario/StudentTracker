@@ -33,11 +33,6 @@
     "super_admin": "Tableau de bord Super Admin"
   },
   "student": {
-    "edit_title": "Modifier l'étudiant",
-    "confirm_edit": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
-    "inside": "À l'intérieur 🏫",
-    "outside": "À l'extérieur 🚪",
-    "added": "Étudiant ajouté",
     "add": "Ajouter un étudiant",
     "edit": "Modifier l'étudiant",
     "delete": "Supprimer l'étudiant",
@@ -63,12 +58,13 @@
     "confirm_toggle": "Êtes-vous sûr de vouloir changer le statut de cet étudiant ?",
     "confirm_edit": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
     "edit_title": "✏️ Modifier les informations de l'étudiant",
-    "not_found": "Étudiant non trouvé",
     "for_parent": "pour le parent",
-    "confirm_add": "Confirmation d'ajout de l'étudiant"
+    "confirm_add": "Confirmation d'ajout de l'étudiant",
+    "not_found": "Étudiant non trouvé",
+    "confirm": "Confirmation"
   },
   "notification": {
-    "title": "Nouvelle notification",
+    "title": "Notifications",
     "general": "Notification générale",
     "private": "Notification privée",
     "send": "Envoyer",
@@ -84,12 +80,10 @@
     "sent_private": "Notification privée envoyée avec succès",
     "confirm_general": "Êtes-vous sûr d'envoyer cette notification à tous les parents ?",
     "confirm_private": "Êtes-vous sûr d'envoyer cette notification au parent ({email}) ?",
-    "message_required": "Écrivez le message de notification"
+    "message_required": "Écrivez le message de notification",
+    "new": "Nouvelle notification"
   },
   "attendance": {
-    "exit": "Sortie",
-    "old_logs": "📜 Anciens enregistrements",
-    "hide_old_logs": "Masquer les anciens enregistrements",
     "log": "Journal de présence",
     "in": "Entrée",
     "out": "Sortie",
@@ -108,7 +102,11 @@
     "all_students_inside": "Tous les étudiants sont à l'intérieur 🏫",
     "all_students_outside": "Tous les étudiants sont à l'extérieur 🚪",
     "student_became_inside": "L'étudiant {name} est à l'intérieur 🏫",
-    "student_became_outside": "L'étudiant {name} est à l'extérieur 🚪"
+    "student_became_outside": "L'étudiant {name} est à l'extérieur 🚪",
+    "student_deleted": "Étudiant supprimé",
+    "student_added": "Étudiant {name} ajouté",
+    "student_updated": "Étudiant {name} modifié",
+    "student_toggled": "Statut de l'étudiant modifié"
   },
   "settings": {
     "school": "Paramètres de l'établissement",
@@ -170,6 +168,7 @@
     "switch_camera": "Changer de caméra",
     "close_scanner": "Fermer",
     "all_details": "Tous les détails",
-    "confirm_add": "Confirmation d'ajout"
+    "confirm_add": "Confirmation d'ajout",
+    "parent": "Parent"
   }
 }
