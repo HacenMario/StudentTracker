@@ -366,7 +366,7 @@ async function initializeSuperAdmin() {
       const superAdmin = new User({
         name: 'Super Admin',
         email: 'admin@system.com',
-        password: '123456',
+        password: 'Admin@123456',
         phone: '0000000000',
         role: 'super_admin',
         tenantId: null,
