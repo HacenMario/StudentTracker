@@ -1019,8 +1019,8 @@ function renderStudents(students, containerId, showAdminControls) {
     }
     let html = '';
     students.forEach(s => {
-        const statusText = getStatusText(s.isInside);
-        const statusClass = getStatusClass(s.isInside);
+        const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
+        const statusClass = s.isInside ? 'inside' : 'outside';
         const toggleText = s.isInside ? translate('student.toggle_exit') : translate('student.entry');
         const toggleClass = s.isInside ? 'exit' : 'enter';
         const parentLabel = translate('student.parent_name');
@@ -1092,11 +1092,11 @@ window.adminDelete = async function(id) {
 window.openEditStudent = async function(studentId) {
     try {
         const res = await fetchWithAuth('/api/students');
-        if (!res.ok) throw new Error('فشل جلب بيانات الطالب');
+        if (!res.ok) throw new Error(translate('common.error'));
         const students = await res.json();
         const student = students.find(s => s._id === studentId);
         if (!student) {
-            alert('الطالب غير موجود');
+            alert(translate('student.not_found'));
             return;
         }
 
@@ -1106,9 +1106,15 @@ window.openEditStudent = async function(studentId) {
         document.getElementById('editParentPhone').value = student.parentPhone || '';
         document.getElementById('editParentEmail').value = student.parentEmail || '';
         document.getElementById('editAddress').value = student.address || '';
+        
+        // ✅ تحديث عنوان النافذة بالترجمة
+        document.querySelector('#editStudentModal h3').textContent = translate('student.edit_title');
+        document.getElementById('saveEditStudentBtn').innerHTML = `<i class="fas fa-save"></i> ${translate('student.save')}`;
+        document.getElementById('closeEditStudentBtn').innerHTML = `<i class="fas fa-times"></i> ${translate('student.cancel')}`;
+        
         document.getElementById('editStudentModal').style.display = 'flex';
     } catch (err) {
-        alert('خطأ في جلب بيانات الطالب: ' + err.message);
+        alert(translate('common.error') + ': ' + err.message);
     }
 };
 
@@ -1121,11 +1127,14 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     const address = document.getElementById('editAddress').value.trim();
 
     if (!name || !parentName || !parentPhone || !parentEmail) {
-        alert('جميع الحقول مطلوبة ما عدا العنوان');
+        alert(translate('common.error'));
         return;
     }
 
-    const confirmed = await showConfirmModal('تعديل الطالب', 'هل أنت متأكد من حفظ التعديلات؟');
+    const confirmed = await showConfirmModal(
+        translate('student.edit'),
+        translate('student.confirm_edit')
+    );
     if (!confirmed) return;
 
     try {
@@ -1289,7 +1298,21 @@ function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const time = formatFullTime(date || new Date());
-    const logEntry = { message: translate(message), time, date: date || new Date() };
+    // ✅ ترجمة الرسالة إذا كانت قابلة للترجمة
+    let translatedMessage = message;
+    if (message.includes('تم تغيير حالة جميع الطلاب إلى داخل')) {
+        translatedMessage = translate('attendance.all_students_inside');
+    } else if (message.includes('تم تغيير حالة جميع الطلاب إلى خارج')) {
+        translatedMessage = translate('attendance.all_students_outside');
+    } else if (message.includes('التلميذ') && message.includes('أصبح داخل')) {
+        const name = message.match(/التلميذ (.*?) أصبح/)?.[1] || '';
+        translatedMessage = translate('attendance.student_became_inside', { name });
+    } else if (message.includes('التلميذ') && message.includes('أصبح خارج')) {
+        const name = message.match(/التلميذ (.*?) أصبح/)?.[1] || '';
+        translatedMessage = translate('attendance.student_became_outside', { name });
+    }
+
+    const logEntry = { message: translatedMessage, time, date: date || new Date() };
 
     if (containerId === 'adminLogContainer') {
         adminLogs.push(logEntry);
