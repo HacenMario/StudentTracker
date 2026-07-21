@@ -24,8 +24,6 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 const app = express();
 const server = http.createServer(app);
-
-// ✅ تعريف io هنا (يجب أن يكون قبل أي استخدام له)
 const io = socketIo(server, {
   cors: {
     origin: "*",
@@ -53,7 +51,7 @@ const vapidKeys = {
 };
 
 if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
-  console.warn('⚠️ مفاتيح VAPID غير موجودة في ملف .env، الإشعارات لن تعمل');
+  console.warn('⚠️ مفاتيح VAPID غير موجودة، الإشعارات لن تعمل');
 } else {
   webpush.setVapidDetails(
     'mailto:info@school.edu',
@@ -64,7 +62,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
 }
 
 // ==========================================
-// دالة إرسال إشعارات Web Push
+// دالة إرسال إشعارات Web Push (مع سجلات تشخيصية)
 // ==========================================
 async function sendPushNotification(title, body, data = {}, targetEmail = null) {
   try {
@@ -73,16 +71,20 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
       return;
     }
 
+    // بناء الفلتر: إذا تم تحديد بريد، نبحث به، وإلا نرسل للجميع
     let filter = {};
     if (targetEmail) {
       filter = { userEmail: targetEmail };
+      console.log(`🔍 البحث عن مشتركين للبريد: "${targetEmail}"`);
     } else {
-      filter = {};
+      console.log(`🔍 إرسال إشعار لجميع المشتركين`);
     }
 
     const subscriptions = await Subscription.find(filter);
+    console.log(`📊 عدد المشتركين الذين تم العثور عليهم: ${subscriptions.length}`);
+
     if (subscriptions.length === 0) {
-      console.log(`📭 لا يوجد مشتركين ${targetEmail ? 'للبريد: ' + targetEmail : ''}`);
+      console.warn(`⚠️ لا يوجد مشتركين ${targetEmail ? 'للبريد: ' + targetEmail : ''}`);
       return;
     }
 
@@ -95,42 +97,33 @@ async function sendPushNotification(title, body, data = {}, targetEmail = null) 
       url: data.url || '/',
     });
 
-    console.log(`📨 جاري إرسال الإشعار إلى ${subscriptions.length} مشترك`);
-
-    const results = await Promise.allSettled(
-      subscriptions.map(async (sub) => {
+    // إرسال الإشعار لكل مشترك
+    for (const sub of subscriptions) {
+      try {
         const pushSubscription = {
           endpoint: sub.endpoint,
           keys: sub.keys,
         };
         await webpush.sendNotification(pushSubscription, payload);
-        console.log(`✅ تم إرسال الإشعار إلى ${sub.endpoint.substring(0, 30)}...`);
-      })
-    );
-
-    results.forEach((result, index) => {
-      if (result.status === 'rejected') {
-        const error = result.reason;
-        console.error(`❌ فشل إرسال الإشعار للمشترك ${index}:`, error.message || error);
-        if (error && error.statusCode && (error.statusCode === 410 || error.statusCode === 404)) {
-          const failedSub = subscriptions[index];
-          if (failedSub) {
-            Subscription.findByIdAndDelete(failedSub._id)
-              .then(() => {
-                console.log(`🗑️ تم حذف اشتراك منتهي: ${failedSub.endpoint.substring(0, 30)}...`);
-              })
-              .catch(err => console.warn('خطأ في حذف الاشتراك:', err));
-          }
+        console.log(`✅ تم إرسال الإشعار إلى مشترك (بريد: ${sub.userEmail || 'غير معروف'})`);
+      } catch (err) {
+        console.error(`❌ فشل إرسال الإشعار لمشترك (بريد: ${sub.userEmail}):`, err.message);
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await Subscription.findByIdAndDelete(sub._id);
+          console.log(`🗑️ تم حذف اشتراك منتهي: ${sub.endpoint.substring(0, 30)}...`);
         }
       }
-    });
+    }
+
+    console.log(`✅ انتهى إرسال الإشعارات`);
+
   } catch (err) {
     console.error('❌ خطأ في إرسال الإشعارات:', err);
   }
 }
 
 // ==========================================
-// Socket.io مع التحقق من التوكن وتخزين المستخدمين
+// Socket.io
 // ==========================================
 const userSockets = new Map();
 
@@ -152,7 +145,7 @@ io.on('connection', (socket) => {
   console.log(`🟢 عميل متصل: ${userEmail} (الدور: ${socket.user.role})`);
 
   // ----------------------
-  // 1. تبديل حالة الطالب (للمدير)
+  // 1. تبديل حالة الطالب (مع إرسال إشعار للجميع مؤقتاً)
   // ----------------------
   socket.on('toggle-status', async (studentId) => {
     if (socket.user.role !== 'admin') {
@@ -181,7 +174,7 @@ io.on('connection', (socket) => {
       const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
       const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-      // ✅ استخدام io هنا (متاح من النطاق الأعلى)
+      // بث عبر Socket
       io.emit('status-changed', {
         student: student,
         message: message,
@@ -189,16 +182,17 @@ io.on('connection', (socket) => {
         parentEmail: student.parentEmail,
       });
 
-      console.log(`📤 محاولة إرسال إشعار تغيير حالة للطالب: ${student.name}`);
+      // ✅ إرسال إشعار Web Push لجميع المشتركين (للتأكد من وصولها لك)
+      console.log(`📤 إرسال إشعار تغيير حالة لجميع المشتركين: ${message}`);
       await sendPushNotification(
-        'تحديث حالة ابنك',
+        '🔔 تغيير حالة الطالب',
         message,
         { url: '/parent-dashboard' },
-        student.parentEmail || null
+        null // إرسال للجميع
       );
 
     } catch (error) {
-      console.error(error);
+      console.error('❌ خطأ في تغيير الحالة:', error);
       socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
     }
   });
