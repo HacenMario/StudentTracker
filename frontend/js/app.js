@@ -391,12 +391,13 @@ function fetchWithAuth(url, options = {}) {
 // ==========================================
 async function loadSchoolSettings() {
     try {
-        const res = await fetchWithAuth('/api/settings');
+        // ✅ استخدام fetch عادي بدون auth (لأن المسار عام)
+        const res = await fetch(`${API_BASE_URL}/api/settings`);
         if (!res.ok) throw new Error('فشل جلب إعدادات المدرسة');
         schoolSettings = await res.json();
         applySchoolSettings();
     } catch (err) {
-        console.error('❌ خطأ في جلب إعدادات المدرسة:', err);
+        console.error(err);
     }
 }
 
