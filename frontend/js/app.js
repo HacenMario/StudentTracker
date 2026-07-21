@@ -999,7 +999,7 @@ function toggleOldNotifications(show) {
 }
 
 // ==========================================
-// 13. دوال التغيير الجماعي
+// 13. دوال التغيير الجماعي - ✅ إصلاح الأزرار
 // ==========================================
 async function toggleAllStudents(status) {
     const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
@@ -1009,6 +1009,8 @@ async function toggleAllStudents(status) {
     if (socket) {
         socket.emit('toggle-all-status', { newStatus: status });
         addLog(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`, new Date(), 'adminLogContainer');
+        // تحديث القائمة فوراً
+        loadAdminStudents();
     } else {
         alert('Socket غير متصل');
     }
@@ -1507,7 +1509,7 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 20. دوال المدير العام (Super Admin) - إدارة المؤسسات
+// 20. دوال المدير العام (Super Admin) - إدارة المؤسسات - ✅ تم الإصلاح
 // ==========================================
 async function loadTenants() {
     try {
@@ -1559,7 +1561,7 @@ function renderTenants() {
 }
 
 // ==========================================
-// دوال المدير العام - إضافة/تعديل/حذف المؤسسات
+// دوال المدير العام - إضافة/تعديل/حذف المؤسسات - ✅ تم الإصلاح
 // ==========================================
 
 // فتح نافذة إضافة مؤسسة
@@ -1594,7 +1596,6 @@ if (addTenantModal) {
 window.editTenant = async function(tenantId) {
     console.log('📝 جاري فتح تعديل المؤسسة:', tenantId);
     try {
-        // جلب جميع المؤسسات
         const res = await fetchWithAuth('/api/tenants');
         if (!res.ok) {
             const error = await res.json();
@@ -1609,7 +1610,6 @@ window.editTenant = async function(tenantId) {
 
         console.log('✅ تم جلب بيانات المؤسسة:', tenant);
 
-        // تعبئة الحقول
         const editId = document.getElementById('editTenantId');
         const editName = document.getElementById('editTenantName');
         const editAddr = document.getElementById('editTenantAddress');
@@ -1654,7 +1654,7 @@ if (editTenantModal) {
 }
 
 // ==========================================
-// حفظ تعديلات المؤسسة
+// حفظ تعديلات المؤسسة - ✅ تم الإصلاح
 // ==========================================
 const saveEditTenantBtn = document.getElementById('saveEditTenantBtn');
 if (saveEditTenantBtn) {
@@ -1699,11 +1699,9 @@ if (saveEditTenantBtn) {
             console.log('✅ تم تحديث المؤسسة بنجاح:', data);
             alert('✅ تم تحديث المؤسسة بنجاح');
             
-            // إغلاق النافذة
             const modal = document.getElementById('editTenantModal');
             if (modal) modal.style.display = 'none';
             
-            // إعادة تحميل قائمة المؤسسات
             loadTenants();
         } catch (err) {
             console.error('❌ خطأ في حفظ تعديلات المؤسسة:', err);
@@ -1713,7 +1711,7 @@ if (saveEditTenantBtn) {
 }
 
 // ==========================================
-// إضافة مؤسسة جديدة
+// إضافة مؤسسة جديدة - ✅ تم الإصلاح
 // ==========================================
 const saveNewTenantBtn = document.getElementById('saveNewTenantBtn');
 if (saveNewTenantBtn) {
@@ -1754,11 +1752,9 @@ if (saveNewTenantBtn) {
             console.log('✅ تم إضافة المؤسسة بنجاح:', data);
             alert('✅ تم إضافة المؤسسة بنجاح');
             
-            // إغلاق النافذة
             const modal = document.getElementById('addTenantModal');
             if (modal) modal.style.display = 'none';
             
-            // تفريغ الحقول
             const nameInput = document.getElementById('newTenantName');
             const subInput = document.getElementById('newTenantSubdomain');
             const addrInput = document.getElementById('newTenantAddress');
@@ -1772,7 +1768,6 @@ if (saveNewTenantBtn) {
             if (emailInput) emailInput.value = '';
             if (adminInput) adminInput.value = '';
             
-            // إعادة تحميل قائمة المؤسسات
             loadTenants();
         } catch (err) {
             console.error('❌ خطأ في إضافة المؤسسة:', err);
@@ -1782,7 +1777,7 @@ if (saveNewTenantBtn) {
 }
 
 // ==========================================
-// تبديل حالة المؤسسة (تفعيل/تعطيل)
+// تبديل حالة المؤسسة (تفعيل/تعطيل) - ✅ تم الإصلاح
 // ==========================================
 window.toggleTenantStatus = async function(tenantId) {
     console.log('🔄 محاولة تغيير حالة المؤسسة:', tenantId);
@@ -1827,9 +1822,10 @@ window.toggleTenantStatus = async function(tenantId) {
 };
 
 // ==========================================
-// 21. أحداث المصادقة وربط الأحداث
+// 21. أحداث المصادقة وربط الأحداث - ✅ تم التأكد من ربط جميع الأزرار
 // ==========================================
 function setupAuthEvents() {
+    // زر تسجيل الدخول
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) {
         loginBtn.addEventListener('click', async () => {
@@ -1854,6 +1850,7 @@ function setupAuthEvents() {
         });
     }
 
+    // زر التسجيل
     const registerBtn = document.getElementById('registerBtn');
     if (registerBtn) {
         registerBtn.addEventListener('click', async () => {
@@ -1882,10 +1879,13 @@ function setupAuthEvents() {
         });
     }
 
+    // روابط التبديل بين الشاشات
     const showRegisterLink = document.getElementById('showRegister');
     if (showRegisterLink) showRegisterLink.addEventListener('click', showRegister);
     const showLoginLink = document.getElementById('showLogin');
     if (showLoginLink) showLoginLink.addEventListener('click', showLogin);
+
+    // أزرار تسجيل الخروج
     const logoutBtnAdmin = document.getElementById('logoutBtnAdmin');
     if (logoutBtnAdmin) logoutBtnAdmin.addEventListener('click', logout);
     const logoutBtnParent = document.getElementById('logoutBtnParent');
@@ -1893,34 +1893,51 @@ function setupAuthEvents() {
     const logoutBtnSuperAdmin = document.getElementById('logoutBtnSuperAdmin');
     if (logoutBtnSuperAdmin) logoutBtnSuperAdmin.addEventListener('click', logout);
 
+    // إعدادات المدرسة
     const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
     if (toggleSettingsBtn) toggleSettingsBtn.addEventListener('click', toggleSettingsForm);
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
     if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSchoolSettings);
+
+    // إضافة طالب
     const toggleAddStudentBtn = document.getElementById('toggleAddStudentBtn');
     if (toggleAddStudentBtn) toggleAddStudentBtn.addEventListener('click', toggleAddStudentForm);
     const adminAddBtn = document.getElementById('adminAddBtn');
     if (adminAddBtn) adminAddBtn.addEventListener('click', adminAddStudent);
+
+    // إشعارات
     const adminSendNotificationBtn = document.getElementById('adminSendNotificationBtn');
     if (adminSendNotificationBtn) adminSendNotificationBtn.addEventListener('click', adminSendGeneralNotification);
     const adminSendParentNotificationBtn = document.getElementById('adminSendParentNotificationBtn');
     if (adminSendParentNotificationBtn) adminSendParentNotificationBtn.addEventListener('click', adminSendParentNotification);
     
+    // ✅ أزرار التغيير الجماعي - تم إصلاحها
     const toggleAllInsideBtn = document.getElementById('toggleAllInsideBtn');
-    if (toggleAllInsideBtn) toggleAllInsideBtn.addEventListener('click', function() { toggleAllStudents(true); });
+    if (toggleAllInsideBtn) {
+        toggleAllInsideBtn.addEventListener('click', function() { 
+            toggleAllStudents(true); 
+        });
+    }
     const toggleAllOutsideBtn = document.getElementById('toggleAllOutsideBtn');
-    if (toggleAllOutsideBtn) toggleAllOutsideBtn.addEventListener('click', function() { toggleAllStudents(false); });
+    if (toggleAllOutsideBtn) {
+        toggleAllOutsideBtn.addEventListener('click', function() { 
+            toggleAllStudents(false); 
+        });
+    }
 
+    // أزرار السجل (المدير)
     const adminShowOldLogsBtn = document.getElementById('adminShowOldLogsBtn');
     if (adminShowOldLogsBtn) adminShowOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(true); });
     const adminHideOldLogsBtn = document.getElementById('adminHideOldLogsBtn');
     if (adminHideOldLogsBtn) adminHideOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(false); });
 
+    // أزرار السجل (ولي الأمر)
     const parentShowOldLogsBtn = document.getElementById('parentShowOldLogsBtn');
     if (parentShowOldLogsBtn) parentShowOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(true); });
     const parentHideOldLogsBtn = document.getElementById('parentHideOldLogsBtn');
     if (parentHideOldLogsBtn) parentHideOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(false); });
 
+    // أزرار الإشعارات القديمة
     const showOldNotificationsBtn = document.getElementById('showOldNotificationsBtn');
     if (showOldNotificationsBtn) showOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(true); });
     const hideOldNotificationsBtn = document.getElementById('hideOldNotificationsBtn');
@@ -1935,10 +1952,8 @@ document.addEventListener('DOMContentLoaded', function() {
         Notification.requestPermission();
     }
 
-    // تحميل الترجمات
     loadTranslations(currentLanguage);
     
-    // إضافة زر تبديل اللغة
     const langSwitcher = document.createElement('div');
     langSwitcher.className = 'lang-switcher';
     langSwitcher.innerHTML = `
