@@ -9,6 +9,41 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="manifest" href="/manifest.json">
+
+    <style>
+  .lang-switcher {
+    display: flex;
+    gap: 8px;
+    margin: 0 15px;
+  }
+  .lang-btn {
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.2);
+    color: #1a365d;
+    padding: 4px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: 0.3s;
+    font-family: 'Tajawal', sans-serif;
+  }
+  .lang-btn:hover {
+    background: rgba(43, 108, 176, 0.1);
+  }
+  .lang-btn.active {
+    background: #2b6cb0;
+    color: white;
+    border-color: #2b6cb0;
+  }
+  /* تعديل اتجاه الصفحة حسب اللغة */
+  html[dir="ltr"] .app-wrapper {
+    direction: ltr;
+  }
+  html[dir="rtl"] .app-wrapper {
+    direction: rtl;
+  }
+</style>
 </head>
 <body>
     <!-- ========================================== -->
@@ -56,12 +91,16 @@
             <!-- لوحة المدير -->
             <!-- ========================================== -->
             <div id="adminDashboard" style="display:none;">
-                <header>
-                    <h1><i class="fas fa-user-cog"></i> لوحة المدير</h1>
-                    <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
-                    <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
-                </header>
-
+<header>
+  <h1><i class="fas fa-user-cog"></i> <span data-i18n="dashboard.admin">لوحة المدير</span></h1>
+  <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
+  <div class="lang-switcher">
+    <button onclick="switchLanguage('ar')" class="lang-btn active">🇸🇦 عربي</button>
+    <button onclick="switchLanguage('en')" class="lang-btn">🇬🇧 English</button>
+    <button onclick="switchLanguage('fr')" class="lang-btn">🇫🇷 Français</button>
+  </div>
+  <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span data-i18n="auth.logout">خروج</span></button>
+</header>
                 <!-- إعدادات المدرسة -->
                 <button id="toggleSettingsBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483);">
                     <i class="fas fa-cog"></i> إعدادات المؤسسة
