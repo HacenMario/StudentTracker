@@ -1,4 +1,3 @@
-console.log('MONGO_URI:', process.env.MONGO_URI);
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -20,7 +19,7 @@ const Subscription = require('./models/Subscription');
 const studentRoutes = require('./routes/studentRoutes');
 const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-const settingsRoutes = require('./routes/settingsRoutes'); // ✅ تم التصحيح (مع 's')
+const settingsRoutes = require('./routes/settingsRoutes'); // تأكد من الاسم الصحيح
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 const app = express();
@@ -33,7 +32,6 @@ const io = socketIo(server, {
 });
 
 app.set('io', io);
-
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
@@ -64,22 +62,27 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
 }
 
 // ==========================================
-// دالة إرسال إشعارات Web Push
+// دالة إرسال إشعارات Web Push (محسّنة للبحث بالبريد)
 // ==========================================
-async function sendPushNotification(title, body, data = {}, targetRole = null, targetEmail = null) {
+async function sendPushNotification(title, body, data = {}, targetEmail = null) {
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
       console.warn('⚠️ مفاتيح VAPID غير متوفرة، تخطي إرسال الإشعار');
       return;
     }
 
+    // بناء الفلتر: الأولوية للبريد الإلكتروني (الأكثر دقة)
     let filter = {};
-    if (targetRole) filter.role = targetRole;
-    if (targetEmail) filter.userEmail = targetEmail;
+    if (targetEmail) {
+      filter.userEmail = targetEmail;
+    } else {
+      // إذا لم يتم تحديد بريد، نرسل للجميع (للإشعارات العامة)
+      filter = {}; 
+    }
 
     const subscriptions = await Subscription.find(filter);
     if (subscriptions.length === 0) {
-      console.log(`📭 لا يوجد مشتركين ${targetRole ? 'لدور ' + targetRole : ''} لإرسال الإشعار`);
+      console.log(`📭 لا يوجد مشتركين للبريد: ${targetEmail || 'جميع المستخدمين'}`);
       return;
     }
 
@@ -92,7 +95,7 @@ async function sendPushNotification(title, body, data = {}, targetRole = null, t
       url: data.url || '/',
     });
 
-    console.log(`📨 جاري إرسال الإشعار إلى ${subscriptions.length} مشترك`);
+    console.log(`📨 جاري إرسال الإشعار إلى ${subscriptions.length} مشترك (للبريد: ${targetEmail || 'الكل'})`);
 
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
@@ -178,6 +181,7 @@ io.on('connection', (socket) => {
       const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
       const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
+      // بث التحديث لجميع العملاء عبر Socket
       io.emit('status-changed', {
         student: student,
         message: message,
@@ -185,15 +189,17 @@ io.on('connection', (socket) => {
         parentEmail: student.parentEmail,
       });
 
-      // إرسال إشعار Web Push لولي الأمر
+      // ✅ إرسال إشعار Web Push لولي الأمر (باستخدام البريد الإلكتروني فقط)
       if (student.parentEmail) {
+        console.log(`📤 محاولة إرسال إشعار تغيير حالة إلى: ${student.parentEmail}`);
         await sendPushNotification(
           'تحديث حالة ابنك',
           message,
           { url: '/parent-dashboard' },
-          'parent',
-          student.parentEmail
+          student.parentEmail // نرسل فقط للبريد، دون تحديد دور
         );
+      } else {
+        console.warn(`⚠️ الطالب ${student.name} ليس له بريد ولي أمر، لم يتم إرسال إشعار`);
       }
 
     } catch (error) {
@@ -221,12 +227,12 @@ io.on('connection', (socket) => {
         createdAt: notification.createdAt 
       });
 
-      // إرسال إشعار Web Push لجميع أولياء الأمور
+      // إرسال إشعار Web Push لكل المشتركين (لأننا لم نحدد بريداً)
       await sendPushNotification(
         '📢 إشعار من المدرسة',
         data.message,
         { url: '/' },
-        'parent'
+        null // إرسال للجميع
       );
 
       console.log(`📢 تم إرسال إشعار عام: ${data.message}`);
@@ -282,7 +288,6 @@ io.on('connection', (socket) => {
         '📩 إشعار خاص من المدرسة',
         message,
         { url: '/parent-dashboard' },
-        'parent',
         parentEmail
       );
 
@@ -329,13 +334,12 @@ io.on('connection', (socket) => {
         isBulk: true,
       });
 
-      // إرسال إشعار Web Push لكل ولي أمر
+      // إرسال إشعار Web Push لكل ولي أمر (بالبريد الإلكتروني)
       for (const email of updatedParents) {
         await sendPushNotification(
           'تحديث جماعي',
           message,
           { url: '/parent-dashboard' },
-          'parent',
           email
         );
       }
