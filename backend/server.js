@@ -8,28 +8,22 @@ const jwt = require('jsonwebtoken');
 const webpush = require('web-push');
 
 // استيراد النماذج
-const Tenant = require('./models/Tenant');
-const User = require('./models/User');
 const Student = require('./models/Student');
+const User = require('./models/User');
 const Attendance = require('./models/Attendance');
 const Notification = require('./models/Notification');
 const SchoolSettings = require('./models/SchoolSettings');
 const Subscription = require('./models/Subscription');
 
 // استيراد المسارات
-const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
+const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
-const tenantRoutes = require('./routes/tenantRoutes');
-const i18nRoutes = require('./routes/i18nRoutes');
 
-// استيراد دالة الإشعارات
-const { sendPushNotificationToAll } = require('./utils/notifications');
-
-// استيراد نظام الترجمات
-const i18n = require('./utils/i18n');
+// ✅ استيراد دوال الإشعارات
+const { sendPushNotificationToAll, sendPushNotificationToParent } = require('./utils/notifications');
 
 const app = express();
 const server = http.createServer(app);
@@ -43,62 +37,15 @@ const io = socketIo(server, {
 });
 
 app.set('io', io);
-
-// Middleware للغة
-app.use((req, res, next) => {
-  const lang = req.headers['accept-language'] || 'ar';
-  req.lang = lang.split(',')[0].split('-')[0];
-  req.t = (key) => i18n.translate(req.lang, key);
-  next();
-});
-
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
-// ==========================================
-// Middleware للتحقق من المؤسسة (Tenant) مع استثناء المسارات العامة
-// ==========================================
-const publicPaths = [
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/i18n',
-  '/api/settings',    // جلب إعدادات المدرسة (عام)
-  '/api/tenants',     // إدارة المؤسسات (للمدير العام)
-];
-
-app.use(async (req, res, next) => {
-  // التحقق مما إذا كان المسار عاماً
-  const isPublic = publicPaths.some(path => req.path.startsWith(path));
-  if (isPublic) {
-    return next();
-  }
-
-  // استخراج subdomain من الرأس
-  const subdomain = req.headers['x-tenant-subdomain'];
-  if (!subdomain) {
-    return res.status(400).json({ message: 'Subdomain is required' });
-  }
-
-  try {
-    const tenant = await Tenant.findOne({ subdomain, isActive: true });
-    if (!tenant) {
-      return res.status(404).json({ message: 'Tenant not found or inactive' });
-    }
-    req.tenant = tenant;
-    next();
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// تسجيل المسارات (يجب أن تكون بعد middleware)
+// تسجيل المسارات
 app.use('/api/auth', authRoutes);
-app.use('/api/i18n', i18nRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/tenants', tenantRoutes);
 
 // ==========================================
 // إعداد Web Push (VAPID)
@@ -145,17 +92,12 @@ io.on('connection', (socket) => {
   // 1. إشعار عام من المدير
   // ----------------------
   socket.on('admin-notification', async (data) => {
-    if (socket.user.role !== 'admin' && socket.user.role !== 'super_admin') return;
+    if (socket.user.role !== 'admin') return;
 
     try {
-      const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
-      if (!tenant) return;
-
       const notification = new Notification({
         target: 'all',
         message: data.message,
-        tenantId: tenant._id,
-        sender: 'Admin',
       });
       await notification.save();
 
@@ -165,6 +107,7 @@ io.on('connection', (socket) => {
         createdAt: notification.createdAt,
       });
 
+      // ✅ إرسال Web Push لجميع المشتركين
       await sendPushNotificationToAll(
         '📢 إشعار من المدرسة',
         data.message,
@@ -173,7 +116,7 @@ io.on('connection', (socket) => {
 
       console.log(`📢 تم إرسال إشعار عام: ${data.message}`);
     } catch (err) {
-      console.error('❌ خطأ في إرسال الإشعار العام:', err);
+      console.error(err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار العام' });
     }
   });
@@ -182,7 +125,7 @@ io.on('connection', (socket) => {
   // 2. إشعار خاص لولي أمر معين
   // ----------------------
   socket.on('admin-notification-to-parent', async (data) => {
-    if (socket.user.role !== 'admin' && socket.user.role !== 'super_admin') {
+    if (socket.user.role !== 'admin') {
       socket.emit('notification-error', { message: 'غير مصرح لك' });
       return;
     }
@@ -194,14 +137,9 @@ io.on('connection', (socket) => {
     }
 
     try {
-      const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
-      if (!tenant) return;
-
       const notification = new Notification({
         target: parentEmail,
         message: message,
-        tenantId: tenant._id,
-        sender: 'Admin',
       });
       await notification.save();
 
@@ -223,15 +161,15 @@ io.on('connection', (socket) => {
         });
       }
 
-      await sendPushNotificationToAll(
+      // ✅ إرسال Web Push لولي الأمر المحدد فقط
+      await sendPushNotificationToParent(
         '📩 إشعار خاص من المدرسة',
         message,
-        { url: '/parent-dashboard' }
+        { url: '/parent-dashboard' },
+        parentEmail
       );
-
-      console.log(`📩 تم إرسال إشعار خاص لـ ${parentEmail}`);
     } catch (err) {
-      console.error('❌ خطأ في إرسال الإشعار الخاص:', err);
+      console.error(err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار الخاص' });
     }
   });
@@ -240,17 +178,14 @@ io.on('connection', (socket) => {
   // 3. تغيير حالة جميع الطلاب دفعة واحدة
   // ----------------------
   socket.on('toggle-all-status', async (data) => {
-    if (socket.user.role !== 'admin' && socket.user.role !== 'super_admin') {
+    if (socket.user.role !== 'admin') {
       socket.emit('error', { message: 'غير مصرح لك' });
       return;
     }
 
     const { newStatus } = data;
     try {
-      const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
-      if (!tenant) return;
-
-      const students = await Student.find({ tenantId: tenant._id });
+      const students = await Student.find();
       const updatedParents = new Set();
 
       for (const student of students) {
@@ -262,7 +197,6 @@ io.on('connection', (socket) => {
           student: student._id,
           status: newStatus ? 'in' : 'out',
           method: 'manual',
-          tenantId: tenant._id,
         });
         await attendance.save();
 
@@ -277,25 +211,25 @@ io.on('connection', (socket) => {
         isBulk: true,
       });
 
+      // إنشاء إشعارات لكل ولي أمر
       for (const email of updatedParents) {
         const notification = new Notification({
           target: email,
           message: message,
-          tenantId: tenant._id,
           sender: 'Admin',
         });
         await notification.save();
+
+        // ✅ إرسال إشعار لكل ولي أمر على حدة
+        await sendPushNotificationToParent(
+          'تحديث جماعي',
+          message,
+          { url: '/parent-dashboard' },
+          email
+        );
       }
-
-      await sendPushNotificationToAll(
-        'تحديث جماعي',
-        message,
-        { url: '/parent-dashboard' }
-      );
-
-      console.log(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`);
     } catch (error) {
-      console.error('❌ خطأ في التغيير الجماعي:', error);
+      console.error(error);
       socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
     }
   });
@@ -307,7 +241,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// الاتصال بقاعدة البيانات وبدء الخادم
+// الاتصال بقاعدة البيانات
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
@@ -317,71 +251,8 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .then(() => {
   console.log('✅ متصل بـ MongoDB بنجاح');
-  
-  // إنشاء المدير العام (Super Admin) إذا لم يكن موجوداً
-  initializeSuperAdmin();
-  
   server.listen(PORT, () => {
     console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
   });
 })
 .catch(err => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err));
-
-// ==========================================
-// دالة تهيئة المدير العام والمؤسسة الافتراضية
-// ==========================================
-async function initializeSuperAdmin() {
-  try {
-    // 1. التحقق من وجود مؤسسة افتراضية
-    let defaultTenant = await Tenant.findOne({ subdomain: 'demo' });
-    if (!defaultTenant) {
-      defaultTenant = new Tenant({
-        name: 'المدرسة النموذجية',
-        subdomain: 'demo',
-        address: 'العنوان الافتراضي',
-        phone: '0555000000',
-        email: 'demo@school.com',
-        isActive: true,
-      });
-      await defaultTenant.save();
-      console.log('✅ تم إنشاء المؤسسة الافتراضية: demo');
-    }
-
-    // 2. التحقق من وجود مدير عام
-    let superAdmin = await User.findOne({ role: 'super_admin' });
-    if (!superAdmin) {
-      const bcrypt = require('bcryptjs');
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('Admin@123456', salt);
-      
-      superAdmin = new User({
-        name: 'Super Admin',
-        email: 'admin@system.com',
-        password: hashedPassword,
-        phone: '0000000000',
-        role: 'super_admin',
-        tenantId: null, // المدير العام لا يتبع مؤسسة معينة
-      });
-      await superAdmin.save();
-      console.log('✅ تم إنشاء المدير العام: admin@system.com / Admin@123456');
-    }
-
-    // 3. ربط المدير العام بالمؤسسة الافتراضية (إذا لم يكن مرتبطاً)
-    if (superAdmin.tenantId === null || superAdmin.tenantId === undefined) {
-      superAdmin.tenantId = defaultTenant._id;
-      await superAdmin.save();
-      console.log('✅ تم ربط المدير العام بالمؤسسة الافتراضية');
-    }
-
-    // 4. التأكد من أن المؤسسة تشير إلى المدير العام كمدير لها
-    if (!defaultTenant.adminId) {
-      defaultTenant.adminId = superAdmin._id;
-      await defaultTenant.save();
-      console.log('✅ تم تعيين المدير العام كمدير للمؤسسة الافتراضية');
-    }
-
-    console.log('✅ تم تهيئة النظام بنجاح');
-  } catch (err) {
-    console.error('❌ خطأ في تهيئة النظام:', err);
-  }
-}
