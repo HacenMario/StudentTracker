@@ -1010,7 +1010,7 @@ async function loadAdminStudents() {
     }
 }
 
-ffunction renderStudents(students, containerId, showAdminControls) {
+function renderStudents(students, containerId, showAdminControls) {
     const container = document.getElementById(containerId);
     if (!container) return;
     if (!students || students.length === 0) {
@@ -1023,9 +1023,9 @@ ffunction renderStudents(students, containerId, showAdminControls) {
         const statusClass = getStatusClass(s.isInside);
         const toggleText = s.isInside ? translate('student.toggle_exit') : translate('student.entry');
         const toggleClass = s.isInside ? 'exit' : 'enter';
-        const parentLabel = translate('student.parent');
+        const parentLabel = translate('student.parent_name');
         const lastUpdateLabel = translate('student.last_update');
-        const lastEntryExitLabel = translate('student.last_entry_exit');
+        const lastEntryExitLabel = translate('attendance.last_entry_exit');
 
         html += `
             <div class="student-card" data-id="${s._id}">
