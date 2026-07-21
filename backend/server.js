@@ -22,10 +22,13 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
+// استيراد دالة الإشعارات من الملف المنفصل
+const { sendPushNotificationToAll } = require('./utils/notifications');
+
 const app = express();
 const server = http.createServer(app);
 
-// تعريف io
+// تعريف io (يجب أن يكون قبل أي استخدام له)
 const io = socketIo(server, {
   cors: {
     origin: "*",
@@ -64,63 +67,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
 }
 
 // ==========================================
-// دالة إرسال إشعارات Web Push (لجميع المشتركين أو لفلتر محدد)
-// ==========================================
-async function sendPushNotificationToAll(title, body, data = {}) {
-  try {
-    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      console.warn('⚠️ مفاتيح VAPID غير متوفرة');
-      return;
-    }
-
-    // جلب جميع المشتركين (مثل الإشعارات العامة)
-    const subscriptions = await Subscription.find({});
-    console.log(`📊 عدد المشتركين الكلي: ${subscriptions.length}`);
-
-    if (subscriptions.length === 0) {
-      console.warn('⚠️ لا يوجد مشتركين');
-      return;
-    }
-
-    const payload = JSON.stringify({
-      title,
-      body,
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      data,
-      url: data.url || '/',
-    });
-
-    console.log(`📨 جاري إرسال الإشعار لـ ${subscriptions.length} مشترك`);
-
-    let successCount = 0;
-    for (const sub of subscriptions) {
-      try {
-        const pushSubscription = {
-          endpoint: sub.endpoint,
-          keys: sub.keys,
-        };
-        await webpush.sendNotification(pushSubscription, payload);
-        console.log(`✅ تم إرسال الإشعار إلى مشترك (بريد: ${sub.userEmail || 'غير معروف'})`);
-        successCount++;
-      } catch (err) {
-        console.error(`❌ فشل إرسال الإشعار:`, err.message);
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          await Subscription.findByIdAndDelete(sub._id);
-          console.log(`🗑️ تم حذف اشتراك منتهي`);
-        }
-      }
-    }
-
-    console.log(`✅ انتهى إرسال الإشعارات (نجح ${successCount} من ${subscriptions.length})`);
-
-  } catch (err) {
-    console.error('❌ خطأ في إرسال الإشعارات:', err);
-  }
-}
-
-// ==========================================
-// Socket.io
+// Socket.io مع التحقق من التوكن وتخزين المستخدمين
 // ==========================================
 const userSockets = new Map();
 
@@ -142,84 +89,7 @@ io.on('connection', (socket) => {
   console.log(`🟢 عميل متصل: ${userEmail} (الدور: ${socket.user.role})`);
 
   // ----------------------
-  // 1. تبديل حالة الطالب (للمدير) - الحل النهائي
-  // ----------------------
-  socket.on('toggle-status', async (studentId) => {
-    if (socket.user.role !== 'admin') {
-      socket.emit('error', { message: 'غير مصرح لك' });
-      return;
-    }
-
-    try {
-      const student = await Student.findById(studentId);
-      if (!student) {
-        socket.emit('error', { message: 'الطالب غير موجود' });
-        return;
-      }
-
-      // تغيير الحالة
-      student.isInside = !student.isInside;
-      student.lastUpdate = new Date();
-      await student.save();
-
-      // تسجيل الحضور
-      const attendance = new Attendance({
-        student: student._id,
-        status: student.isInside ? 'in' : 'out',
-        method: 'manual',
-      });
-      await attendance.save();
-
-      const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
-      const message = `التلميذ ${student.name} أصبح ${statusText}`;
-
-      // 1️⃣ بث التحديث عبر Socket (لجميع العملاء)
-      io.emit('status-changed', {
-        student: student,
-        message: message,
-        parentId: student.parent ? student.parent.toString() : null,
-        parentEmail: student.parentEmail,
-      });
-
-      // 2️⃣ إنشاء إشعار في قاعدة البيانات (موجه لولي الأمر)
-      if (student.parentEmail) {
-        const notification = new Notification({
-          target: student.parentEmail,
-          message: message,
-          sender: 'Admin',
-        });
-        await notification.save();
-
-        // 3️⃣ إرسال الإشعار عبر Socket للمستخدم المتصل (إن وجد)
-        const targetSocketId = userSockets.get(student.parentEmail);
-        if (targetSocketId) {
-          io.to(targetSocketId).emit('notification', {
-            message: message,
-            notificationId: notification._id,
-            createdAt: notification.createdAt,
-          });
-          console.log(`✅ تم إرسال الإشعار عبر Socket إلى ${student.parentEmail}`);
-        }
-
-        // 4️⃣ إرسال إشعار Web Push لجميع المشتركين (مثل الإشعارات العامة)
-        console.log(`📤 محاولة إرسال إشعار Web Push (لجميع المشتركين) لتغيير حالة ${student.name}`);
-        await sendPushNotificationToAll(
-          'تحديث حالة ابنك',
-          message,
-          { url: '/parent-dashboard', notificationId: notification._id.toString() }
-        );
-      } else {
-        console.warn(`⚠️ الطالب ${student.name} ليس له بريد ولي أمر، لم يتم إنشاء إشعار`);
-      }
-
-    } catch (error) {
-      console.error('❌ خطأ في تغيير حالة الطالب:', error);
-      socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
-    }
-  });
-
-  // ----------------------
-  // 2. إشعار عام من المدير
+  // 1. إشعار عام من المدير
   // ----------------------
   socket.on('admin-notification', async (data) => {
     if (socket.user.role !== 'admin') return;
@@ -231,13 +101,14 @@ io.on('connection', (socket) => {
       });
       await notification.save();
 
+      // بث عبر Socket للمستخدمين المتصلين
       io.emit('notification', {
         message: data.message,
         notificationId: notification._id,
         createdAt: notification.createdAt,
       });
 
-      // إرسال إشعار Web Push لجميع المشتركين
+      // إرسال Web Push لجميع المشتركين
       await sendPushNotificationToAll(
         '📢 إشعار من المدرسة',
         data.message,
@@ -246,13 +117,13 @@ io.on('connection', (socket) => {
 
       console.log(`📢 تم إرسال إشعار عام: ${data.message}`);
     } catch (err) {
-      console.error(err);
+      console.error('❌ خطأ في إرسال الإشعار العام:', err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار العام' });
     }
   });
 
   // ----------------------
-  // 3. إشعار خاص لولي أمر معين
+  // 2. إشعار خاص لولي أمر معين
   // ----------------------
   socket.on('admin-notification-to-parent', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -273,6 +144,7 @@ io.on('connection', (socket) => {
       });
       await notification.save();
 
+      // إرسال عبر Socket للمستخدم المتصل إن وجد
       const targetSocketId = userSockets.get(parentEmail);
       if (targetSocketId) {
         io.to(targetSocketId).emit('notification', {
@@ -291,20 +163,22 @@ io.on('connection', (socket) => {
         });
       }
 
-      // إرسال إشعار Web Push لجميع المشتركين (لضمان الوصول)
+      // إرسال Web Push لجميع المشتركين (لضمان الوصول)
       await sendPushNotificationToAll(
         '📩 إشعار خاص من المدرسة',
         message,
         { url: '/parent-dashboard' }
       );
+
+      console.log(`📩 تم إرسال إشعار خاص لـ ${parentEmail}`);
     } catch (err) {
-      console.error(err);
+      console.error('❌ خطأ في إرسال الإشعار الخاص:', err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار الخاص' });
     }
   });
 
   // ----------------------
-  // 4. تغيير حالة جميع الطلاب دفعة واحدة
+  // 3. تغيير حالة جميع الطلاب دفعة واحدة
   // ----------------------
   socket.on('toggle-all-status', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -315,7 +189,7 @@ io.on('connection', (socket) => {
     const { newStatus } = data;
     try {
       const students = await Student.find();
-      let updatedParents = new Set();
+      const updatedParents = new Set();
 
       for (const student of students) {
         student.isInside = newStatus;
@@ -335,12 +209,13 @@ io.on('connection', (socket) => {
       const statusText = newStatus ? 'داخل 🏫' : 'خارج 🚪';
       const message = `تم تغيير حالة جميع الطلاب إلى ${statusText}`;
 
+      // بث عبر Socket
       io.emit('status-changed', {
         message: message,
         isBulk: true,
       });
 
-      // إنشاء إشعارات لكل ولي أمر
+      // إنشاء إشعارات لكل ولي أمر في قاعدة البيانات
       for (const email of updatedParents) {
         const notification = new Notification({
           target: email,
@@ -350,28 +225,28 @@ io.on('connection', (socket) => {
         await notification.save();
       }
 
-      // إرسال إشعار Web Push لجميع المشتركين
+      // إرسال Web Push لجميع المشتركين
       await sendPushNotificationToAll(
         'تحديث جماعي',
         message,
         { url: '/parent-dashboard' }
       );
+
+      console.log(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`);
     } catch (error) {
-      console.error(error);
+      console.error('❌ خطأ في التغيير الجماعي:', error);
       socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
     }
   });
 
   // ----------------------
-  // 5. انقطاع الاتصال
+  // 4. انقطاع الاتصال
   // ----------------------
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
     console.log(`🔴 عميل غير متصل: ${userEmail}`);
   });
 });
-
-module.exports = { sendPushNotificationToAll };
 
 // ==========================================
 // الاتصال بقاعدة البيانات وبدء الخادم
