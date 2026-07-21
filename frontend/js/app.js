@@ -31,7 +31,7 @@ let currentTenantSubdomain = localStorage.getItem('tenantSubdomain') || 'demo';
 let tenants = [];
 
 // ==========================================
-// 3. نظام الترجمات (i18n) - مختصر
+// 3. نظام الترجمات (i18n)
 // ==========================================
 let currentLanguage = localStorage.getItem('language') || 'ar';
 let translations = {};
@@ -485,7 +485,7 @@ if (settingsLogoUpload) {
 }
 
 // ==========================================
-// 10. دوال QR Code - مختصرة
+// 10. دوال QR Code
 // ==========================================
 window.downloadQR = function(studentId) {
     fetchWithAuth('/api/students/' + studentId + '/qr')
@@ -537,9 +537,186 @@ function openScanner() {
 }
 
 function startScannerProcess() {
-    // ... (مختصر، نفس الكود السابق)
-    // للحفاظ على الطول، يمكنك نسخ هذا الجزء من الكود السابق
+    const resultsContainer = document.getElementById('qr-reader-results');
+    if (resultsContainer) resultsContainer.innerHTML = '📷 جاري الوصول للكاميرا...';
+
+    html5QrCode = new Html5Qrcode('qr-reader');
+
+    Html5Qrcode.getCameras()
+        .then(devices => {
+            if (devices && devices.length > 0) {
+                availableCameras = devices;
+                let selectedCamera = devices[0];
+                const backCamera = devices.find(d => {
+                    const label = d.label.toLowerCase();
+                    return label.includes('back') || label.includes('rear') || 
+                           label.includes('environment') || label.includes('خلفية');
+                });
+                if (backCamera) {
+                    selectedCamera = backCamera;
+                } else {
+                    const nonFront = devices.find(d => {
+                        const label = d.label.toLowerCase();
+                        return !label.includes('front') && !label.includes('selfie') && 
+                               !label.includes('أمامية');
+                    });
+                    if (nonFront) selectedCamera = nonFront;
+                }
+
+                currentCameraId = selectedCamera.id;
+                if (resultsContainer) resultsContainer.innerHTML = `✅ تم اختيار الكاميرا: ${selectedCamera.label || 'غير معروف'}`;
+                
+                const switchBtn = document.getElementById('switchCameraBtn');
+                if (switchBtn) {
+                    if (devices.length > 1) {
+                        switchBtn.style.display = 'inline-block';
+                    } else {
+                        switchBtn.style.display = 'none';
+                    }
+                }
+
+                startNewScanner(currentCameraId);
+            } else {
+                if (resultsContainer) resultsContainer.innerHTML = '❌ لا توجد كاميرات متاحة على هذا الجهاز.';
+            }
+        })
+        .catch(err => {
+            console.error('خطأ في الوصول للكاميرات:', err);
+            if (resultsContainer) {
+                if (err.message && err.message.includes('Permission')) {
+                    resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا في إعدادات المتصفح.';
+                } else {
+                    resultsContainer.innerHTML = `❌ فشل الوصول للكاميرا: ${err.message || 'خطأ غير معروف'}`;
+                }
+            }
+        });
 }
+
+function startNewScanner(cameraId) {
+    const resultsContainer = document.getElementById('qr-reader-results');
+    if (resultsContainer) resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
+
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode('qr-reader');
+    }
+
+    html5QrCode.start(
+        cameraId,
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        onScanSuccess,
+        onScanError
+    )
+    .then(() => {
+        if (resultsContainer) resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
+        currentCameraId = cameraId;
+    })
+    .catch(err => {
+        console.error('فشل تشغيل الكاميرا:', err);
+        if (resultsContainer) {
+            resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
+            if (err.message && err.message.includes('NotAllowedError')) {
+                resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح.';
+            }
+        }
+    });
+}
+
+function switchCamera() {
+    if (availableCameras.length < 2) {
+        alert('لا توجد كاميرات أخرى');
+        return;
+    }
+
+    const currentIndex = availableCameras.findIndex(d => d.id === currentCameraId);
+    const nextIndex = (currentIndex + 1) % availableCameras.length;
+    const nextCamera = availableCameras[nextIndex];
+    
+    console.log('🔄 تبديل الكاميرا إلى:', nextCamera.label || 'غير معروف');
+    
+    if (html5QrCode) {
+        html5QrCode.stop()
+            .then(() => {
+                html5QrCode.clear();
+                html5QrCode = null;
+                startScannerProcess();
+            })
+            .catch(() => {
+                html5QrCode = null;
+                startScannerProcess();
+            });
+    } else {
+        startScannerProcess();
+    }
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    const resultsContainer = document.getElementById('qr-reader-results');
+    if (resultsContainer) resultsContainer.innerHTML = '✅ جاري معالجة الكود...';
+
+    if (html5QrCode) {
+        html5QrCode.pause();
+    }
+
+    const cleanData = decodedText.trim();
+
+    fetchWithAuth('/api/students/scan-qr', {
+        method: 'POST',
+        body: JSON.stringify({ qrData: cleanData })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            if (resultsContainer) resultsContainer.innerHTML = '✅ ' + data.message;
+            if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+                loadAdminStudents();
+                loadAdminLogs();
+            } else {
+                loadParentStudents();
+                loadParentLogs();
+            }
+            setTimeout(closeScanner, 2000);
+        } else {
+            if (resultsContainer) resultsContainer.innerHTML = '❌ ' + data.message;
+            if (html5QrCode) html5QrCode.resume();
+        }
+    })
+    .catch(err => {
+        if (resultsContainer) resultsContainer.innerHTML = '❌ خطأ في الاتصال بالخادم';
+        console.error(err);
+        if (html5QrCode) html5QrCode.resume();
+    });
+}
+
+function onScanError(error) {
+    // تجاهل الأخطاء العادية
+}
+
+function closeScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop()
+            .then(() => {
+                html5QrCode.clear();
+                html5QrCode = null;
+            })
+            .catch(err => {
+                console.warn('خطأ في إيقاف الماسح:', err);
+                html5QrCode = null;
+            });
+    }
+    const modal = document.getElementById('scannerModal');
+    if (modal) modal.style.display = 'none';
+    const resultsContainer = document.getElementById('qr-reader-results');
+    if (resultsContainer) resultsContainer.innerHTML = '';
+    const switchBtn = document.getElementById('switchCameraBtn');
+    if (switchBtn) switchBtn.style.display = 'none';
+}
+
+const openScannerBtn = document.getElementById('openScannerBtn');
+if (openScannerBtn) openScannerBtn.addEventListener('click', openScanner);
+const closeScannerBtn = document.getElementById('closeScannerBtn');
+if (closeScannerBtn) closeScannerBtn.addEventListener('click', closeScanner);
+const switchCameraBtn = document.getElementById('switchCameraBtn');
+if (switchCameraBtn) switchCameraBtn.addEventListener('click', switchCamera);
 
 // ==========================================
 // 11. دوال الإشعارات (Web Push)
@@ -585,13 +762,739 @@ async function requestNotificationPermission() {
     }
 }
 
-async function subscribeToPush() { /* ... مختصر */ }
-async function sendSubscriptionToServer(subscription) { /* ... مختصر */ }
-function urlBase64ToUint8Array(base64String) { /* ... مختصر */ }
-async function unsubscribeFromPush() { /* ... مختصر */ }
+async function subscribeToPush() {
+    try {
+        if (!token) {
+            token = localStorage.getItem('token');
+            if (!token) {
+                console.warn('⚠️ لا يوجد توكن لتسجيل الاشتراك');
+                return null;
+            }
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
+        const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            console.log('✅ اشتراك موجود مسبقاً');
+            await sendSubscriptionToServer(subscription);
+            return subscription;
+        }
+
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedKey,
+        });
+
+        console.log('✅ اشتراك جديد تم إنشاؤه');
+        await sendSubscriptionToServer(subscription);
+        
+        return subscription;
+    } catch (err) {
+        console.error('❌ فشل الاشتراك في Push:', err);
+        return null;
+    }
+}
+
+async function sendSubscriptionToServer(subscription) {
+    try {
+        const payload = {
+            subscription: {
+                endpoint: subscription.endpoint,
+                keys: {
+                    p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
+                    auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))),
+                },
+            },
+            userEmail: currentUser ? currentUser.email : null,
+            role: currentUser ? currentUser.role : null,
+        };
+
+        const res = await fetchWithAuth('/api/subscriptions/subscribe', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+            console.log('✅ تم تسجيل الاشتراك في الخادم');
+        } else {
+            const error = await res.json();
+            console.warn('❌ فشل تسجيل الاشتراك:', error.message);
+        }
+    } catch (err) {
+        console.error('❌ خطأ في إرسال الاشتراك:', err);
+    }
+}
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function unsubscribeFromPush() {
+    try {
+        if (!token) {
+            console.log('ℹ️ لا يوجد توكن، تخطي إلغاء الاشتراك');
+            return;
+        }
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            await subscription.unsubscribe();
+            console.log('✅ تم إلغاء الاشتراك من Push');
+            
+            await fetchWithAuth('/api/subscriptions/unsubscribe', {
+                method: 'DELETE',
+                body: JSON.stringify({ endpoint: subscription.endpoint }),
+            }).catch(err => console.warn('⚠️ فشل إعلام الخادم:', err));
+        }
+    } catch (err) {
+        console.error('❌ فشل إلغاء الاشتراك:', err);
+    }
+}
 
 // ==========================================
-// 12. دوال المدير العام (Super Admin) - إدارة المؤسسات
+// 12. دوال الإشعارات (داخل التطبيق)
+// ==========================================
+async function loadAdminNotifications() {
+    try {
+        const res = await fetchWithAuth('/api/notifications');
+        if (!res.ok) throw new Error('فشل جلب الإشعارات');
+        const notifications = await res.json();
+        notifications.forEach(n => {
+            addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', n.createdAt, 'adminLogContainer');
+        });
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function loadParentNotifications() {
+    try {
+        const res = await fetchWithAuth('/api/notifications');
+        if (!res.ok) throw new Error('فشل جلب الإشعارات');
+        allNotifications = await res.json();
+        allNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        renderNotifications(showOldNotifications);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function renderNotifications(showOld) {
+    const list = document.getElementById('notificationList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (allNotifications.length === 0) {
+        list.innerHTML = '<li style="color:#8a9aaa; text-align:center; padding:20px;">📭 لا توجد إشعارات حالياً</li>';
+        const showOldBtn = document.getElementById('showOldNotificationsBtn');
+        const hideOldBtn = document.getElementById('hideOldNotificationsBtn');
+        if (showOldBtn) showOldBtn.style.display = 'none';
+        if (hideOldBtn) hideOldBtn.style.display = 'none';
+        return;
+    }
+
+    const unreadCount = allNotifications.filter(n => !n.isRead).length;
+    const recentCount = Math.max(unreadCount, 3);
+    
+    let newNotifications = [];
+    let oldNotifications = [];
+
+    if (showOld) {
+        newNotifications = allNotifications;
+        oldNotifications = [];
+        const showOldBtn = document.getElementById('showOldNotificationsBtn');
+        const hideOldBtn = document.getElementById('hideOldNotificationsBtn');
+        if (showOldBtn) showOldBtn.style.display = 'none';
+        if (hideOldBtn) hideOldBtn.style.display = 'block';
+    } else {
+        newNotifications = allNotifications.slice(0, recentCount);
+        oldNotifications = allNotifications.slice(recentCount);
+        const showOldBtn = document.getElementById('showOldNotificationsBtn');
+        const hideOldBtn = document.getElementById('hideOldNotificationsBtn');
+        if (oldNotifications.length > 0) {
+            if (showOldBtn) showOldBtn.style.display = 'inline-flex';
+            if (hideOldBtn) hideOldBtn.style.display = 'none';
+        } else {
+            if (showOldBtn) showOldBtn.style.display = 'none';
+            if (hideOldBtn) hideOldBtn.style.display = 'none';
+        }
+    }
+
+    newNotifications.forEach(n => {
+        addNotificationToUI(n.message, n.createdAt, n.isRead, n._id);
+    });
+
+    if (showOld && oldNotifications.length > 0) {
+        const divider = document.createElement('li');
+        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
+        divider.textContent = '📜 الإشعارات القديمة';
+        list.appendChild(divider);
+        
+        oldNotifications.forEach(n => {
+            addNotificationToUI(n.message, n.createdAt, n.isRead, n._id);
+        });
+    }
+}
+
+function addNotificationToUI(message, createdAt, isRead = false, id = null) {
+    const list = document.getElementById('notificationList');
+    if (!list) return;
+    const li = document.createElement('li');
+    const time = formatFullTime(createdAt);
+    li.textContent = message + ' (وقت: ' + time + ')';
+    li.style.cssText = 'padding:10px 16px; margin:4px 0; border-radius:12px; transition:0.3s;';
+    
+    if (!isRead) {
+        li.style.fontWeight = 'bold';
+        li.style.backgroundColor = '#d4e6ff';
+        li.style.borderRight = '4px solid #1c7ed6';
+        li.style.boxShadow = '0 2px 8px rgba(28,126,214,0.1)';
+        
+        if (id) {
+            fetchWithAuth('/api/notifications/' + id + '/read', { method: 'PUT' })
+                .catch(err => console.error('فشل تحديث حالة القراءة'));
+        }
+    } else {
+        li.style.backgroundColor = '#f8fcff';
+        li.style.borderRight = '4px solid #d6e8f5';
+        li.style.color = '#4a5a6e';
+    }
+    
+    list.appendChild(li);
+}
+
+function toggleOldNotifications(show) {
+    showOldNotifications = show;
+    renderNotifications(showOldNotifications);
+}
+
+// ==========================================
+// 13. دوال التغيير الجماعي
+// ==========================================
+async function toggleAllStudents(status) {
+    const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
+    const confirmed = await showConfirmModal('تغيير حالة جميع الطلاب', `هل أنت متأكد من تغيير حالة جميع الطلاب إلى ${statusText}؟`);
+    if (!confirmed) return;
+
+    if (socket) {
+        socket.emit('toggle-all-status', { newStatus: status });
+        addLog(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`, new Date(), 'adminLogContainer');
+        loadAdminStudents();
+    } else {
+        alert('Socket غير متصل');
+    }
+}
+// ==========================================
+// 14. دوال المدير (والمدير العام)
+// ==========================================
+async function loadAdminStudents() {
+    try {
+        const res = await fetchWithAuth('/api/students');
+        if (!res.ok) throw new Error('فشل جلب الطلاب');
+        const students = await res.json();
+        renderStudents(students, 'adminStudentsList', true);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function renderStudents(students, containerId, showAdminControls) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!students || students.length === 0) {
+        container.innerHTML = '<div class="loading-state">📭 لا يوجد تلاميذ</div>';
+        return;
+    }
+    let html = '';
+    students.forEach(s => {
+        const statusText = getStatusText(s.isInside);
+        const statusClass = getStatusClass(s.isInside);
+        const toggleText = s.isInside ? 'تسجيل خروج' : 'تسجيل دخول';
+        const toggleClass = s.isInside ? 'exit' : 'enter';
+
+        html += `
+            <div class="student-card" data-id="${s._id}">
+                <div>
+                    <div class="student-name">${s.name} (${s.studentId})</div>
+                    <div style="font-size:14px;color:#4a5a6e;">ولي الأمر: ${s.parentName}</div>
+                    <div style="font-size:13px;color:#6a7a8e;">📞 ${s.parentPhone}</div>
+                    <span class="student-time">🕒 آخر تحديث: ${formatFullTime(s.lastUpdate)}</span>
+                </div>
+                <span class="status-badge ${statusClass}">${statusText}</span>
+                <div class="card-actions">
+                    ${showAdminControls ? `
+                        <button class="btn-toggle ${toggleClass}" onclick="adminToggle('${s._id}')">${toggleText}</button>
+                        <button class="btn-delete" onclick="adminDelete('${s._id}')">🗑️</button>
+                        <button class="btn-edit" onclick="openEditStudent('${s._id}')"><i class="fas fa-edit"></i> تعديل</button>
+                    ` : `
+                        <span style="font-size:13px;color:#7b8b9e;">آخر دخول/خروج: ${formatFullTime(s.lastUpdate)}</span>
+                    `}
+                    <button class="btn-qr" onclick="downloadQR('${s._id}')"><i class="fas fa-qrcode"></i> QR</button>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+window.adminToggle = async function(id) {
+    const confirmed = await showConfirmModal('تغيير حالة الطالب', 'هل أنت متأكد من تغيير حالة هذا الطالب؟');
+    if (!confirmed) return;
+
+    fetchWithAuth('/api/students/' + id + '/toggle', { method: 'PUT' })
+        .then(res => {
+            if (!res.ok) throw new Error('فشل تغيير الحالة');
+            return res.json();
+        })
+        .then(() => {
+            loadAdminStudents();
+            addLog('🔄 تم تغيير حالة الطالب', new Date(), 'adminLogContainer');
+        })
+        .catch(err => alert('خطأ: ' + err.message));
+};
+
+window.adminDelete = async function(id) {
+    const confirmed = await showConfirmModal('حذف الطالب', 'هل أنت متأكد من حذف هذا الطالب نهائياً؟');
+    if (!confirmed) return;
+
+    fetchWithAuth('/api/students/' + id, { method: 'DELETE' })
+        .then(() => {
+            loadAdminStudents();
+            addLog('🗑️ تم حذف تلميذ', new Date(), 'adminLogContainer');
+        })
+        .catch(err => alert('خطأ في الحذف'));
+};
+
+// ==========================================
+// 15. تعديل معلومات الطالب
+// ==========================================
+window.openEditStudent = async function(studentId) {
+    try {
+        const res = await fetchWithAuth('/api/students');
+        if (!res.ok) throw new Error('فشل جلب بيانات الطالب');
+        const students = await res.json();
+        const student = students.find(s => s._id === studentId);
+        if (!student) {
+            alert('الطالب غير موجود');
+            return;
+        }
+
+        const editId = document.getElementById('editStudentId');
+        const editName = document.getElementById('editName');
+        const editParentName = document.getElementById('editParentName');
+        const editParentPhone = document.getElementById('editParentPhone');
+        const editParentEmail = document.getElementById('editParentEmail');
+        const editAddress = document.getElementById('editAddress');
+        const modal = document.getElementById('editStudentModal');
+        if (editId) editId.value = student._id;
+        if (editName) editName.value = student.name || '';
+        if (editParentName) editParentName.value = student.parentName || '';
+        if (editParentPhone) editParentPhone.value = student.parentPhone || '';
+        if (editParentEmail) editParentEmail.value = student.parentEmail || '';
+        if (editAddress) editAddress.value = student.address || '';
+        if (modal) modal.style.display = 'flex';
+    } catch (err) {
+        alert('خطأ في جلب بيانات الطالب: ' + err.message);
+    }
+};
+
+const saveEditStudentBtn = document.getElementById('saveEditStudentBtn');
+if (saveEditStudentBtn) {
+    saveEditStudentBtn.addEventListener('click', async function() {
+        const id = document.getElementById('editStudentId')?.value;
+        const name = document.getElementById('editName')?.value.trim();
+        const parentName = document.getElementById('editParentName')?.value.trim();
+        const parentPhone = document.getElementById('editParentPhone')?.value.trim();
+        const parentEmail = document.getElementById('editParentEmail')?.value.trim();
+        const address = document.getElementById('editAddress')?.value.trim();
+
+        if (!name || !parentName || !parentPhone || !parentEmail) {
+            alert('جميع الحقول مطلوبة ما عدا العنوان');
+            return;
+        }
+
+        const confirmed = await showConfirmModal('تعديل الطالب', 'هل أنت متأكد من حفظ التعديلات؟');
+        if (!confirmed) return;
+
+        try {
+            const res = await fetchWithAuth('/api/students/' + id, {
+                method: 'PUT',
+                body: JSON.stringify({ name, parentName, parentPhone, parentEmail, address })
+            });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || 'فشل التعديل');
+            }
+            alert('✅ تم تعديل معلومات الطالب بنجاح');
+            const modal = document.getElementById('editStudentModal');
+            if (modal) modal.style.display = 'none';
+            loadAdminStudents();
+            addLog('✏️ تم تعديل معلومات الطالب ' + name, new Date(), 'adminLogContainer');
+        } catch (err) {
+            alert('خطأ: ' + err.message);
+        }
+    });
+}
+
+const closeEditStudentBtn = document.getElementById('closeEditStudentBtn');
+if (closeEditStudentBtn) {
+    closeEditStudentBtn.addEventListener('click', function() {
+        const modal = document.getElementById('editStudentModal');
+        if (modal) modal.style.display = 'none';
+    });
+}
+
+const editStudentModal = document.getElementById('editStudentModal');
+if (editStudentModal) {
+    editStudentModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+        }
+    });
+}
+
+// ==========================================
+// 16. عرض جميع سجلات النشاطات في نافذة منبثقة
+// ==========================================
+const adminShowAllLogsBtn = document.getElementById('adminShowAllLogsBtn');
+if (adminShowAllLogsBtn) {
+    adminShowAllLogsBtn.addEventListener('click', function() {
+        const container = document.getElementById('allLogsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        if (sortedLogs.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#8a9aaa; padding:20px;">لا توجد سجلات</div>';
+        } else {
+            sortedLogs.forEach(log => {
+                const item = document.createElement('div');
+                item.className = 'log-item';
+                item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+                container.appendChild(item);
+            });
+        }
+        
+        const modal = document.getElementById('allLogsModal');
+        if (modal) modal.style.display = 'flex';
+    });
+}
+
+const closeAllLogsBtn = document.getElementById('closeAllLogsBtn');
+if (closeAllLogsBtn) {
+    closeAllLogsBtn.addEventListener('click', function() {
+        const modal = document.getElementById('allLogsModal');
+        if (modal) modal.style.display = 'none';
+    });
+}
+
+const allLogsModal = document.getElementById('allLogsModal');
+if (allLogsModal) {
+    allLogsModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+        }
+    });
+}
+
+// ==========================================
+// 17. دوال المدير (إضافة طالب، إشعارات، إلخ)
+// ==========================================
+async function adminAddStudent() {
+    const name = document.getElementById('adminStudentName')?.value.trim();
+    const parentEmail = document.getElementById('adminParentEmail')?.value.trim();
+    const parentName = document.getElementById('adminParentName')?.value.trim();
+    const parentPhone = document.getElementById('adminParentPhone')?.value.trim();
+    const address = document.getElementById('adminAddress')?.value.trim();
+    if (!name || !parentEmail || !parentName || !parentPhone) {
+        alert('جميع الحقول مطلوبة ما عدا العنوان');
+        return;
+    }
+
+    const confirmed = await showConfirmModal('إضافة طالب جديد', `تأكيد إضافة الطالب "${name}" لولي الأمر "${parentName}"؟`);
+    if (!confirmed) return;
+
+    try {
+        const res = await fetchWithAuth('/api/students', {
+            method: 'POST',
+            body: JSON.stringify({ name, parentEmail, parentName, parentPhone, address })
+        });
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل الإضافة');
+        }
+        const studentNameInput = document.getElementById('adminStudentName');
+        const parentEmailInput = document.getElementById('adminParentEmail');
+        const parentNameInput = document.getElementById('adminParentName');
+        const parentPhoneInput = document.getElementById('adminParentPhone');
+        const addressInput = document.getElementById('adminAddress');
+        if (studentNameInput) studentNameInput.value = '';
+        if (parentEmailInput) parentEmailInput.value = '';
+        if (parentNameInput) parentNameInput.value = '';
+        if (parentPhoneInput) parentPhoneInput.value = '';
+        if (addressInput) addressInput.value = '';
+        loadAdminStudents();
+        addLog('➕ تم إضافة الطالب ' + name, new Date(), 'adminLogContainer');
+        const form = document.getElementById('addStudentForm');
+        const btn = document.getElementById('toggleAddStudentBtn');
+        if (form) form.style.display = 'none';
+        if (btn) btn.textContent = '➕ إضافة طالب جديد';
+    } catch (err) {
+        alert('خطأ: ' + err.message);
+    }
+}
+
+function toggleAddStudentForm() {
+    const form = document.getElementById('addStudentForm');
+    const btn = document.getElementById('toggleAddStudentBtn');
+    if (!form || !btn) return;
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        btn.innerHTML = '<i class="fas fa-times"></i> إغلاق نموذج الإضافة';
+    } else {
+        form.style.display = 'none';
+        btn.innerHTML = '<i class="fas fa-plus-circle"></i> إضافة طالب جديد';
+    }
+}
+
+async function adminSendGeneralNotification() {
+    const msg = document.getElementById('adminNotificationMsg')?.value.trim();
+    if (!msg) return alert('اكتب رسالة الإشعار');
+    
+    const confirmed = await showConfirmModal('إرسال إشعار عام', 'هل أنت متأكد من إرسال هذا الإشعار لجميع أولياء الأمور؟');
+    if (!confirmed) return;
+
+    if (socket) {
+        socket.emit('admin-notification', { message: msg });
+        const msgInput = document.getElementById('adminNotificationMsg');
+        if (msgInput) msgInput.value = '';
+        addLog('📢 تم إرسال إشعار عام', new Date(), 'adminLogContainer');
+        alert('✅ تم إرسال الإشعار العام بنجاح');
+    } else {
+        alert('Socket غير متصل');
+    }
+}
+
+async function adminSendParentNotification() {
+    const email = document.getElementById('adminParentEmailInput')?.value.trim();
+    const msg = document.getElementById('adminParentNotificationMsg')?.value.trim();
+    if (!email || !msg) return alert('املأ جميع الحقول');
+    
+    const confirmed = await showConfirmModal('إرسال إشعار خاص', `هل أنت متأكد من إرسال هذا الإشعار لولي الأمر (${email})؟`);
+    if (!confirmed) return;
+
+    if (socket) {
+        socket.emit('admin-notification-to-parent', { parentEmail: email, message: msg });
+        const emailInput = document.getElementById('adminParentEmailInput');
+        const msgInput = document.getElementById('adminParentNotificationMsg');
+        if (emailInput) emailInput.value = '';
+        if (msgInput) msgInput.value = '';
+        alert('✅ تم إرسال الإشعار الخاص بنجاح');
+    } else {
+        alert('Socket غير متصل');
+    }
+}
+
+// ==========================================
+// 18. دوال السجل (مع عرض آخر 5 سجلات فقط)
+// ==========================================
+function addLog(message, date, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const time = formatFullTime(date || new Date());
+    const logEntry = { message, time, date: date || new Date() };
+
+    if (containerId === 'adminLogContainer') {
+        adminLogs.push(logEntry);
+        renderAdminLogs(adminShowOldLogs);
+    } else if (containerId === 'parentLogContainer') {
+        parentLogs.push(logEntry);
+        renderParentLogs(parentShowOldLogs);
+    }
+}
+
+async function loadAdminLogs() {
+    renderAdminLogs(adminShowOldLogs);
+}
+
+function renderAdminLogs(showOld) {
+    const container = document.getElementById('adminLogContainer');
+    if (!container) return;
+
+    const showOldBtn = document.getElementById('adminShowOldLogsBtn');
+    const hideOldBtn = document.getElementById('adminHideOldLogsBtn');
+    const showAllBtn = document.getElementById('adminShowAllLogsBtn');
+    if (showOldBtn) showOldBtn.style.display = 'none';
+    if (hideOldBtn) hideOldBtn.style.display = 'none';
+    if (showAllBtn) showAllBtn.style.display = 'none';
+
+    if (adminLogs.length === 0) {
+        container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد نشاطات بعد</div>';
+        return;
+    }
+
+    const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const todayLogs = sortedLogs.filter(log => isToday(log.date));
+    const oldLogs = sortedLogs.filter(log => !isToday(log.date));
+
+    container.innerHTML = '';
+    let logsToShow = [];
+
+    if (showOld) {
+        logsToShow = sortedLogs;
+        if (showOldBtn) showOldBtn.style.display = 'none';
+        if (hideOldBtn) hideOldBtn.style.display = 'inline-flex';
+        if (showAllBtn) showAllBtn.style.display = 'none';
+    } else {
+        const todayOnly = todayLogs.length > 0 ? todayLogs : sortedLogs.slice(0, 5);
+        logsToShow = todayOnly.slice(0, 5);
+        
+        if (oldLogs.length > 0 || todayLogs.length > 5) {
+            if (showOldBtn) showOldBtn.style.display = 'inline-flex';
+            if (hideOldBtn) hideOldBtn.style.display = 'none';
+            if (sortedLogs.length > 5 && showAllBtn) showAllBtn.style.display = 'inline-flex';
+        } else {
+            if (showOldBtn) showOldBtn.style.display = 'none';
+            if (hideOldBtn) hideOldBtn.style.display = 'none';
+            if (showAllBtn) showAllBtn.style.display = 'none';
+        }
+    }
+
+    logsToShow.forEach(log => {
+        const item = document.createElement('div');
+        item.className = 'log-item';
+        item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+        container.appendChild(item);
+    });
+
+    if (showOld && oldLogs.length > 0) {
+        const divider = document.createElement('div');
+        divider.className = 'log-item';
+        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
+        divider.textContent = '📜 السجل السابق';
+        container.appendChild(divider);
+    }
+}
+
+function toggleAdminOldLogs(show) {
+    adminShowOldLogs = show;
+    renderAdminLogs(adminShowOldLogs);
+}
+
+// ==========================================
+// 19. دوال ولي الأمر
+// ==========================================
+async function loadParentStudents() {
+    try {
+        const res = await fetchWithAuth('/api/students');
+        if (!res.ok) throw new Error('فشل جلب بيانات أبنائك');
+        const students = await res.json();
+        renderStudents(students, 'parentStudentsList', false);
+        if (students.length > 0) {
+            loadAttendance(students[0]._id);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function loadAttendance(studentId) {
+    try {
+        const res = await fetchWithAuth('/api/students/' + studentId + '/attendance');
+        if (!res.ok) throw new Error('فشل جلب سجل الحضور');
+        const records = await res.json();
+        parentLogs = records.map(r => ({
+            message: r.status === 'in' ? 'دخول' : 'خروج',
+            time: formatFullTime(r.timestamp),
+            date: new Date(r.timestamp)
+        }));
+        renderParentLogs(parentShowOldLogs);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function loadParentLogs() {
+    renderParentLogs(parentShowOldLogs);
+}
+
+function renderParentLogs(showOld) {
+    const container = document.getElementById('parentLogContainer');
+    if (!container) return;
+
+    const showOldBtn = document.getElementById('parentShowOldLogsBtn');
+    const hideOldBtn = document.getElementById('parentHideOldLogsBtn');
+    if (showOldBtn) showOldBtn.style.display = 'none';
+    if (hideOldBtn) hideOldBtn.style.display = 'none';
+
+    if (parentLogs.length === 0) {
+        container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد سجلات بعد</div>';
+        return;
+    }
+
+    const sortedLogs = [...parentLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const todayLogs = sortedLogs.filter(log => isToday(log.date));
+    const oldLogs = sortedLogs.filter(log => !isToday(log.date));
+
+    container.innerHTML = '';
+    let logsToShow = [];
+
+    if (showOld) {
+        logsToShow = sortedLogs;
+        if (showOldBtn) showOldBtn.style.display = 'none';
+        if (hideOldBtn) hideOldBtn.style.display = 'inline-flex';
+    } else {
+        logsToShow = todayLogs.slice(0, 5);
+        if (oldLogs.length > 0 || todayLogs.length > 5) {
+            if (showOldBtn) showOldBtn.style.display = 'inline-flex';
+            if (hideOldBtn) hideOldBtn.style.display = 'none';
+        } else {
+            if (showOldBtn) showOldBtn.style.display = 'none';
+            if (hideOldBtn) hideOldBtn.style.display = 'none';
+        }
+    }
+
+    logsToShow.forEach(log => {
+        const item = document.createElement('div');
+        item.className = 'log-item';
+        item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+        container.appendChild(item);
+    });
+
+    if (showOld && oldLogs.length > 0) {
+        const divider = document.createElement('div');
+        divider.className = 'log-item';
+        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
+        divider.textContent = '📜 السجل السابق';
+        container.appendChild(divider);
+    }
+}
+
+function toggleParentOldLogs(show) {
+    parentShowOldLogs = show;
+    renderParentLogs(parentShowOldLogs);
+}
+
+// ==========================================
+// 20. دوال المدير العام (Super Admin) - إدارة المؤسسات
 // ==========================================
 async function loadTenants() {
     try {
@@ -646,7 +1549,7 @@ function renderTenants() {
 }
 
 // ==========================================
-// 13. دوال المدير العام - الأزرار
+// 21. دوال المدير العام - الأزرار (✅ تم الإصلاح الكامل)
 // ==========================================
 
 // فتح نافذة إضافة مؤسسة
@@ -675,7 +1578,17 @@ if (closeAddTenantBtn) {
     console.warn('⚠️ closeAddTenantBtn غير موجود');
 }
 
-// إضافة مؤسسة جديدة
+// إغلاق النافذة عند الضغط خارجها
+const addTenantModal = document.getElementById('addTenantModal');
+if (addTenantModal) {
+    addTenantModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+        }
+    });
+}
+
+// حفظ إضافة مؤسسة جديدة
 const saveNewTenantBtn = document.getElementById('saveNewTenantBtn');
 if (saveNewTenantBtn) {
     saveNewTenantBtn.addEventListener('click', async function() {
@@ -727,7 +1640,7 @@ if (saveNewTenantBtn) {
 }
 
 // ==========================================
-// 14. دوال تعديل المؤسسة
+// 22. دوال تعديل المؤسسة
 // ==========================================
 window.editTenant = async function(tenantId) {
     try {
@@ -762,6 +1675,16 @@ if (closeEditTenantBtn) {
     console.warn('⚠️ closeEditTenantBtn غير موجود');
 }
 
+// إغلاق النافذة عند الضغط خارجها
+const editTenantModal = document.getElementById('editTenantModal');
+if (editTenantModal) {
+    editTenantModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+        }
+    });
+}
+
 // حفظ تعديلات المؤسسة
 const saveEditTenantBtn = document.getElementById('saveEditTenantBtn');
 if (saveEditTenantBtn) {
@@ -775,7 +1698,10 @@ if (saveEditTenantBtn) {
         if (!id) { alert('خطأ: لم يتم العثور على معرف المؤسسة'); return; }
         if (!name) { alert('اسم المؤسسة مطلوب'); return; }
 
-        const confirmed = await showConfirmModal('تعديل المؤسسة', `هل أنت متأكد من حفظ التعديلات للمؤسسة "${name}"؟`);
+        const confirmed = await showConfirmModal(
+            'تعديل المؤسسة',
+            `هل أنت متأكد من حفظ التعديلات للمؤسسة "${name}"؟`
+        );
         if (!confirmed) return;
 
         try {
@@ -799,7 +1725,7 @@ if (saveEditTenantBtn) {
 }
 
 // ==========================================
-// 15. تبديل حالة المؤسسة
+// 23. تبديل حالة المؤسسة (تفعيل/تعطيل)
 // ==========================================
 window.toggleTenantStatus = async function(tenantId) {
     try {
@@ -835,56 +1761,7 @@ window.toggleTenantStatus = async function(tenantId) {
 };
 
 // ==========================================
-// 16. دوال المدير - الأزرار الرئيسية
-// ==========================================
-async function toggleAllStudents(status) {
-    const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
-    const confirmed = await showConfirmModal('تغيير حالة جميع الطلاب', `هل أنت متأكد من تغيير حالة جميع الطلاب إلى ${statusText}؟`);
-    if (!confirmed) return;
-
-    if (socket) {
-        socket.emit('toggle-all-status', { newStatus: status });
-        addLog(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`, new Date(), 'adminLogContainer');
-        loadAdminStudents();
-    } else {
-        alert('Socket غير متصل');
-    }
-}
-
-async function loadAdminStudents() { /* ... مختصر */ }
-function renderStudents(students, containerId, showAdminControls) { /* ... مختصر */ }
-async function adminAddStudent() { /* ... مختصر */ }
-function toggleAddStudentForm() { /* ... مختصر */ }
-async function adminSendGeneralNotification() { /* ... مختصر */ }
-async function adminSendParentNotification() { /* ... مختصر */ }
-
-// ==========================================
-// 17. دوال السجل (Logs)
-// ==========================================
-function addLog(message, date, containerId) { /* ... مختصر */ }
-async function loadAdminLogs() { /* ... مختصر */ }
-function renderAdminLogs(showOld) { /* ... مختصر */ }
-function toggleAdminOldLogs(show) { adminShowOldLogs = show; renderAdminLogs(adminShowOldLogs); }
-
-// ==========================================
-// 18. دوال ولي الأمر
-// ==========================================
-async function loadParentStudents() { /* ... مختصر */ }
-async function loadParentLogs() { /* ... مختصر */ }
-function renderParentLogs(showOld) { /* ... مختصر */ }
-function toggleParentOldLogs(show) { parentShowOldLogs = show; renderParentLogs(parentShowOldLogs); }
-
-// ==========================================
-// 19. دوال الإشعارات داخل التطبيق
-// ==========================================
-async function loadAdminNotifications() { /* ... مختصر */ }
-async function loadParentNotifications() { /* ... مختصر */ }
-function renderNotifications(showOld) { /* ... مختصر */ }
-function addNotificationToUI(message, createdAt, isRead, id) { /* ... مختصر */ }
-function toggleOldNotifications(show) { showOldNotifications = show; renderNotifications(showOldNotifications); }
-
-// ==========================================
-// 20. ✅ إصلاح أزرار تسجيل الدخول والتسجيل
+// 24. ✅ إصلاح أزرار تسجيل الدخول والتسجيل
 // ==========================================
 function setupAuthEvents() {
     console.log('🔧 جاري ربط أحداث المصادقة...');
@@ -999,11 +1876,71 @@ function setupAuthEvents() {
     const logoutBtnSuperAdmin = document.getElementById('logoutBtnSuperAdmin');
     if (logoutBtnSuperAdmin) logoutBtnSuperAdmin.addEventListener('click', logout);
 
+    // ---------- أزرار التغيير الجماعي ----------
+    const toggleAllInsideBtn = document.getElementById('toggleAllInsideBtn');
+    if (toggleAllInsideBtn) {
+        toggleAllInsideBtn.addEventListener('click', function() { toggleAllStudents(true); });
+        console.log('✅ ربط toggleAllInsideBtn');
+    }
+
+    const toggleAllOutsideBtn = document.getElementById('toggleAllOutsideBtn');
+    if (toggleAllOutsideBtn) {
+        toggleAllOutsideBtn.addEventListener('click', function() { toggleAllStudents(false); });
+        console.log('✅ ربط toggleAllOutsideBtn');
+    }
+
+    // ---------- أزرار الإشعارات ----------
+    const adminSendNotificationBtn = document.getElementById('adminSendNotificationBtn');
+    if (adminSendNotificationBtn) {
+        adminSendNotificationBtn.addEventListener('click', adminSendGeneralNotification);
+        console.log('✅ ربط adminSendNotificationBtn');
+    }
+
+    const adminSendParentNotificationBtn = document.getElementById('adminSendParentNotificationBtn');
+    if (adminSendParentNotificationBtn) {
+        adminSendParentNotificationBtn.addEventListener('click', adminSendParentNotification);
+        console.log('✅ ربط adminSendParentNotificationBtn');
+    }
+
+    // ---------- أزرار السجل ----------
+    const adminShowOldLogsBtn = document.getElementById('adminShowOldLogsBtn');
+    if (adminShowOldLogsBtn) {
+        adminShowOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(true); });
+        console.log('✅ ربط adminShowOldLogsBtn');
+    }
+    const adminHideOldLogsBtn = document.getElementById('adminHideOldLogsBtn');
+    if (adminHideOldLogsBtn) {
+        adminHideOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(false); });
+        console.log('✅ ربط adminHideOldLogsBtn');
+    }
+    const adminShowAllLogsBtn = document.getElementById('adminShowAllLogsBtn');
+    if (adminShowAllLogsBtn) {
+        adminShowAllLogsBtn.addEventListener('click', function() {
+            const container = document.getElementById('allLogsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+            if (sortedLogs.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#8a9aaa; padding:20px;">لا توجد سجلات</div>';
+            } else {
+                sortedLogs.forEach(log => {
+                    const item = document.createElement('div');
+                    item.className = 'log-item';
+                    item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+                    container.appendChild(item);
+                });
+            }
+            const modal = document.getElementById('allLogsModal');
+            if (modal) modal.style.display = 'flex';
+        });
+        console.log('✅ ربط adminShowAllLogsBtn');
+    }
+
     console.log('🔧 تم ربط جميع أحداث المصادقة بنجاح!');
 }
 
 // ==========================================
-// 21. بدء التطبيق
+// 25. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 بدء التطبيق...');
