@@ -309,18 +309,21 @@ function connectSocket() {
 
     socket.on('connect', () => console.log('✅ Socket متصل'));
 
-    socket.on('status-changed', (data) => {
-        if (currentUser.role === 'admin') {
-            loadAdminStudents();
-            loadAdminLogs();
-        } else {
-            if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
-                loadParentStudents();
-                loadParentLogs();
-                showBrowserNotification('تحديث حالة ابنك', data.message);
-            }
+socket.on('status-changed', (data) => {
+    if (currentUser.role === 'admin') {
+        loadAdminStudents();
+        loadAdminLogs();
+    } else {
+        if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
+            loadParentStudents();
+            loadParentLogs();
+            const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
+            const message = translate('notification.status_changed', { name: data.student.name, status: statusText });
+            addLog(message, new Date(), 'parentLogContainer');
+            showBrowserNotification(translate('notification.title'), message);
         }
-    });
+    }
+});
 
     socket.on('notification', (data) => {
         if (currentUser.role === 'parent') {
@@ -421,7 +424,7 @@ async function saveSchoolSettings() {
     let logoFileName = schoolSettings ? schoolSettings.logoFileName : '';
     
     const fileInput = document.getElementById('settingsLogoUpload');
-    if (fileInput.files && fileInput.files.length > 0) {
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
         const file = fileInput.files[0];
         const reader = new FileReader();
         const base64 = await new Promise((resolve) => {
@@ -432,7 +435,10 @@ async function saveSchoolSettings() {
         logoFileName = file.name;
     }
 
-    const confirmed = await showConfirmModal('حفظ إعدادات المدرسة', 'هل أنت متأكد من حفظ التغييرات؟');
+    const confirmed = await showConfirmModal(
+        translate('settings.save'),
+        translate('settings.confirm')
+    );
     if (!confirmed) return;
 
     try {
@@ -440,24 +446,25 @@ async function saveSchoolSettings() {
             method: 'PUT',
             body: JSON.stringify({ schoolName, address, phone, email, logo, logoFileName })
         });
-        if (!res.ok) throw new Error('فشل حفظ الإعدادات');
+        if (!res.ok) throw new Error(translate('common.error'));
         const data = await res.json();
         schoolSettings = data;
         applySchoolSettings();
-        alert('تم حفظ إعدادات المدرسة بنجاح');
+        alert(translate('settings.success'));
         document.getElementById('settingsForm').style.display = 'none';
-        document.getElementById('toggleSettingsBtn').innerHTML = '<i class="fas fa-cog"></i> إعدادات المؤسسة';
+        document.getElementById('toggleSettingsBtn').innerHTML = `<i class="fas fa-cog"></i> ${translate('settings.school')}`;
     } catch (err) {
-        alert('خطأ: ' + err.message);
+        alert(translate('common.error'));
     }
 }
 
 function toggleSettingsForm() {
     const form = document.getElementById('settingsForm');
     const btn = document.getElementById('toggleSettingsBtn');
+    if (!form || !btn) return;
     if (form.style.display === 'none') {
         form.style.display = 'block';
-        btn.innerHTML = '<i class="fas fa-times"></i> إغلاق الإعدادات';
+        btn.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.close')}`;
         if (schoolSettings) {
             document.getElementById('settingsSchoolName').value = schoolSettings.schoolName || '';
             document.getElementById('settingsAddress').value = schoolSettings.address || '';
@@ -472,7 +479,7 @@ function toggleSettingsForm() {
         }
     } else {
         form.style.display = 'none';
-        btn.innerHTML = '<i class="fas fa-cog"></i> إعدادات المؤسسة';
+        btn.innerHTML = `<i class="fas fa-cog"></i> ${translate('settings.school')}`;
     }
 }
 
@@ -514,9 +521,10 @@ window.downloadQR = function(studentId) {
 
 function openScanner() {
     const modal = document.getElementById('scannerModal');
+    if (!modal) return;
     modal.style.display = 'flex';
     const resultsContainer = document.getElementById('qr-reader-results');
-    resultsContainer.innerHTML = '📷 جاري طلب الإذن للكاميرا...';
+    if (resultsContainer) resultsContainer.innerHTML = `📷 ${translate('qr.accessing_camera')}`;
 
     if (typeof Html5Qrcode === 'undefined') {
         resultsContainer.innerHTML = '❌ مكتبة المسح غير محملة، تحقق من اتصال الإنترنت.';
@@ -541,7 +549,7 @@ function openScanner() {
 
 function startScannerProcess() {
     const resultsContainer = document.getElementById('qr-reader-results');
-    resultsContainer.innerHTML = '📷 جاري الوصول للكاميرا...';
+    if (resultsContainer) resultsContainer.innerHTML = translate('scanner.accessing');
 
     html5QrCode = new Html5Qrcode('qr-reader');
 
@@ -593,7 +601,7 @@ function startScannerProcess() {
 
 function startNewScanner(cameraId) {
     const resultsContainer = document.getElementById('qr-reader-results');
-    resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
+    if (resultsContainer) resultsContainer.innerHTML = `⏳ ${translate('qr.starting_camera')}`;
 
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode('qr-reader');
@@ -606,9 +614,10 @@ function startNewScanner(cameraId) {
         onScanError
     )
     .then(() => {
-        resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
+        if (resultsContainer) resultsContainer.innerHTML = `📸 ${translate('qr.camera_working')}`;
         currentCameraId = cameraId;
     })
+}
     .catch(err => {
         console.error('فشل تشغيل الكاميرا:', err);
         resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
@@ -971,15 +980,18 @@ function toggleOldNotifications(show) {
 // 12. دوال التغيير الجماعي
 // ==========================================
 async function toggleAllStudents(status) {
-    const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
-    const confirmed = await showConfirmModal('تغيير حالة جميع الطلاب', `هل أنت متأكد من تغيير حالة جميع الطلاب إلى ${statusText}؟`);
+    const statusText = status ? translate('student.inside') : translate('student.outside');
+    const confirmed = await showConfirmModal(
+        translate('bulk.all_inside'),
+        translate('bulk.confirm', { status: statusText })
+    );
     if (!confirmed) return;
 
     if (socket) {
         socket.emit('toggle-all-status', { newStatus: status });
-        addLog(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`, new Date(), 'adminLogContainer');
+        addLog(`🔄 ${translate('bulk.all_inside')} ${statusText}`, new Date(), 'adminLogContainer');
     } else {
-        alert('Socket غير متصل');
+        alert(translate('common.error'));
     }
 }
 
@@ -997,37 +1009,41 @@ async function loadAdminStudents() {
     }
 }
 
-function renderStudents(students, containerId, showAdminControls) {
+ffunction renderStudents(students, containerId, showAdminControls) {
     const container = document.getElementById(containerId);
+    if (!container) return;
     if (!students || students.length === 0) {
-        container.innerHTML = '<div class="loading-state">📭 لا يوجد تلاميذ</div>';
+        container.innerHTML = `<div class="loading-state">${translate('student.no_students')}</div>`;
         return;
     }
     let html = '';
     students.forEach(s => {
         const statusText = getStatusText(s.isInside);
         const statusClass = getStatusClass(s.isInside);
-        const toggleText = s.isInside ? 'تسجيل خروج' : 'تسجيل دخول';
+        const toggleText = s.isInside ? translate('student.toggle_exit') : translate('student.entry');
         const toggleClass = s.isInside ? 'exit' : 'enter';
+        const parentLabel = translate('student.parent');
+        const lastUpdateLabel = translate('student.last_update');
+        const lastEntryExitLabel = translate('student.last_entry_exit');
 
         html += `
             <div class="student-card" data-id="${s._id}">
                 <div>
                     <div class="student-name">${s.name} (${s.studentId})</div>
-                    <div style="font-size:14px;color:#4a5a6e;">ولي الأمر: ${s.parentName}</div>
+                    <div style="font-size:14px;color:#4a5a6e;">${parentLabel}: ${s.parentName}</div>
                     <div style="font-size:13px;color:#6a7a8e;">📞 ${s.parentPhone}</div>
-                    <span class="student-time">🕒 آخر تحديث: ${formatFullTime(s.lastUpdate)}</span>
+                    <span class="student-time">🕒 ${lastUpdateLabel}: ${formatFullTime(s.lastUpdate)}</span>
                 </div>
                 <span class="status-badge ${statusClass}">${statusText}</span>
                 <div class="card-actions">
                     ${showAdminControls ? `
                         <button class="btn-toggle ${toggleClass}" onclick="adminToggle('${s._id}')">${toggleText}</button>
-                        <button class="btn-delete" onclick="adminDelete('${s._id}')">🗑️</button>
-                        <button class="btn-edit" onclick="openEditStudent('${s._id}')"><i class="fas fa-edit"></i> تعديل</button>
+                        <button class="btn-delete" onclick="adminDelete('${s._id}')">${translate('common.delete')}</button>
+                        <button class="btn-edit" onclick="openEditStudent('${s._id}')"><i class="fas fa-edit"></i> ${translate('common.edit')}</button>
                     ` : `
-                        <span style="font-size:13px;color:#7b8b9e;">آخر دخول/خروج: ${formatFullTime(s.lastUpdate)}</span>
+                        <span style="font-size:13px;color:#7b8b9e;">${lastEntryExitLabel}: ${formatFullTime(s.lastUpdate)}</span>
                     `}
-                    <button class="btn-qr" onclick="downloadQR('${s._id}')"><i class="fas fa-qrcode"></i> QR</button>
+                    <button class="btn-qr" onclick="downloadQR('${s._id}')"><i class="fas fa-qrcode"></i> ${translate('common.qr')}</button>
                 </div>
             </div>
         `;
@@ -1036,7 +1052,10 @@ function renderStudents(students, containerId, showAdminControls) {
 }
 
 window.adminToggle = async function(id) {
-    const confirmed = await showConfirmModal('تغيير حالة الطالب', 'هل أنت متأكد من تغيير حالة هذا الطالب؟');
+    const confirmed = await showConfirmModal(
+        translate('student.toggle'),
+        translate('student.confirm_toggle')
+    );
     if (!confirmed) return;
 
     fetchWithAuth('/api/students/' + id + '/toggle', { method: 'PUT' })
@@ -1046,9 +1065,9 @@ window.adminToggle = async function(id) {
         })
         .then(() => {
             loadAdminStudents();
-            addLog('🔄 تم تغيير حالة الطالب', new Date(), 'adminLogContainer');
+            addLog(translate('student.toggled'), new Date(), 'adminLogContainer');
         })
-        .catch(err => alert('خطأ: ' + err.message));
+        .catch(err => alert(translate('common.error') + ': ' + err.message));
 };
 
 window.adminDelete = async function(id) {
@@ -1061,9 +1080,9 @@ window.adminDelete = async function(id) {
     fetchWithAuth('/api/students/' + id, { method: 'DELETE' })
         .then(() => {
             loadAdminStudents();
-            addLog('🗑️ تم حذف تلميذ', new Date(), 'adminLogContainer');
+            addLog(translate('student.deleted'), new Date(), 'adminLogContainer');
         })
-        .catch(err => alert('خطأ في الحذف'));
+        .catch(err => alert(translate('common.error') + ': ' + err.message));
 };
 
 // ==========================================
@@ -1179,11 +1198,14 @@ async function adminAddStudent() {
     const parentPhone = document.getElementById('adminParentPhone').value.trim();
     const address = document.getElementById('adminAddress').value.trim();
     if (!name || !parentEmail || !parentName || !parentPhone) {
-        alert('جميع الحقول مطلوبة ما عدا العنوان');
+        alert(translate('common.error') + ': ' + translate('student.add'));
         return;
     }
 
-    const confirmed = await showConfirmModal('إضافة طالب جديد', `تأكيد إضافة الطالب "${name}" لولي الأمر "${parentName}"؟`);
+    const confirmed = await showConfirmModal(
+        translate('student.add_new'),
+        translate('student.confirm_add', { name, parentName })
+    );
     if (!confirmed) return;
 
     const res = await fetchWithAuth('/api/students', {
@@ -1197,12 +1219,12 @@ async function adminAddStudent() {
         document.getElementById('adminParentPhone').value = '';
         document.getElementById('adminAddress').value = '';
         loadAdminStudents();
-        addLog('➕ تم إضافة الطالب ' + name, new Date(), 'adminLogContainer');
+        addLog(translate('student.added', { name }), new Date(), 'adminLogContainer');
         document.getElementById('addStudentForm').style.display = 'none';
-        document.getElementById('toggleAddStudentBtn').textContent = '➕ إضافة طالب جديد';
+        document.getElementById('toggleAddStudentBtn').innerHTML = `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
     } else {
         const data = await res.json();
-        alert(data.message || 'حدث خطأ');
+        alert(translate('common.error') + ': ' + data.message);
     }
 }
 
@@ -1220,34 +1242,42 @@ function toggleAddStudentForm() {
 
 async function adminSendGeneralNotification() {
     const msg = document.getElementById('adminNotificationMsg').value.trim();
-    if (!msg) return alert('اكتب رسالة الإشعار');
+    if (!msg) return alert(translate('notification.message_required'));
     
-    const confirmed = await showConfirmModal('إرسال إشعار عام', 'هل أنت متأكد من إرسال هذا الإشعار لجميع أولياء الأمور؟');
+    const confirmed = await showConfirmModal(
+        translate('notification.general'),
+        translate('notification.confirm_general')
+    );
     if (!confirmed) return;
 
     if (socket) {
         socket.emit('admin-notification', { message: msg });
         document.getElementById('adminNotificationMsg').value = '';
-        addLog('📢 تم إرسال إشعار عام', new Date(), 'adminLogContainer');
+        addLog(`📢 ${translate('notification.sent_general')}`, new Date(), 'adminLogContainer');
+        alert(translate('notification.sent_general'));
     } else {
-        alert('Socket غير متصل');
+        alert(translate('common.error'));
     }
 }
 
 async function adminSendParentNotification() {
     const email = document.getElementById('adminParentEmailInput').value.trim();
     const msg = document.getElementById('adminParentNotificationMsg').value.trim();
-    if (!email || !msg) return alert('املأ جميع الحقول');
+    if (!email || !msg) return alert(translate('common.error'));
     
-    const confirmed = await showConfirmModal('إرسال إشعار خاص', `هل أنت متأكد من إرسال هذا الإشعار لولي الأمر (${email})؟`);
+    const confirmed = await showConfirmModal(
+        translate('notification.private'),
+        translate('notification.confirm_private', { email })
+    );
     if (!confirmed) return;
 
     if (socket) {
         socket.emit('admin-notification-to-parent', { parentEmail: email, message: msg });
         document.getElementById('adminParentEmailInput').value = '';
         document.getElementById('adminParentNotificationMsg').value = '';
+        alert(translate('notification.sent_private'));
     } else {
-        alert('Socket غير متصل');
+        alert(translate('common.error'));
     }
 }
 
@@ -1258,7 +1288,7 @@ function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const time = formatFullTime(date || new Date());
-    const logEntry = { message, time, date: date || new Date() };
+    const logEntry = { message: translate(message), time, date: date || new Date() };
 
     if (containerId === 'adminLogContainer') {
         adminLogs.push(logEntry);
@@ -1327,7 +1357,7 @@ function renderAdminLogs(showOld) {
         const divider = document.createElement('div');
         divider.className = 'log-item';
         divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-        divider.textContent = '📜 السجل السابق';
+        divider.textContent = translate('attendance.old_logs');
         container.appendChild(divider);
     }
 }
