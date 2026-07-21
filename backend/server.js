@@ -8,22 +8,28 @@ const jwt = require('jsonwebtoken');
 const webpush = require('web-push');
 
 // استيراد النماذج
-const Student = require('./models/Student');
+const Tenant = require('./models/Tenant');
 const User = require('./models/User');
+const Student = require('./models/Student');
 const Attendance = require('./models/Attendance');
 const Notification = require('./models/Notification');
 const SchoolSettings = require('./models/SchoolSettings');
 const Subscription = require('./models/Subscription');
 
 // استيراد المسارات
-const studentRoutes = require('./routes/studentRoutes');
 const authRoutes = require('./routes/authRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const tenantRoutes = require('./routes/tenantRoutes');
+const i18nRoutes = require('./routes/i18nRoutes');
 
-// ✅ استيراد دوال الإشعارات
-const { sendPushNotificationToAll, sendPushNotificationToParent } = require('./utils/notifications');
+// استيراد دالة الإشعارات
+const { sendPushNotificationToAll } = require('./utils/notifications');
+
+// استيراد نظام الترجمات
+const i18n = require('./utils/i18n');
 
 const app = express();
 const server = http.createServer(app);
@@ -37,15 +43,51 @@ const io = socketIo(server, {
 });
 
 app.set('io', io);
+
+// Middleware للغة
+app.use((req, res, next) => {
+  const lang = req.headers['accept-language'] || 'ar';
+  req.lang = lang.split(',')[0].split('-')[0];
+  req.t = (key) => i18n.translate(req.lang, key);
+  next();
+});
+
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
+// Middleware للتحقق من المؤسسة (Tenant)
+app.use(async (req, res, next) => {
+  // تخطي مسارات المصادقة العامة
+  if (req.path.startsWith('/api/auth/') || req.path.startsWith('/api/i18n/')) {
+    return next();
+  }
+
+  // استخراج subdomain من الرأس
+  const subdomain = req.headers['x-tenant-subdomain'];
+  if (!subdomain) {
+    return res.status(400).json({ message: 'Subdomain is required' });
+  }
+
+  try {
+    const tenant = await Tenant.findOne({ subdomain, isActive: true });
+    if (!tenant) {
+      return res.status(404).json({ message: 'Tenant not found or inactive' });
+    }
+    req.tenant = tenant;
+    next();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // تسجيل المسارات
 app.use('/api/auth', authRoutes);
+app.use('/api/i18n', i18nRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/tenants', tenantRoutes);
 
 // ==========================================
 // إعداد Web Push (VAPID)
@@ -95,9 +137,15 @@ io.on('connection', (socket) => {
     if (socket.user.role !== 'admin') return;
 
     try {
+      // استخدام tenant من طلب المصادقة
+      const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
+      if (!tenant) return;
+
       const notification = new Notification({
         target: 'all',
         message: data.message,
+        tenantId: tenant._id,
+        sender: 'Admin',
       });
       await notification.save();
 
@@ -107,7 +155,6 @@ io.on('connection', (socket) => {
         createdAt: notification.createdAt,
       });
 
-      // ✅ إرسال Web Push لجميع المشتركين
       await sendPushNotificationToAll(
         '📢 إشعار من المدرسة',
         data.message,
@@ -116,7 +163,7 @@ io.on('connection', (socket) => {
 
       console.log(`📢 تم إرسال إشعار عام: ${data.message}`);
     } catch (err) {
-      console.error(err);
+      console.error('❌ خطأ في إرسال الإشعار العام:', err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار العام' });
     }
   });
@@ -137,9 +184,14 @@ io.on('connection', (socket) => {
     }
 
     try {
+      const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
+      if (!tenant) return;
+
       const notification = new Notification({
         target: parentEmail,
         message: message,
+        tenantId: tenant._id,
+        sender: 'Admin',
       });
       await notification.save();
 
@@ -161,15 +213,15 @@ io.on('connection', (socket) => {
         });
       }
 
-      // ✅ إرسال Web Push لولي الأمر المحدد فقط
-      await sendPushNotificationToParent(
+      await sendPushNotificationToAll(
         '📩 إشعار خاص من المدرسة',
         message,
-        { url: '/parent-dashboard' },
-        parentEmail
+        { url: '/parent-dashboard' }
       );
+
+      console.log(`📩 تم إرسال إشعار خاص لـ ${parentEmail}`);
     } catch (err) {
-      console.error(err);
+      console.error('❌ خطأ في إرسال الإشعار الخاص:', err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار الخاص' });
     }
   });
@@ -185,7 +237,10 @@ io.on('connection', (socket) => {
 
     const { newStatus } = data;
     try {
-      const students = await Student.find();
+      const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
+      if (!tenant) return;
+
+      const students = await Student.find({ tenantId: tenant._id });
       const updatedParents = new Set();
 
       for (const student of students) {
@@ -197,6 +252,7 @@ io.on('connection', (socket) => {
           student: student._id,
           status: newStatus ? 'in' : 'out',
           method: 'manual',
+          tenantId: tenant._id,
         });
         await attendance.save();
 
@@ -211,25 +267,25 @@ io.on('connection', (socket) => {
         isBulk: true,
       });
 
-      // إنشاء إشعارات لكل ولي أمر
       for (const email of updatedParents) {
         const notification = new Notification({
           target: email,
           message: message,
+          tenantId: tenant._id,
           sender: 'Admin',
         });
         await notification.save();
-
-        // ✅ إرسال إشعار لكل ولي أمر على حدة
-        await sendPushNotificationToParent(
-          'تحديث جماعي',
-          message,
-          { url: '/parent-dashboard' },
-          email
-        );
       }
+
+      await sendPushNotificationToAll(
+        'تحديث جماعي',
+        message,
+        { url: '/parent-dashboard' }
+      );
+
+      console.log(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`);
     } catch (error) {
-      console.error(error);
+      console.error('❌ خطأ في التغيير الجماعي:', error);
       socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
     }
   });
@@ -241,7 +297,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// الاتصال بقاعدة البيانات
+// الاتصال بقاعدة البيانات وبدء الخادم
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
@@ -251,8 +307,53 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .then(() => {
   console.log('✅ متصل بـ MongoDB بنجاح');
+  
+  // إنشاء المدير العام (Super Admin) إذا لم يكن موجوداً
+  initializeSuperAdmin();
+  
   server.listen(PORT, () => {
     console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
   });
 })
 .catch(err => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err));
+
+// ==========================================
+// دالة تهيئة المدير العام
+// ==========================================
+async function initializeSuperAdmin() {
+  try {
+    // التحقق من وجود مدير عام
+    const superAdminExists = await User.findOne({ role: 'super_admin' });
+    if (!superAdminExists) {
+      // إنشاء مدير عام افتراضي
+      const superAdmin = new User({
+        name: 'Super Admin',
+        email: 'admin@system.com',
+        password: 'Admin@123456',
+        phone: '0000000000',
+        role: 'super_admin',
+        tenantId: null, // المدير العام لا يتبع أي مؤسسة
+      });
+      await superAdmin.save();
+      console.log('✅ تم إنشاء المدير العام: admin@system.com / Admin@123456');
+      
+      // إنشاء مؤسسة افتراضية
+      const defaultTenant = new Tenant({
+        name: 'المدرسة النموذجية',
+        subdomain: 'demo',
+        address: 'العنوان الافتراضي',
+        phone: '0555000000',
+        email: 'demo@school.com',
+        adminId: superAdmin._id,
+      });
+      await defaultTenant.save();
+      console.log('✅ تم إنشاء المؤسسة الافتراضية: demo');
+      
+      // تحديث المدير العام ليرتبط بالمؤسسة
+      superAdmin.tenantId = defaultTenant._id;
+      await superAdmin.save();
+    }
+  } catch (err) {
+    console.error('❌ خطأ في تهيئة المدير العام:', err);
+  }
+}
