@@ -617,12 +617,13 @@ function startNewScanner(cameraId) {
         if (resultsContainer) resultsContainer.innerHTML = `📸 ${translate('qr.camera_working')}`;
         currentCameraId = cameraId;
     })
-}
     .catch(err => {
         console.error('فشل تشغيل الكاميرا:', err);
-        resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
-        if (err.message && err.message.includes('NotAllowedError')) {
-            resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح.';
+        if (resultsContainer) {
+            resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
+            if (err.message && err.message.includes('NotAllowedError')) {
+                resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح.';
+            }
         }
     });
 }
