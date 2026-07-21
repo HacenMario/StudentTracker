@@ -1003,7 +1003,6 @@ document.getElementById('adminShowAllLogsBtn').addEventListener('click', functio
     const container = document.getElementById('allLogsContainer');
     container.innerHTML = '';
     
-    // ترتيب تنازلي (الأحدث أولاً)
     const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
     
     if (sortedLogs.length === 0) {
@@ -1154,7 +1153,6 @@ function renderAdminLogs(showOld) {
         return;
     }
 
-    // ترتيب تنازلي (الأحدث أولاً)
     const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const todayLogs = sortedLogs.filter(log => isToday(log.date));
@@ -1164,21 +1162,17 @@ function renderAdminLogs(showOld) {
     let logsToShow = [];
 
     if (showOld) {
-        // ✅ إذا كان زر "عرض السجل السابق" مفعّلاً، نعرض جميع السجلات (للتوافق مع الوظيفة القديمة)
         logsToShow = sortedLogs;
         document.getElementById('adminShowOldLogsBtn').style.display = 'none';
         document.getElementById('adminHideOldLogsBtn').style.display = 'inline-flex';
-        // إخفاء زر "عرض جميع التفاصيل" لأننا بالفعل نعرض الكل
         document.getElementById('adminShowAllLogsBtn').style.display = 'none';
     } else {
-        // ✅ العرض الافتراضي: آخر 5 سجلات فقط (من بين أحداث اليوم)
         const todayOnly = todayLogs.length > 0 ? todayLogs : sortedLogs.slice(0, 5);
-        logsToShow = todayOnly.slice(0, 5); // آخر 5 فقط
+        logsToShow = todayOnly.slice(0, 5);
         
         if (oldLogs.length > 0 || todayLogs.length > 5) {
             document.getElementById('adminShowOldLogsBtn').style.display = 'inline-flex';
             document.getElementById('adminHideOldLogsBtn').style.display = 'none';
-            // ✅ إظهار زر "عرض جميع التفاصيل" إذا كان هناك سجلات إضافية
             if (sortedLogs.length > 5) {
                 document.getElementById('adminShowAllLogsBtn').style.display = 'inline-flex';
             }
@@ -1272,7 +1266,7 @@ function renderParentLogs(showOld) {
         document.getElementById('parentShowOldLogsBtn').style.display = 'none';
         document.getElementById('parentHideOldLogsBtn').style.display = 'inline-flex';
     } else {
-        logsToShow = todayLogs.slice(0, 5); // آخر 5 فقط
+        logsToShow = todayLogs.slice(0, 5);
         if (oldLogs.length > 0 || todayLogs.length > 5) {
             document.getElementById('parentShowOldLogsBtn').style.display = 'inline-flex';
             document.getElementById('parentHideOldLogsBtn').style.display = 'none';
@@ -1304,7 +1298,7 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 19. أحداث المصادقة وربط الأحداث
+// 19. أحداث المصادقة وربط الأحداث (مع التحقق من وجود العناصر)
 // ==========================================
 function setupAuthEvents() {
     document.getElementById('loginBtn').addEventListener('click', async () => {
