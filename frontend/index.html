@@ -101,6 +101,39 @@
   </div>
   <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span data-i18n="auth.logout">خروج</span></button>
 </header>
+                <!-- ========================================== -->
+<!-- لوحة المدير العام (Super Admin) -->
+<!-- ========================================== -->
+<div id="superAdminDashboard" style="display:none;">
+    <header>
+        <h1><i class="fas fa-globe"></i> لوحة المدير العام</h1>
+        <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
+        <button id="logoutBtnSuperAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
+    </header>
+
+    <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap;">
+        <button id="addTenantBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #27ae60, #1e8449);">
+            <i class="fas fa-plus-circle"></i> إضافة مؤسسة جديدة
+        </button>
+    </div>
+
+    <!-- نموذج إضافة مؤسسة -->
+    <div id="addTenantForm" style="display:none;" class="add-student-form">
+        <h4 style="margin-bottom:12px;">بيانات المؤسسة الجديدة</h4>
+        <div class="form-grid">
+            <input type="text" id="tenantName" placeholder="اسم المؤسسة">
+            <input type="text" id="tenantSubdomain" placeholder="النطاق الفرعي (مثل: school1)">
+            <input type="text" id="tenantAddress" placeholder="العنوان">
+            <input type="text" id="tenantPhone" placeholder="الهاتف">
+            <input type="email" id="tenantEmail" placeholder="البريد الإلكتروني">
+            <input type="email" id="tenantAdminEmail" placeholder="بريد المدير (يجب أن يكون مسجلاً)">
+            <button id="saveTenantBtn" class="btn-primary" style="grid-column: 1 / -1;"><i class="fas fa-save"></i> حفظ المؤسسة</button>
+        </div>
+    </div>
+
+    <!-- قائمة المؤسسات -->
+    <div id="tenantsList" class="students-grid"></div>
+</div>
                 <!-- إعدادات المدرسة -->
                 <button id="toggleSettingsBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483);">
                     <i class="fas fa-cog"></i> إعدادات المؤسسة
