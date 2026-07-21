@@ -1,0 +1,80 @@
+{
+  "auth": {
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirm_password": "Confirmer le mot de passe",
+    "forgot_password": "Mot de passe oublié ?",
+    "logout": "Déconnexion"
+  },
+  "dashboard": {
+    "admin": "Tableau de bord Admin",
+    "parent": "Tableau de bord Parent",
+    "students": "Étudiants",
+    "attendance": "Présence",
+    "notifications": "Notifications",
+    "settings": "Paramètres"
+  },
+  "student": {
+    "add": "Ajouter un étudiant",
+    "edit": "Modifier un étudiant",
+    "delete": "Supprimer un étudiant",
+    "name": "Nom de l'étudiant",
+    "parent_name": "Nom du parent",
+    "parent_phone": "Téléphone du parent",
+    "parent_email": "Email du parent",
+    "address": "Adresse",
+    "status": "Statut",
+    "inside": "À l'intérieur",
+    "outside": "À l'extérieur",
+    "toggle": "Changer le statut",
+    "student_id": "ID Étudiant"
+  },
+  "notification": {
+    "title": "Nouvelle notification",
+    "general": "Notification générale",
+    "private": "Notification privée",
+    "send": "Envoyer",
+    "message": "Message",
+    "target": "Cible",
+    "all_parents": "Tous les parents"
+  },
+  "attendance": {
+    "log": "Journal de présence",
+    "in": "Entrée",
+    "out": "Sortie",
+    "method": "Méthode",
+    "manual": "Manuel",
+    "qr": "Code QR"
+  },
+  "tenant": {
+    "title": "Gestion des locataires",
+    "add": "Ajouter un locataire",
+    "edit": "Modifier un locataire",
+    "name": "Nom du locataire",
+    "subdomain": "Sous-domaine",
+    "admin": "Administrateur",
+    "status": "Statut",
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "search": "Rechercher",
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "success": "Succès",
+    "yes": "Oui",
+    "no": "Non",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Soumettre",
+    "reset": "Réinitialiser"
+  }
+}
