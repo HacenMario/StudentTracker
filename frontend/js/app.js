@@ -8,7 +8,7 @@ const API_BASE_URL = isLocal
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
-// 2. إدارة التوكن والمستخدم والمتغيرات العامة
+// 2. المتغيرات العامة
 // ==========================================
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -31,65 +31,65 @@ let currentTenantSubdomain = localStorage.getItem('tenantSubdomain') || 'demo';
 let tenants = [];
 
 // ==========================================
-// 3. نظام الترجمات (i18n) - مبسط
+// 3. نظام الترجمات (i18n)
 // ==========================================
 let currentLanguage = localStorage.getItem('language') || 'ar';
 let translations = {};
 
 async function loadTranslations(lang) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/i18n/${lang}`);
-        if (!res.ok) throw new Error('فشل تحميل الترجمات');
-        translations = await res.json();
-        currentLanguage = lang;
-        localStorage.setItem('language', lang);
-        applyTranslations();
-    } catch (err) {
-        console.error('❌ خطأ في تحميل الترجمات:', err);
-    }
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/i18n/${lang}`);
+    if (!res.ok) throw new Error('فشل تحميل الترجمات');
+    translations = await res.json();
+    currentLanguage = lang;
+    localStorage.setItem('language', lang);
+    applyTranslations();
+  } catch (err) {
+    console.error('❌ خطأ في تحميل الترجمات:', err);
+  }
 }
 
 function applyTranslations() {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        const translation = getTranslation(key);
-        if (translation) {
-            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                el.placeholder = translation;
-            } else {
-                el.textContent = translation;
-            }
-        }
-    });
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const translation = getTranslation(key);
+    if (translation) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = translation;
+      } else {
+        el.textContent = translation;
+      }
+    }
+  });
 }
 
 function getTranslation(key, params = {}) {
-    const keys = key.split('.');
-    let value = translations;
-    for (const k of keys) {
-        if (value && value[k] !== undefined) {
-            value = value[k];
-        } else {
-            return key;
-        }
+  const keys = key.split('.');
+  let value = translations;
+  for (const k of keys) {
+    if (value && value[k] !== undefined) {
+      value = value[k];
+    } else {
+      return key;
     }
-    if (typeof value === 'string') {
-        for (const [paramKey, paramValue] of Object.entries(params)) {
-            value = value.replace(`{${paramKey}}`, paramValue);
-        }
+  }
+  if (typeof value === 'string') {
+    for (const [paramKey, paramValue] of Object.entries(params)) {
+      value = value.replace(`{${paramKey}}`, paramValue);
     }
-    return value;
+  }
+  return value;
 }
 
 function switchLanguage(lang) {
-    if (lang === currentLanguage) return;
-    loadTranslations(lang);
-    const dir = lang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.dir = dir;
-    document.documentElement.lang = lang;
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === lang);
-    });
+  if (lang === currentLanguage) return;
+  loadTranslations(lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.dir = dir;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
 }
 
 // ==========================================
@@ -136,19 +136,25 @@ let modalResolve = null;
 
 function showConfirmModal(title, message) {
     return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        if (!modal) {
+            console.warn('⚠️ confirmModal غير موجود');
+            resolve(false);
+            return;
+        }
         document.getElementById('modalTitle').textContent = title;
         document.getElementById('modalMessage').textContent = message;
-        document.getElementById('confirmModal').style.display = 'flex';
+        modal.style.display = 'flex';
         modalResolve = resolve;
     });
 }
 
-document.getElementById('modalConfirmBtn').addEventListener('click', function() {
+document.getElementById('modalConfirmBtn')?.addEventListener('click', function() {
     document.getElementById('confirmModal').style.display = 'none';
     if (modalResolve) modalResolve(true);
 });
 
-document.getElementById('modalCancelBtn').addEventListener('click', function() {
+document.getElementById('modalCancelBtn')?.addEventListener('click', function() {
     document.getElementById('confirmModal').style.display = 'none';
     if (modalResolve) modalResolve(false);
 });
@@ -196,19 +202,29 @@ function logout() {
         });
 }
 
+function hideAllScreens() {
+    ['loginScreen', 'registerScreen', 'adminDashboard', 'parentDashboard', 'superAdminDashboard'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+}
+
 function showLogin() {
     hideAllScreens();
-    document.getElementById('loginScreen').style.display = 'block';
+    const el = document.getElementById('loginScreen');
+    if (el) el.style.display = 'block';
 }
 
 function showRegister() {
     hideAllScreens();
-    document.getElementById('registerScreen').style.display = 'block';
+    const el = document.getElementById('registerScreen');
+    if (el) el.style.display = 'block';
 }
 
 function showAdminDashboard() {
     hideAllScreens();
-    document.getElementById('adminDashboard').style.display = 'block';
+    const el = document.getElementById('adminDashboard');
+    if (el) el.style.display = 'block';
     connectSocket();
     loadSchoolSettings();
     loadAdminStudents();
@@ -218,7 +234,8 @@ function showAdminDashboard() {
 
 function showParentDashboard() {
     hideAllScreens();
-    document.getElementById('parentDashboard').style.display = 'block';
+    const el = document.getElementById('parentDashboard');
+    if (el) el.style.display = 'block';
     connectSocket();
     loadParentStudents();
     loadParentLogs();
@@ -227,16 +244,10 @@ function showParentDashboard() {
 
 function showSuperAdminDashboard() {
     hideAllScreens();
-    document.getElementById('superAdminDashboard').style.display = 'block';
+    const el = document.getElementById('superAdminDashboard');
+    if (el) el.style.display = 'block';
     connectSocket();
     loadTenants();
-}
-
-function hideAllScreens() {
-    ['loginScreen', 'registerScreen', 'adminDashboard', 'parentDashboard', 'superAdminDashboard'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
 }
 
 // ==========================================
@@ -244,7 +255,7 @@ function hideAllScreens() {
 // ==========================================
 function connectSocket() {
     if (socket) { socket.disconnect(); socket = null; }
-    socket = io(SOCKET_URL, {
+    socket = io(SOCKET_URL, { 
         auth: { token },
         transportOptions: {
             polling: {
@@ -376,10 +387,10 @@ function applySchoolSettings() {
 }
 
 async function saveSchoolSettings() {
-    const schoolName = document.getElementById('settingsSchoolName').value.trim();
-    const address = document.getElementById('settingsAddress').value.trim();
-    const phone = document.getElementById('settingsPhone').value.trim();
-    const email = document.getElementById('settingsEmail').value.trim();
+    const schoolName = document.getElementById('settingsSchoolName')?.value.trim() || '';
+    const address = document.getElementById('settingsAddress')?.value.trim() || '';
+    const phone = document.getElementById('settingsPhone')?.value.trim() || '';
+    const email = document.getElementById('settingsEmail')?.value.trim() || '';
     
     let logo = schoolSettings ? schoolSettings.logo : '';
     let logoFileName = schoolSettings ? schoolSettings.logoFileName : '';
@@ -693,13 +704,13 @@ function closeScanner() {
     if (switchBtn) switchBtn.style.display = 'none';
 }
 
+// ربط أزرار الماسح الضوئي
 const openScannerBtn = document.getElementById('openScannerBtn');
 if (openScannerBtn) openScannerBtn.addEventListener('click', openScanner);
 const closeScannerBtn = document.getElementById('closeScannerBtn');
 if (closeScannerBtn) closeScannerBtn.addEventListener('click', closeScanner);
 const switchCameraBtn = document.getElementById('switchCameraBtn');
 if (switchCameraBtn) switchCameraBtn.addEventListener('click', switchCamera);
-
 // ==========================================
 // 11. دوال الإشعارات (Web Push)
 // ==========================================
@@ -964,6 +975,7 @@ function toggleOldNotifications(show) {
     showOldNotifications = show;
     renderNotifications(showOldNotifications);
 }
+
 // ==========================================
 // 13. دوال التغيير الجماعي
 // ==========================================
@@ -1267,6 +1279,7 @@ async function adminSendGeneralNotification() {
         const msgInput = document.getElementById('adminNotificationMsg');
         if (msgInput) msgInput.value = '';
         addLog('📢 تم إرسال إشعار عام', new Date(), 'adminLogContainer');
+        alert('✅ تم إرسال الإشعار العام بنجاح');
     } else {
         alert('Socket غير متصل');
     }
@@ -1286,6 +1299,7 @@ async function adminSendParentNotification() {
         const msgInput = document.getElementById('adminParentNotificationMsg');
         if (emailInput) emailInput.value = '';
         if (msgInput) msgInput.value = '';
+        alert('✅ تم إرسال الإشعار الخاص بنجاح');
     } else {
         alert('Socket غير متصل');
     }
@@ -1479,14 +1493,17 @@ function toggleParentOldLogs(show) {
 async function loadTenants() {
     try {
         const res = await fetchWithAuth('/api/tenants');
-        if (!res.ok) throw new Error('فشل جلب المؤسسات');
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل جلب المؤسسات');
+        }
         tenants = await res.json();
         renderTenants();
     } catch (err) {
-        console.error(err);
+        console.error('❌ خطأ في جلب المؤسسات:', err);
         const container = document.getElementById('tenantsList');
         if (container) {
-            container.innerHTML = '<div class="loading-state">❌ فشل تحميل المؤسسات</div>';
+            container.innerHTML = `<div class="loading-state">❌ فشل تحميل المؤسسات: ${err.message}</div>`;
         }
     }
 }
@@ -1526,7 +1543,7 @@ function renderTenants() {
 }
 
 // ==========================================
-// دوال المدير العام - إضافة/تعديل/حذف المؤسسات
+// 21. دوال إدارة المؤسسات (مدير عام) - ✅ تم الإصلاح الكامل
 // ==========================================
 
 // فتح نافذة إضافة مؤسسة
@@ -1535,17 +1552,27 @@ if (addTenantBtn) {
     addTenantBtn.addEventListener('click', function() {
         const modal = document.getElementById('addTenantModal');
         if (modal) modal.style.display = 'flex';
+        console.log('✅ فتح نافذة إضافة مؤسسة');
     });
+    console.log('✅ ربط addTenantBtn');
+} else {
+    console.warn('⚠️ addTenantBtn غير موجود');
 }
 
+// إغلاق نافذة إضافة مؤسسة
 const closeAddTenantBtn = document.getElementById('closeAddTenantBtn');
 if (closeAddTenantBtn) {
     closeAddTenantBtn.addEventListener('click', function() {
         const modal = document.getElementById('addTenantModal');
         if (modal) modal.style.display = 'none';
+        console.log('✅ إغلاق نافذة إضافة مؤسسة');
     });
+    console.log('✅ ربط closeAddTenantBtn');
+} else {
+    console.warn('⚠️ closeAddTenantBtn غير موجود');
 }
 
+// إغلاق نافذة الإضافة عند الضغط خارجها
 const addTenantModal = document.getElementById('addTenantModal');
 if (addTenantModal) {
     addTenantModal.addEventListener('click', function(e) {
@@ -1553,6 +1580,70 @@ if (addTenantModal) {
             this.style.display = 'none';
         }
     });
+}
+
+// ==========================================
+// حفظ إضافة مؤسسة جديدة
+// ==========================================
+const saveNewTenantBtn = document.getElementById('saveNewTenantBtn');
+if (saveNewTenantBtn) {
+    saveNewTenantBtn.addEventListener('click', async function() {
+        console.log('💾 محاولة إضافة مؤسسة جديدة...');
+        
+        const name = document.getElementById('newTenantName')?.value.trim();
+        const subdomain = document.getElementById('newTenantSubdomain')?.value.trim();
+        const address = document.getElementById('newTenantAddress')?.value.trim();
+        const phone = document.getElementById('newTenantPhone')?.value.trim();
+        const email = document.getElementById('newTenantEmail')?.value.trim();
+        const adminEmail = document.getElementById('newTenantAdminEmail')?.value.trim();
+
+        console.log('📦 البيانات:', { name, subdomain, address, phone, email, adminEmail });
+
+        if (!name || !subdomain || !adminEmail) {
+            alert('اسم المؤسسة، النطاق الفرعي، وبريد المدير مطلوبة');
+            return;
+        }
+
+        const confirmed = await showConfirmModal(
+            'إضافة مؤسسة جديدة',
+            `هل أنت متأكد من إضافة المؤسسة "${name}" بالنطاق الفرعي "${subdomain}"؟`
+        );
+        if (!confirmed) {
+            console.log('❌ تم إلغاء الإضافة');
+            return;
+        }
+
+        try {
+            const res = await fetchWithAuth('/api/tenants', {
+                method: 'POST',
+                body: JSON.stringify({ name, subdomain, address, phone, email, adminEmail })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || 'فشل إضافة المؤسسة');
+            }
+            
+            console.log('✅ تم إضافة المؤسسة بنجاح:', data);
+            alert('✅ تم إضافة المؤسسة بنجاح');
+            
+            const modal = document.getElementById('addTenantModal');
+            if (modal) modal.style.display = 'none';
+            
+            // تفريغ الحقول
+            ['newTenantName','newTenantSubdomain','newTenantAddress','newTenantPhone','newTenantEmail','newTenantAdminEmail'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            
+            loadTenants();
+        } catch (err) {
+            console.error('❌ خطأ:', err);
+            alert('❌ ' + err.message);
+        }
+    });
+    console.log('✅ ربط saveNewTenantBtn');
+} else {
+    console.warn('⚠️ saveNewTenantBtn غير موجود');
 }
 
 // ==========================================
@@ -1605,6 +1696,9 @@ if (closeEditTenantBtn) {
         if (modal) modal.style.display = 'none';
         console.log('🔴 تم إغلاق نافذة تعديل المؤسسة');
     });
+    console.log('✅ ربط closeEditTenantBtn');
+} else {
+    console.warn('⚠️ closeEditTenantBtn غير موجود');
 }
 
 // إغلاق النافذة عند الضغط خارجها
@@ -1613,7 +1707,6 @@ if (editTenantModal) {
     editTenantModal.addEventListener('click', function(e) {
         if (e.target === this) {
             this.style.display = 'none';
-            console.log('🔴 تم إغلاق نافذة تعديل المؤسسة (خارج)');
         }
     });
 }
@@ -1632,7 +1725,7 @@ if (saveEditTenantBtn) {
         const phone = document.getElementById('editTenantPhone')?.value.trim();
         const email = document.getElementById('editTenantEmail')?.value.trim();
 
-        console.log('📦 البيانات المرسلة:', { id, name, address, phone, email });
+        console.log('📦 البيانات:', { id, name, address, phone, email });
 
         if (!id) {
             alert('خطأ: لم يتم العثور على معرف المؤسسة');
@@ -1659,7 +1752,9 @@ if (saveEditTenantBtn) {
                 body: JSON.stringify({ name, address, phone, email })
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'فشل تحديث المؤسسة');
+            if (!res.ok) {
+                throw new Error(data.message || 'فشل تحديث المؤسسة');
+            }
             
             console.log('✅ تم تحديث المؤسسة بنجاح:', data);
             alert('✅ تم تحديث المؤسسة بنجاح');
@@ -1669,76 +1764,13 @@ if (saveEditTenantBtn) {
             
             loadTenants();
         } catch (err) {
-            console.error('❌ خطأ في حفظ تعديلات المؤسسة:', err);
+            console.error('❌ خطأ:', err);
             alert('❌ ' + err.message);
         }
     });
-}
-
-// ==========================================
-// إضافة مؤسسة جديدة
-// ==========================================
-const saveNewTenantBtn = document.getElementById('saveNewTenantBtn');
-if (saveNewTenantBtn) {
-    saveNewTenantBtn.addEventListener('click', async function() {
-        console.log('💾 محاولة إضافة مؤسسة جديدة...');
-        
-        const name = document.getElementById('newTenantName')?.value.trim();
-        const subdomain = document.getElementById('newTenantSubdomain')?.value.trim();
-        const address = document.getElementById('newTenantAddress')?.value.trim();
-        const phone = document.getElementById('newTenantPhone')?.value.trim();
-        const email = document.getElementById('newTenantEmail')?.value.trim();
-        const adminEmail = document.getElementById('newTenantAdminEmail')?.value.trim();
-
-        console.log('📦 بيانات المؤسسة الجديدة:', { name, subdomain, address, phone, email, adminEmail });
-
-        if (!name || !subdomain || !adminEmail) {
-            alert('اسم المؤسسة، النطاق الفرعي، وبريد المدير مطلوبة');
-            return;
-        }
-
-        const confirmed = await showConfirmModal(
-            'إضافة مؤسسة جديدة',
-            `هل أنت متأكد من إضافة المؤسسة "${name}" بالنطاق الفرعي "${subdomain}"؟`
-        );
-        if (!confirmed) {
-            console.log('❌ تم إلغاء الإضافة');
-            return;
-        }
-
-        try {
-            const res = await fetchWithAuth('/api/tenants', {
-                method: 'POST',
-                body: JSON.stringify({ name, subdomain, address, phone, email, adminEmail })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'فشل إضافة المؤسسة');
-            
-            console.log('✅ تم إضافة المؤسسة بنجاح:', data);
-            alert('✅ تم إضافة المؤسسة بنجاح');
-            
-            const modal = document.getElementById('addTenantModal');
-            if (modal) modal.style.display = 'none';
-            
-            const nameInput = document.getElementById('newTenantName');
-            const subInput = document.getElementById('newTenantSubdomain');
-            const addrInput = document.getElementById('newTenantAddress');
-            const phoneInput = document.getElementById('newTenantPhone');
-            const emailInput = document.getElementById('newTenantEmail');
-            const adminInput = document.getElementById('newTenantAdminEmail');
-            if (nameInput) nameInput.value = '';
-            if (subInput) subInput.value = '';
-            if (addrInput) addrInput.value = '';
-            if (phoneInput) phoneInput.value = '';
-            if (emailInput) emailInput.value = '';
-            if (adminInput) adminInput.value = '';
-            
-            loadTenants();
-        } catch (err) {
-            console.error('❌ خطأ في إضافة المؤسسة:', err);
-            alert('❌ ' + err.message);
-        }
-    });
+    console.log('✅ ربط saveEditTenantBtn');
+} else {
+    console.warn('⚠️ saveEditTenantBtn غير موجود');
 }
 
 // ==========================================
@@ -1775,277 +1807,15 @@ window.toggleTenantStatus = async function(tenantId) {
             body: JSON.stringify({ isActive: newStatus })
         });
         const data = await updateRes.json();
-        if (!updateRes.ok) throw new Error(data.message || 'فشل تغيير الحالة');
+        if (!updateRes.ok) {
+            throw new Error(data.message || 'فشل تغيير الحالة');
+        }
         
         console.log(`✅ تم ${statusText} المؤسسة بنجاح`);
         alert(`✅ تم ${statusText} المؤسسة بنجاح`);
         loadTenants();
     } catch (err) {
-        console.error('❌ خطأ في تغيير حالة المؤسسة:', err);
+        console.error('❌ خطأ:', err);
         alert('❌ ' + err.message);
     }
 };
-
-// ==========================================
-// 21. أحداث المصادقة وربط الأحداث
-// ==========================================
-function setupAuthEvents() {
-    console.log('🔧 جاري ربط الأحداث...');
-
-    // ---------- أزرار تسجيل الدخول والتسجيل ----------
-    const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', async () => {
-            const email = document.getElementById('loginEmail')?.value;
-            const password = document.getElementById('loginPassword')?.value;
-            if (!email || !password) return alert('املأ جميع الحقول');
-            try {
-                const res = await fetch(API_BASE_URL + '/api/auth/login', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'x-tenant-subdomain': getTenantSubdomain()
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || 'فشل تسجيل الدخول');
-                saveAuth(data);
-            } catch (err) {
-                alert(err.message || 'فشل تسجيل الدخول');
-            }
-        });
-        console.log('✅ ربط زر تسجيل الدخول');
-    }
-
-    const registerBtn = document.getElementById('registerBtn');
-    if (registerBtn) {
-        registerBtn.addEventListener('click', async () => {
-            const name = document.getElementById('regName')?.value.trim();
-            const email = document.getElementById('regEmail')?.value.trim();
-            const password = document.getElementById('regPassword')?.value.trim();
-            const phone = document.getElementById('regPhone')?.value.trim();
-            const role = document.getElementById('regRole')?.value;
-            if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
-            if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
-            try {
-                const res = await fetch(API_BASE_URL + '/api/auth/register', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'x-tenant-subdomain': getTenantSubdomain()
-                    },
-                    body: JSON.stringify({ name, email, password, phone, role })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || 'فشل التسجيل');
-                saveAuth(data);
-            } catch (err) {
-                alert(err.message || 'فشل التسجيل');
-            }
-        });
-        console.log('✅ ربط زر التسجيل');
-    }
-
-    // ---------- روابط التبديل بين الشاشات ----------
-    const showRegisterLink = document.getElementById('showRegister');
-    if (showRegisterLink) { showRegisterLink.addEventListener('click', showRegister); console.log('✅ ربط showRegister'); }
-    const showLoginLink = document.getElementById('showLogin');
-    if (showLoginLink) { showLoginLink.addEventListener('click', showLogin); console.log('✅ ربط showLogin'); }
-
-    // ---------- أزرار تسجيل الخروج ----------
-    const logoutBtns = ['logoutBtnAdmin', 'logoutBtnParent', 'logoutBtnSuperAdmin'];
-    logoutBtns.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) { btn.addEventListener('click', logout); console.log(`✅ ربط ${id}`); }
-    });
-
-    // ---------- إعدادات المدرسة ----------
-    const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
-    if (toggleSettingsBtn) { toggleSettingsBtn.addEventListener('click', toggleSettingsForm); console.log('✅ ربط toggleSettingsBtn'); }
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-    if (saveSettingsBtn) { saveSettingsBtn.addEventListener('click', saveSchoolSettings); console.log('✅ ربط saveSettingsBtn'); }
-
-    // ---------- إضافة طالب ----------
-    const toggleAddStudentBtn = document.getElementById('toggleAddStudentBtn');
-    if (toggleAddStudentBtn) { toggleAddStudentBtn.addEventListener('click', toggleAddStudentForm); console.log('✅ ربط toggleAddStudentBtn'); }
-    const adminAddBtn = document.getElementById('adminAddBtn');
-    if (adminAddBtn) { adminAddBtn.addEventListener('click', adminAddStudent); console.log('✅ ربط adminAddBtn'); }
-
-    // ---------- الإشعارات ----------
-    const adminSendNotificationBtn = document.getElementById('adminSendNotificationBtn');
-    if (adminSendNotificationBtn) { adminSendNotificationBtn.addEventListener('click', adminSendGeneralNotification); console.log('✅ ربط adminSendNotificationBtn'); }
-    const adminSendParentNotificationBtn = document.getElementById('adminSendParentNotificationBtn');
-    if (adminSendParentNotificationBtn) { adminSendParentNotificationBtn.addEventListener('click', adminSendParentNotification); console.log('✅ ربط adminSendParentNotificationBtn'); }
-
-    // ---------- أزرار التغيير الجماعي (تم إصلاحها) ----------
-    const toggleAllInsideBtn = document.getElementById('toggleAllInsideBtn');
-    if (toggleAllInsideBtn) {
-        toggleAllInsideBtn.addEventListener('click', function() { toggleAllStudents(true); });
-        console.log('✅ ربط toggleAllInsideBtn');
-    } else {
-        console.warn('⚠️ toggleAllInsideBtn غير موجود');
-    }
-
-    const toggleAllOutsideBtn = document.getElementById('toggleAllOutsideBtn');
-    if (toggleAllOutsideBtn) {
-        toggleAllOutsideBtn.addEventListener('click', function() { toggleAllStudents(false); });
-        console.log('✅ ربط toggleAllOutsideBtn');
-    } else {
-        console.warn('⚠️ toggleAllOutsideBtn غير موجود');
-    }
-
-    // ---------- أزرار سجل النشاطات (مدير) ----------
-    const adminShowOldLogsBtn = document.getElementById('adminShowOldLogsBtn');
-    if (adminShowOldLogsBtn) { adminShowOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(true); }); console.log('✅ ربط adminShowOldLogsBtn'); }
-    const adminHideOldLogsBtn = document.getElementById('adminHideOldLogsBtn');
-    if (adminHideOldLogsBtn) { adminHideOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(false); }); console.log('✅ ربط adminHideOldLogsBtn'); }
-
-    // ---------- أزرار سجل النشاطات (ولي أمر) ----------
-    const parentShowOldLogsBtn = document.getElementById('parentShowOldLogsBtn');
-    if (parentShowOldLogsBtn) { parentShowOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(true); }); console.log('✅ ربط parentShowOldLogsBtn'); }
-    const parentHideOldLogsBtn = document.getElementById('parentHideOldLogsBtn');
-    if (parentHideOldLogsBtn) { parentHideOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(false); }); console.log('✅ ربط parentHideOldLogsBtn'); }
-
-    // ---------- أزرار الإشعارات القديمة ----------
-    const showOldNotificationsBtn = document.getElementById('showOldNotificationsBtn');
-    if (showOldNotificationsBtn) { showOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(true); }); console.log('✅ ربط showOldNotificationsBtn'); }
-    const hideOldNotificationsBtn = document.getElementById('hideOldNotificationsBtn');
-    if (hideOldNotificationsBtn) { hideOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(false); }); console.log('✅ ربط hideOldNotificationsBtn'); }
-
-    // ---------- أزرار المدير العام (تم إصلاحها) ----------
-    const addTenantBtn = document.getElementById('addTenantBtn');
-    if (addTenantBtn) {
-        addTenantBtn.addEventListener('click', function() {
-            document.getElementById('addTenantModal').style.display = 'flex';
-        });
-        console.log('✅ ربط addTenantBtn');
-    } else {
-        console.warn('⚠️ addTenantBtn غير موجود');
-    }
-
-    const closeAddTenantBtn = document.getElementById('closeAddTenantBtn');
-    if (closeAddTenantBtn) {
-        closeAddTenantBtn.addEventListener('click', function() {
-            document.getElementById('addTenantModal').style.display = 'none';
-        });
-        console.log('✅ ربط closeAddTenantBtn');
-    }
-
-    const saveNewTenantBtn = document.getElementById('saveNewTenantBtn');
-    if (saveNewTenantBtn) {
-        saveNewTenantBtn.addEventListener('click', async function() {
-            const name = document.getElementById('newTenantName')?.value.trim();
-            const subdomain = document.getElementById('newTenantSubdomain')?.value.trim();
-            const address = document.getElementById('newTenantAddress')?.value.trim();
-            const phone = document.getElementById('newTenantPhone')?.value.trim();
-            const email = document.getElementById('newTenantEmail')?.value.trim();
-            const adminEmail = document.getElementById('newTenantAdminEmail')?.value.trim();
-            if (!name || !subdomain || !adminEmail) {
-                alert('اسم المؤسسة، النطاق الفرعي، وبريد المدير مطلوبة');
-                return;
-            }
-            const confirmed = await showConfirmModal('إضافة مؤسسة جديدة', `هل أنت متأكد من إضافة المؤسسة "${name}" بالنطاق الفرعي "${subdomain}"؟`);
-            if (!confirmed) return;
-            try {
-                const res = await fetchWithAuth('/api/tenants', {
-                    method: 'POST',
-                    body: JSON.stringify({ name, subdomain, address, phone, email, adminEmail })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || 'فشل إضافة المؤسسة');
-                alert('✅ تم إضافة المؤسسة بنجاح');
-                document.getElementById('addTenantModal').style.display = 'none';
-                ['newTenantName','newTenantSubdomain','newTenantAddress','newTenantPhone','newTenantEmail','newTenantAdminEmail'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.value = '';
-                });
-                loadTenants();
-            } catch (err) { alert('❌ ' + err.message); }
-        });
-        console.log('✅ ربط saveNewTenantBtn');
-    }
-
-    const closeEditTenantBtn = document.getElementById('closeEditTenantBtn');
-    if (closeEditTenantBtn) {
-        closeEditTenantBtn.addEventListener('click', function() {
-            document.getElementById('editTenantModal').style.display = 'none';
-        });
-        console.log('✅ ربط closeEditTenantBtn');
-    }
-
-    const saveEditTenantBtn = document.getElementById('saveEditTenantBtn');
-    if (saveEditTenantBtn) {
-        saveEditTenantBtn.addEventListener('click', async function() {
-            const id = document.getElementById('editTenantId')?.value;
-            const name = document.getElementById('editTenantName')?.value.trim();
-            const address = document.getElementById('editTenantAddress')?.value.trim();
-            const phone = document.getElementById('editTenantPhone')?.value.trim();
-            const email = document.getElementById('editTenantEmail')?.value.trim();
-            if (!id) { alert('خطأ: لم يتم العثور على معرف المؤسسة'); return; }
-            if (!name) { alert('اسم المؤسسة مطلوب'); return; }
-            const confirmed = await showConfirmModal('تعديل المؤسسة', `هل أنت متأكد من حفظ التعديلات للمؤسسة "${name}"؟`);
-            if (!confirmed) return;
-            try {
-                const res = await fetchWithAuth('/api/tenants/' + id, {
-                    method: 'PUT',
-                    body: JSON.stringify({ name, address, phone, email })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || 'فشل تحديث المؤسسة');
-                alert('✅ تم تحديث المؤسسة بنجاح');
-                document.getElementById('editTenantModal').style.display = 'none';
-                loadTenants();
-            } catch (err) { alert('❌ ' + err.message); }
-        });
-        console.log('✅ ربط saveEditTenantBtn');
-    }
-
-    console.log('🔧 تم ربط جميع الأحداث بنجاح!');
-}
-
-// ==========================================
-// 22. بدء التطبيق
-// ==========================================
-document.addEventListener('DOMContentLoaded', function() {
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
-
-    // تحميل الترجمات
-    loadTranslations(currentLanguage);
-    
-    // إضافة زر تبديل اللغة
-    const langSwitcher = document.createElement('div');
-    langSwitcher.className = 'lang-switcher';
-    langSwitcher.innerHTML = `
-        <button data-lang="ar" class="lang-btn ${currentLanguage === 'ar' ? 'active' : ''}" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
-        <button data-lang="en" class="lang-btn ${currentLanguage === 'en' ? 'active' : ''}" onclick="switchLanguage('en')">🇬🇧 English</button>
-        <button data-lang="fr" class="lang-btn ${currentLanguage === 'fr' ? 'active' : ''}" onclick="switchLanguage('fr')">🇫🇷 Français</button>
-    `;
-    const header = document.querySelector('header');
-    if (header) {
-        header.appendChild(langSwitcher);
-    }
-
-    loadSchoolSettings();
-    setupAuthEvents();
-
-    if (token) {
-        try {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (user) {
-                currentUser = user;
-                if (currentUser.role === 'super_admin') {
-                    showSuperAdminDashboard();
-                } else if (currentUser.role === 'admin') {
-                    showAdminDashboard();
-                } else {
-                    showParentDashboard();
-                }
-                return;
-            }
-        } catch(e) {}
-    }
-    showLogin();
-});
