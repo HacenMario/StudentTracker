@@ -24,6 +24,105 @@ let currentCameraId = null;
 let availableCameras = [];
 
 // ==========================================
+// نظام الترجمة (i18n)
+// ==========================================
+let currentLanguage = localStorage.getItem('language') || 'ar';
+let translationsLoaded = false;
+
+// تحميل الترجمات
+async function loadTranslations() {
+    try {
+        const arRes = await fetch('/locales/ar.json');
+        const frRes = await fetch('/locales/fr.json');
+        
+        if (!arRes.ok || !frRes.ok) {
+            throw new Error('فشل تحميل ملفات الترجمة');
+        }
+        
+        window.translations = {
+            ar: await arRes.json(),
+            fr: await frRes.json()
+        };
+        
+        translationsLoaded = true;
+        console.log('✅ تم تحميل الترجمات بنجاح');
+        return true;
+    } catch (err) {
+        console.error('❌ خطأ في تحميل الترجمات:', err);
+        return false;
+    }
+}
+
+// دالة الترجمة
+function t(key, params = {}) {
+    if (!translationsLoaded || !window.translations) {
+        return key;
+    }
+    
+    const lang = currentLanguage;
+    const keys = key.split('.');
+    let value = window.translations[lang];
+    
+    for (const k of keys) {
+        if (value && value[k] !== undefined) {
+            value = value[k];
+        } else {
+            // العودة إلى العربية
+            let fallback = window.translations.ar;
+            for (const k2 of keys) {
+                if (fallback && fallback[k2] !== undefined) {
+                    fallback = fallback[k2];
+                } else {
+                    return key;
+                }
+            }
+            value = fallback;
+            break;
+        }
+    }
+    
+    if (typeof value === 'string') {
+        for (const [paramKey, paramValue] of Object.entries(params)) {
+            value = value.replace(`{${paramKey}}`, paramValue);
+        }
+    }
+    return value || key;
+}
+
+// تبديل اللغة
+function switchLanguage(lang) {
+    if (lang === currentLanguage) return;
+    currentLanguage = lang;
+    localStorage.setItem('language', lang);
+    applyTranslationsToAll();
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+}
+
+// تطبيق الترجمات على جميع العناصر
+function applyTranslationsToAll() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const translation = t(key);
+        if (translation && translation !== key) {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.placeholder = translation;
+            } else {
+                el.textContent = translation;
+            }
+        }
+    });
+}
+
+// دالة مساعدة للترجمة في JavaScript
+function translate(key, params = {}) {
+    return t(key, params);
+}
+
+// ==========================================
 // 3. دوال مساعدة
 // ==========================================
 function getStatusText(isInside) {
@@ -914,7 +1013,10 @@ window.adminToggle = async function(id) {
 };
 
 window.adminDelete = async function(id) {
-    const confirmed = await showConfirmModal('حذف الطالب', 'هل أنت متأكد من حذف هذا الطالب نهائياً؟');
+    const confirmed = await showConfirmModal(
+        translate('student.delete'),
+        translate('student.confirm_delete')
+    );
     if (!confirmed) return;
 
     fetchWithAuth('/api/students/' + id, { method: 'DELETE' })
@@ -1381,6 +1483,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
+
+    await loadTranslations();
+    applyTranslationsToAll();
 
     loadSchoolSettings();
     setupAuthEvents();
