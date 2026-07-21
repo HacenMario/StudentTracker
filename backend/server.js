@@ -22,13 +22,13 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
-// استيراد دالة الإشعارات من الملف المنفصل
+// استيراد دالة الإشعارات
 const { sendPushNotificationToAll } = require('./utils/notifications');
 
 const app = express();
 const server = http.createServer(app);
 
-// تعريف io (يجب أن يكون قبل أي استخدام له)
+// تعريف io
 const io = socketIo(server, {
   cors: {
     origin: "*",
@@ -67,7 +67,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
 }
 
 // ==========================================
-// Socket.io مع التحقق من التوكن وتخزين المستخدمين
+// Socket.io
 // ==========================================
 const userSockets = new Map();
 
@@ -89,7 +89,7 @@ io.on('connection', (socket) => {
   console.log(`🟢 عميل متصل: ${userEmail} (الدور: ${socket.user.role})`);
 
   // ----------------------
-  // 1. إشعار عام من المدير
+  // 1. إشعار عام
   // ----------------------
   socket.on('admin-notification', async (data) => {
     if (socket.user.role !== 'admin') return;
@@ -101,14 +101,12 @@ io.on('connection', (socket) => {
       });
       await notification.save();
 
-      // بث عبر Socket للمستخدمين المتصلين
       io.emit('notification', {
         message: data.message,
         notificationId: notification._id,
         createdAt: notification.createdAt,
       });
 
-      // إرسال Web Push لجميع المشتركين
       await sendPushNotificationToAll(
         '📢 إشعار من المدرسة',
         data.message,
@@ -117,13 +115,13 @@ io.on('connection', (socket) => {
 
       console.log(`📢 تم إرسال إشعار عام: ${data.message}`);
     } catch (err) {
-      console.error('❌ خطأ في إرسال الإشعار العام:', err);
+      console.error(err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار العام' });
     }
   });
 
   // ----------------------
-  // 2. إشعار خاص لولي أمر معين
+  // 2. إشعار خاص
   // ----------------------
   socket.on('admin-notification-to-parent', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -144,7 +142,6 @@ io.on('connection', (socket) => {
       });
       await notification.save();
 
-      // إرسال عبر Socket للمستخدم المتصل إن وجد
       const targetSocketId = userSockets.get(parentEmail);
       if (targetSocketId) {
         io.to(targetSocketId).emit('notification', {
@@ -163,22 +160,19 @@ io.on('connection', (socket) => {
         });
       }
 
-      // إرسال Web Push لجميع المشتركين (لضمان الوصول)
       await sendPushNotificationToAll(
         '📩 إشعار خاص من المدرسة',
         message,
         { url: '/parent-dashboard' }
       );
-
-      console.log(`📩 تم إرسال إشعار خاص لـ ${parentEmail}`);
     } catch (err) {
-      console.error('❌ خطأ في إرسال الإشعار الخاص:', err);
+      console.error(err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار الخاص' });
     }
   });
 
   // ----------------------
-  // 3. تغيير حالة جميع الطلاب دفعة واحدة
+  // 3. تغيير جميع الطلاب
   // ----------------------
   socket.on('toggle-all-status', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -209,13 +203,11 @@ io.on('connection', (socket) => {
       const statusText = newStatus ? 'داخل 🏫' : 'خارج 🚪';
       const message = `تم تغيير حالة جميع الطلاب إلى ${statusText}`;
 
-      // بث عبر Socket
       io.emit('status-changed', {
         message: message,
         isBulk: true,
       });
 
-      // إنشاء إشعارات لكل ولي أمر في قاعدة البيانات
       for (const email of updatedParents) {
         const notification = new Notification({
           target: email,
@@ -225,23 +217,17 @@ io.on('connection', (socket) => {
         await notification.save();
       }
 
-      // إرسال Web Push لجميع المشتركين
       await sendPushNotificationToAll(
         'تحديث جماعي',
         message,
         { url: '/parent-dashboard' }
       );
-
-      console.log(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`);
     } catch (error) {
-      console.error('❌ خطأ في التغيير الجماعي:', error);
+      console.error(error);
       socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
     }
   });
 
-  // ----------------------
-  // 4. انقطاع الاتصال
-  // ----------------------
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
     console.log(`🔴 عميل غير متصل: ${userEmail}`);
@@ -249,7 +235,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// الاتصال بقاعدة البيانات وبدء الخادم
+// الاتصال بقاعدة البيانات
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
