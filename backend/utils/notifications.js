@@ -1,4 +1,3 @@
-// backend/utils/notifications.js
 const webpush = require('web-push');
 const Subscription = require('../models/Subscription');
 
