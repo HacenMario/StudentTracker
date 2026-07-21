@@ -69,15 +69,18 @@ router.post('/', auth, isAdmin, async (req, res) => {
 // ==========================================
 router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
   try {
+    // 1. استخدام findById بدلاً من findByIdAndUpdate
     const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: 'غير موجود' });
+    if (!student) {
+      return res.status(404).json({ message: 'الطالب غير موجود' });
+    }
 
-    // تغيير الحالة
+    // 2. تغيير الحالة وحفظها باستخدام save() لتشغيل middleware
     student.isInside = !student.isInside;
     student.lastUpdate = new Date();
-    await student.save();
+    await student.save(); // هنا يتم تفعيل pre('save') و التحقق من صحة البيانات
 
-    // تسجيل في Attendance
+    // 3. تسجيل في Attendance
     const attendance = new Attendance({
       student: student._id,
       status: student.isInside ? 'in' : 'out',
@@ -85,11 +88,11 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     });
     await attendance.save();
 
-    // **إرسال الإشعارات (بنفس طريقة الإشعارات العامة)**
+    // 4. تحضير الرسالة
     const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
     const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-    // 1. حفظ الإشعار في قاعدة البيانات
+    // 5. حفظ الإشعار في قاعدة البيانات
     if (student.parentEmail) {
       const notification = new Notification({
         target: student.parentEmail,
@@ -99,7 +102,7 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       await notification.save();
     }
 
-    // 2. بث عبر Socket.io (لجميع العملاء)
+    // 6. بث عبر Socket
     const io = req.app.get('io');
     io.emit('status-changed', {
       student: student,
@@ -108,7 +111,8 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       parentEmail: student.parentEmail,
     });
 
-    // 3. إرسال Web Push لجميع المشتركين (نفس طريقة الإشعارات العامة)
+    // 7. إرسال Web Push لجميع المشتركين
+    const { sendPushNotificationToAll } = require('../utils/notifications');
     await sendPushNotificationToAll(
       'تحديث حالة ابنك',
       message,
