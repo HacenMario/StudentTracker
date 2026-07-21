@@ -71,10 +71,12 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: 'غير موجود' });
 
+    // تغيير الحالة
     student.isInside = !student.isInside;
     student.lastUpdate = new Date();
     await student.save();
 
+    // تسجيل في Attendance
     const attendance = new Attendance({
       student: student._id,
       status: student.isInside ? 'in' : 'out',
@@ -82,8 +84,21 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     });
     await attendance.save();
 
+    // **إرسال الإشعارات (بثلاث طرق)**
     const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
     const message = `التلميذ ${student.name} أصبح ${statusText}`;
+
+    // 1. حفظ الإشعار في قاعدة البيانات
+    if (student.parentEmail) {
+      const notification = new Notification({
+        target: student.parentEmail,
+        message: message,
+        sender: 'Admin',
+      });
+      await notification.save();
+    }
+
+    // 2. بث عبر Socket.io (لجميع العملاء)
     const io = req.app.get('io');
     io.emit('status-changed', {
       student: student,
@@ -91,6 +106,15 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       parentId: student.parent ? student.parent.toString() : null,
       parentEmail: student.parentEmail,
     });
+
+    // 3. إرسال Web Push لجميع المشتركين (كما تفعل الإشعارات العامة)
+    // نستدعي الدالة التي تعمل بنجاح في الإشعارات العامة
+    const { sendPushNotificationToAll } = require('../server'); // أو ننقل الدالة إلى ملف منفصل
+    await sendPushNotificationToAll(
+      'تحديث حالة ابنك',
+      message,
+      { url: '/parent-dashboard' }
+    );
 
     res.json(student);
   } catch (err) {
