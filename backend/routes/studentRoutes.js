@@ -3,18 +3,10 @@ const router = express.Router();
 const Student = require('../models/Student');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
+const Notification = require('../models/Notification'); // ✅ تمت الإضافة
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
 const { sendPushNotificationToAll } = require('../utils/notifications');
-
-// استيراد مكتبة QR Code مع التحقق من وجودها
-let QRCode;
-try {
-  QRCode = require('qrcode');
-} catch (err) {
-  console.error('❌ مكتبة qrcode غير مثبتة. قم بتشغيل: npm install qrcode');
-  QRCode = null;
-}
 
 // ==========================================
 // 1. جلب الطلاب (حسب الدور)
@@ -65,22 +57,19 @@ router.post('/', auth, isAdmin, async (req, res) => {
 });
 
 // ==========================================
-// 3. تبديل حالة الطالب (للمدير فقط)
+// 3. تبديل حالة الطالب (للمدير فقط) - مع إصلاح خطأ Notification
 // ==========================================
 router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
   try {
-    // 1. استخدام findById بدلاً من findByIdAndUpdate
     const student = await Student.findById(req.params.id);
     if (!student) {
       return res.status(404).json({ message: 'الطالب غير موجود' });
     }
 
-    // 2. تغيير الحالة وحفظها باستخدام save() لتشغيل middleware
     student.isInside = !student.isInside;
     student.lastUpdate = new Date();
-    await student.save(); // هنا يتم تفعيل pre('save') و التحقق من صحة البيانات
+    await student.save();
 
-    // 3. تسجيل في Attendance
     const attendance = new Attendance({
       student: student._id,
       status: student.isInside ? 'in' : 'out',
@@ -88,11 +77,10 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     });
     await attendance.save();
 
-    // 4. تحضير الرسالة
     const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
     const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-    // 5. حفظ الإشعار في قاعدة البيانات
+    // ✅ الآن Notification معرف بشكل صحيح
     if (student.parentEmail) {
       const notification = new Notification({
         target: student.parentEmail,
@@ -102,7 +90,6 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       await notification.save();
     }
 
-    // 6. بث عبر Socket
     const io = req.app.get('io');
     io.emit('status-changed', {
       student: student,
@@ -111,8 +98,6 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       parentEmail: student.parentEmail,
     });
 
-    // 7. إرسال Web Push لجميع المشتركين
-    const { sendPushNotificationToAll } = require('../utils/notifications');
     await sendPushNotificationToAll(
       'تحديث حالة ابنك',
       message,
@@ -125,8 +110,6 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
-module.exports = router;
 
 // ==========================================
 // 4. حذف طالب (للمدير فقط)
@@ -178,17 +161,7 @@ router.post('/scan-qr', auth, async (req, res) => {
     const { qrData } = req.body;
     if (!qrData) return res.status(400).json({ success: false, message: 'بيانات QR مطلوبة' });
 
-    // تنظيف البيانات
-    const cleanData = qrData.trim();
-
-    // البحث باستخدام studentId
-    let student = await Student.findOne({ studentId: cleanData });
-    
-    // إذا لم يتم العثور، حاول البحث باستخدام _id (في حال كان QR يحتوي على _id)
-    if (!student && cleanData.match(/^[0-9a-fA-F]{24}$/)) {
-      student = await Student.findById(cleanData);
-    }
-
+    const student = await Student.findOne({ studentId: qrData });
     if (!student) {
       return res.status(404).json({ success: false, message: 'الطالب غير موجود' });
     }
@@ -210,6 +183,17 @@ router.post('/scan-qr', auth, async (req, res) => {
 
     const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
     const message = `التلميذ ${student.name} أصبح ${statusText} (عن طريق QR)`;
+    
+    // ✅ إرسال إشعار عند المسح عبر QR
+    if (student.parentEmail) {
+      const notification = new Notification({
+        target: student.parentEmail,
+        message: message,
+        sender: 'Admin',
+      });
+      await notification.save();
+    }
+
     const io = req.app.get('io');
     io.emit('status-changed', {
       student: student,
@@ -217,6 +201,12 @@ router.post('/scan-qr', auth, async (req, res) => {
       parentId: student.parent ? student.parent.toString() : null,
       parentEmail: student.parentEmail,
     });
+
+    await sendPushNotificationToAll(
+      'تحديث حالة ابنك (QR)',
+      message,
+      { url: '/parent-dashboard' }
+    );
 
     res.json({ success: true, message: `تم تغيير حالة ${student.name} إلى ${statusText}` });
   } catch (err) {
@@ -226,11 +216,10 @@ router.post('/scan-qr', auth, async (req, res) => {
 });
 
 // ==========================================
-// 7. تحميل QR Code كصورة (للمدير وولي الأمر) - النسخة المُعدّلة
+// 7. تحميل QR Code كصورة (للمدير وولي الأمر)
 // ==========================================
 router.get('/:id/qr', auth, async (req, res) => {
   try {
-    // 1. التحقق من وجود المكتبة
     let QRCode;
     try {
       QRCode = require('qrcode');
@@ -242,21 +231,17 @@ router.get('/:id/qr', auth, async (req, res) => {
       });
     }
 
-    // 2. البحث عن الطالب
     const student = await Student.findById(req.params.id);
     if (!student) {
       return res.status(404).json({ message: 'الطالب غير موجود' });
     }
 
-    // 3. التحقق من الصلاحية
     if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
       return res.status(403).json({ message: 'غير مصرح لك بتحميل QR لهذا الطالب' });
     }
 
-    // 4. تجهيز البيانات
     const qrData = String(student.studentId || student._id.toString());
 
-    // 5. توليد QR Code
     console.log(`🔄 جاري توليد QR للطالب: ${student.name} (${qrData})`);
     const qrCodeBuffer = await QRCode.toBuffer(qrData, {
       type: 'png',
@@ -269,25 +254,17 @@ router.get('/:id/qr', auth, async (req, res) => {
       errorCorrectionLevel: 'H',
     });
 
-    // 6. إعداد اسم الملف مع التشفير لتجنب الأحرف غير الصالحة
-    const fileName = `QR_${student.name}_${student.studentId}.png`;
-    // استخدام encodeURIComponent لتأمين الاسم
-    const encodedFileName = encodeURIComponent(fileName);
-    
-    // 7. إرسال الصورة مع Header صحيح
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFileName}`);
+    res.setHeader('Content-Disposition', `attachment; filename=QR_${student.name}_${student.studentId}.png`);
     res.send(qrCodeBuffer);
 
   } catch (err) {
     console.error('❌ خطأ في توليد QR Code:', err);
-    console.error('❌ تفاصيل الخطأ:', err.stack);
-    
     res.status(500).json({ 
       message: 'فشل توليد QR Code', 
       error: err.message,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
   }
 });
+
 module.exports = router;
