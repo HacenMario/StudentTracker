@@ -71,12 +71,14 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     student.lastUpdate = new Date();
     await student.save();
 
-    const attendance = new Attendance({
-      student: student._id,
-      status: student.isInside ? 'in' : 'out',
-      method: 'manual',
-    });
-    await attendance.save();
+const attendance = new Attendance({
+  student: student._id,
+  status: student.isInside ? 'in' : 'out',
+  method: 'manual',
+  studentName: student.name,
+  statusText: student.isInside ? 'داخل 🏫' : 'خارج 🚪',
+});
+await attendance.save();
 
     const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
     const message = `التلميذ ${student.name} أصبح ${statusText}`;
