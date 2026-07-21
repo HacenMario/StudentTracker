@@ -1479,11 +1479,12 @@ function setupAuthEvents() {
 // ==========================================
 // 20. بدء التطبيق
 // ==========================================
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
 
+    // تحميل الترجمات (مع await)
     await loadTranslations();
     applyTranslationsToAll();
 
@@ -1502,7 +1503,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return;
             }
-        } catch(e) {}
+        } catch(e) {
+            console.error('خطأ في قراءة المستخدم:', e);
+        }
     }
     showLogin();
 });
