@@ -9,13 +9,17 @@
     "register": "Créer un compte",
     "email": "Adresse e-mail",
     "password": "Mot de passe",
-    "confirm_password": "Confirmer le mot de passe",
+    "phone": "Numéro de téléphone",
+    "role": "Rôle",
+    "parent": "Parent",
+    "admin": "Administrateur",
     "forgot_password": "Mot de passe oublié ?",
     "logout": "Déconnexion",
     "no_account": "Vous n'avez pas de compte ?",
     "have_account": "Vous avez déjà un compte ?",
     "register_now": "S'inscrire maintenant",
-    "login_now": "Se connecter"
+    "login_now": "Se connecter",
+    "password_min": "Mot de passe (6 caractères minimum)"
   },
   "dashboard": {
     "admin": "Tableau de bord Admin",
@@ -24,7 +28,8 @@
     "attendance": "Présence",
     "notifications": "Notifications",
     "settings": "Paramètres",
-    "live": "En direct"
+    "live": "En direct",
+    "super_admin": "Tableau de bord Super Admin"
   },
   "student": {
     "add": "Ajouter un étudiant",
@@ -47,7 +52,9 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm_delete": "Êtes-vous sûr de vouloir supprimer cet étudiant définitivement ?",
-    "confirm_toggle": "Êtes-vous sûr de vouloir changer le statut de cet étudiant ?"
+    "confirm_toggle": "Êtes-vous sûr de vouloir changer le statut de cet étudiant ?",
+    "confirm_edit": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
+    "edit_title": "✏️ Modifier les informations de l'étudiant"
   },
   "notification": {
     "title": "Nouvelle notification",
@@ -63,7 +70,9 @@
     "hide_old": "Masquer les anciennes notifications",
     "show_old": "Afficher les anciennes notifications",
     "sent_general": "Notification générale envoyée avec succès",
-    "sent_private": "Notification privée envoyée avec succès"
+    "sent_private": "Notification privée envoyée avec succès",
+    "confirm_general": "Êtes-vous sûr d'envoyer cette notification à tous les parents ?",
+    "confirm_private": "Êtes-vous sûr d'envoyer cette notification au parent ({email}) ?"
   },
   "attendance": {
     "log": "Journal de présence",
@@ -76,7 +85,8 @@
     "old_logs": "📜 Anciens enregistrements",
     "hide_old_logs": "Masquer les anciens enregistrements",
     "show_old_logs": "Afficher les anciens enregistrements",
-    "show_all": "Afficher tous les détails"
+    "show_all": "Afficher tous les détails",
+    "my_children": "Journal d'entrée/sortie de mes enfants"
   },
   "settings": {
     "school": "Paramètres de l'établissement",
@@ -87,12 +97,28 @@
     "logo": "Télécharger le logo de l'école :",
     "save": "Enregistrer les paramètres",
     "confirm": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
-    "success": "Paramètres de l'école enregistrés avec succès"
+    "success": "Paramètres de l'école enregistrés avec succès",
+    "title": "Modifier les informations de l'école"
   },
   "bulk": {
     "all_inside": "Tout changer à l'intérieur",
     "all_outside": "Tout changer à l'extérieur",
     "confirm": "Êtes-vous sûr de vouloir changer le statut de tous les étudiants à {status} ?"
+  },
+  "tenant": {
+    "add": "Ajouter un nouveau locataire",
+    "edit": "Modifier le locataire",
+    "name": "Nom du locataire",
+    "subdomain": "Sous-domaine (ex: school1)",
+    "admin_email": "Email de l'administrateur",
+    "confirm_add": "Êtes-vous sûr d'ajouter le locataire \"{name}\" avec le sous-domaine \"{subdomain}\" ?",
+    "confirm_edit": "Êtes-vous sûr d'enregistrer les modifications pour le locataire \"{name}\" ?",
+    "confirm_status": "Êtes-vous sûr de {status} le locataire \"{name}\" ?",
+    "status_active": "Actif",
+    "status_inactive": "Inactif",
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "not_found": "Locataire non trouvé"
   },
   "common": {
     "save": "Enregistrer",
@@ -114,6 +140,7 @@
     "qr": "QR",
     "scan_qr": "Scanner le code QR",
     "switch_camera": "Changer de caméra",
-    "close_scanner": "Fermer"
+    "close_scanner": "Fermer",
+    "all_details": "Tous les détails"
   }
 }
