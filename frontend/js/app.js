@@ -1,10 +1,7 @@
 // ==========================================
-// 1. رابط الخادم (تلقائي حسب البيئة)
+// 1. رابط الخادم
 // ==========================================
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE_URL = isLocal 
-    ? 'http://localhost:5000' 
-    : 'https://studenttracker-zgom.onrender.com';
+const API_BASE_URL = 'https://studenttracker-zgom.onrender.com';
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
@@ -1019,7 +1016,6 @@ document.getElementById('closeAllLogsBtn').addEventListener('click', function() 
     document.getElementById('allLogsModal').style.display = 'none';
 });
 
-// إغلاق النوافذ المنبثقة عند الضغط خارجها
 document.getElementById('allLogsModal').addEventListener('click', function(e) {
     if (e.target === this) {
         this.style.display = 'none';
@@ -1294,7 +1290,7 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 19. أحداث المصادقة وربط الأحداث (مع التحقق من وجود العناصر)
+// 19. أحداث المصادقة وربط الأحداث
 // ==========================================
 function setupAuthEvents() {
     document.getElementById('loginBtn').addEventListener('click', async () => {
