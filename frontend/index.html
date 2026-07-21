@@ -9,41 +9,121 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="manifest" href="/manifest.json">
-
     <style>
-  .lang-switcher {
-    display: flex;
-    gap: 8px;
-    margin: 0 15px;
-  }
-  .lang-btn {
-    background: transparent;
-    border: 2px solid rgba(255,255,255,0.2);
-    color: #1a365d;
-    padding: 4px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    transition: 0.3s;
-    font-family: 'Tajawal', sans-serif;
-  }
-  .lang-btn:hover {
-    background: rgba(43, 108, 176, 0.1);
-  }
-  .lang-btn.active {
-    background: #2b6cb0;
-    color: white;
-    border-color: #2b6cb0;
-  }
-  /* تعديل اتجاه الصفحة حسب اللغة */
-  html[dir="ltr"] .app-wrapper {
-    direction: ltr;
-  }
-  html[dir="rtl"] .app-wrapper {
-    direction: rtl;
-  }
-</style>
+        .lang-switcher {
+            display: flex;
+            gap: 8px;
+            margin: 0 15px;
+        }
+        .lang-btn {
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.2);
+            color: #1a365d;
+            padding: 4px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: 0.3s;
+            font-family: 'Tajawal', sans-serif;
+        }
+        .lang-btn:hover {
+            background: rgba(43, 108, 176, 0.1);
+        }
+        .lang-btn.active {
+            background: #2b6cb0;
+            color: white;
+            border-color: #2b6cb0;
+        }
+        html[dir="ltr"] .app-wrapper {
+            direction: ltr;
+        }
+        html[dir="rtl"] .app-wrapper {
+            direction: rtl;
+        }
+        /* تنسيقات المؤسسات */
+        .tenants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .tenant-card {
+            background: white;
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid #eef4fa;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: 0.3s;
+        }
+        .tenant-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            border-color: #b8cde0;
+        }
+        .tenant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .tenant-header h3 {
+            color: #1a365d;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .tenant-status {
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .tenant-status.active {
+            background: #def7e5;
+            color: #0a6b34;
+        }
+        .tenant-status.inactive {
+            background: #fde8e6;
+            color: #b3362a;
+        }
+        .tenant-info p {
+            margin: 4px 0;
+            font-size: 14px;
+            color: #4a5a6e;
+        }
+        .tenant-info strong {
+            color: #1a365d;
+        }
+        .tenant-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .tenant-actions button {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Tajawal', sans-serif;
+        }
+        .tenant-actions .btn-edit {
+            background: #f39c12;
+            color: white;
+        }
+        .tenant-actions .btn-edit:hover {
+            background: #d68910;
+        }
+        .tenant-actions .btn-toggle {
+            background: #e2eaf2;
+            color: #2a4a6a;
+        }
+        .tenant-actions .btn-toggle:hover {
+            background: #cbddee;
+        }
+    </style>
 </head>
 <body>
     <!-- ========================================== -->
@@ -88,52 +168,35 @@
             </div>
 
             <!-- ========================================== -->
+            <!-- لوحة المدير العام (Super Admin) -->
+            <!-- ========================================== -->
+            <div id="superAdminDashboard" style="display:none;">
+                <header>
+                    <h1><i class="fas fa-globe"></i> لوحة المدير العام</h1>
+                    <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
+                    <button id="logoutBtnSuperAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
+                </header>
+                <div style="margin-bottom:20px;">
+                    <h3>🏢 إدارة المؤسسات</h3>
+                    <button id="addTenantBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #27ae60, #1e8449);">
+                        <i class="fas fa-plus-circle"></i> إضافة مؤسسة جديدة
+                    </button>
+                </div>
+                <div id="tenantsList" class="tenants-grid">
+                    <div class="loading-state">جاري تحميل المؤسسات...</div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
             <!-- لوحة المدير -->
             <!-- ========================================== -->
             <div id="adminDashboard" style="display:none;">
-<header>
-  <h1><i class="fas fa-user-cog"></i> <span data-i18n="dashboard.admin">لوحة المدير</span></h1>
-  <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
-  <div class="lang-switcher">
-    <button onclick="switchLanguage('ar')" class="lang-btn active">🇸🇦 عربي</button>
-    <button onclick="switchLanguage('en')" class="lang-btn">🇬🇧 English</button>
-    <button onclick="switchLanguage('fr')" class="lang-btn">🇫🇷 Français</button>
-  </div>
-  <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span data-i18n="auth.logout">خروج</span></button>
-</header>
-                <!-- ========================================== -->
-<!-- لوحة المدير العام (Super Admin) -->
-<!-- ========================================== -->
-<div id="superAdminDashboard" style="display:none;">
-    <header>
-        <h1><i class="fas fa-globe"></i> لوحة المدير العام</h1>
-        <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
-        <button id="logoutBtnSuperAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
-    </header>
+                <header>
+                    <h1><i class="fas fa-user-cog"></i> لوحة المدير</h1>
+                    <span class="live-badge"><i class="fas fa-circle"></i> مباشر</span>
+                    <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
+                </header>
 
-    <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap;">
-        <button id="addTenantBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #27ae60, #1e8449);">
-            <i class="fas fa-plus-circle"></i> إضافة مؤسسة جديدة
-        </button>
-    </div>
-
-    <!-- نموذج إضافة مؤسسة -->
-    <div id="addTenantForm" style="display:none;" class="add-student-form">
-        <h4 style="margin-bottom:12px;">بيانات المؤسسة الجديدة</h4>
-        <div class="form-grid">
-            <input type="text" id="tenantName" placeholder="اسم المؤسسة">
-            <input type="text" id="tenantSubdomain" placeholder="النطاق الفرعي (مثل: school1)">
-            <input type="text" id="tenantAddress" placeholder="العنوان">
-            <input type="text" id="tenantPhone" placeholder="الهاتف">
-            <input type="email" id="tenantEmail" placeholder="البريد الإلكتروني">
-            <input type="email" id="tenantAdminEmail" placeholder="بريد المدير (يجب أن يكون مسجلاً)">
-            <button id="saveTenantBtn" class="btn-primary" style="grid-column: 1 / -1;"><i class="fas fa-save"></i> حفظ المؤسسة</button>
-        </div>
-    </div>
-
-    <!-- قائمة المؤسسات -->
-    <div id="tenantsList" class="students-grid"></div>
-</div>
                 <!-- إعدادات المدرسة -->
                 <button id="toggleSettingsBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483);">
                     <i class="fas fa-cog"></i> إعدادات المؤسسة
