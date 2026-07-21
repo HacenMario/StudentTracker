@@ -4,7 +4,7 @@
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_BASE_URL = isLocal 
     ? 'http://localhost:5000' 
-    : 'https://studenttracker-zgom.onrender.com'; // رابط Render الخاص بك
+    : 'https://studenttracker-zgom.onrender.com';
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
@@ -21,7 +21,7 @@ let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
 
-// متغيرات الماسح الضوئي (معرفة مرة واحدة فقط)
+// متغيرات الماسح الضوئي
 let html5QrCode = null;
 let currentCameraId = null;
 let availableCameras = [];
@@ -90,18 +90,13 @@ document.getElementById('modalCancelBtn').addEventListener('click', function() {
 // ==========================================
 // 5. دوال المصادقة
 // ==========================================
-// ==========================================
-// 5. دوال المصادقة (مع إشعارات الهاتف)
-// ==========================================
 function saveAuth(data) {
     token = data.token;
     currentUser = data.user;
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(currentUser));
     
-    // ✅ طلب إذن الإشعارات وتسجيل الاشتراك بعد تسجيل الدخول
     if (currentUser) {
-        // ننتظر قليلاً حتى يتم تحميل الصفحة بالكامل
         setTimeout(() => {
             requestNotificationPermission();
         }, 1500);
@@ -115,17 +110,14 @@ function saveAuth(data) {
 }
 
 function logout() {
-    // إلغاء الاشتراك أولاً (يحتاج توكن صالح)
     unsubscribeFromPush()
         .then(() => {
             console.log('✅ تم إلغاء الاشتراك بنجاح');
         })
         .catch(err => {
-            // هذا الخطأ غير حرج، نستمر في عملية الخروج
             console.warn('⚠️ فشل إلغاء الاشتراك (غير حرج):', err);
         })
         .finally(() => {
-            // تنظيف البيانات بغض النظر عن نتيجة إلغاء الاشتراك
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             token = null;
@@ -141,181 +133,6 @@ function showLogin() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'none';
-}
-
-// ==========================================
-// دوال إشعارات الهاتف (Web Push)
-// ==========================================
-
-// طلب إذن الإشعارات وتسجيل الاشتراك
-async function requestNotificationPermission() {
-    // التحقق من توفر Service Worker
-    if (!('serviceWorker' in navigator)) {
-        console.warn('⚠️ Service Worker غير مدعوم في هذا المتصفح');
-        return false;
-    }
-
-    if (!('Notification' in window)) {
-        console.warn('⚠️ هذا المتصفح لا يدعم الإشعارات');
-        return false;
-    }
-
-    // التحقق من وجود مستخدم مسجل الدخول
-    if (!currentUser) {
-        console.warn('⚠️ لا يوجد مستخدم مسجل الدخول');
-        return false;
-    }
-
-    if (Notification.permission === 'granted') {
-        console.log('✅ الإذن موجود مسبقاً');
-        await subscribeToPush();
-        return true;
-    }
-
-    if (Notification.permission === 'denied') {
-        console.warn('⚠️ تم رفض إذن الإشعارات مسبقاً');
-        return false;
-    }
-
-    // طلب الإذن من المستخدم
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            console.log('✅ تم منح الإذن');
-            await subscribeToPush();
-            return true;
-        } else {
-            console.warn('⚠️ تم رفض الإذن');
-            return false;
-        }
-    } catch (err) {
-        console.error('❌ خطأ في طلب الإذن:', err);
-        return false;
-    }
-}
-
-// تسجيل الاشتراك في الخادم
-async function subscribeToPush() {
-    try {
-        // التأكد من جاهزية Service Worker
-        const registration = await navigator.serviceWorker.ready;
-        
-        // الحصول على المفتاح العام من VAPID
-        // ⚠️ استبدل هذا المفتاح بالمفتاح العام من ملف .env الخاص بك
-        const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
-        const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
-
-        // محاولة الحصول على اشتراك موجود
-        let subscription = await registration.pushManager.getSubscription();
-        
-        if (subscription) {
-            console.log('✅ اشتراك موجود مسبقاً');
-            // يمكننا إعادة استخدامه أو تحديثه
-            // نتحقق من صحة المفاتيح
-            const existingKeys = subscription.toJSON();
-            if (existingKeys.keys && existingKeys.keys.p256dh) {
-                // الاشتراك صحيح، نرسله للخادم للتأكد من تسجيله
-                await sendSubscriptionToServer(subscription);
-                return subscription;
-            }
-            // إذا كان غير صحيح، نلغي الاشتراك القديم ونسجل جديداً
-            await subscription.unsubscribe();
-            console.log('🔄 تم إلغاء الاشتراك القديم، نسجل اشتراكاً جديداً');
-        }
-
-        // إنشاء اشتراك جديد
-        subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: convertedKey,
-        });
-
-        console.log('✅ اشتراك جديد تم إنشاؤه');
-
-        // إرسال الاشتراك إلى الخادم
-        await sendSubscriptionToServer(subscription);
-        
-        return subscription;
-    } catch (err) {
-        console.error('❌ فشل الاشتراك في Push:', err);
-        return null;
-    }
-}
-
-// إرسال الاشتراك إلى الخادم
-async function sendSubscriptionToServer(subscription) {
-    try {
-        const payload = {
-            subscription: {
-                endpoint: subscription.endpoint,
-                keys: {
-                    p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
-                    auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))),
-                },
-            },
-            userEmail: currentUser ? currentUser.email : null,
-            role: currentUser ? currentUser.role : null,
-        };
-
-        const res = await fetchWithAuth('/api/subscriptions/subscribe', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-        });
-
-        if (res.ok) {
-            console.log('✅ تم تسجيل الاشتراك في الخادم');
-        } else {
-            const error = await res.json();
-            console.warn('❌ فشل تسجيل الاشتراك في الخادم:', error.message);
-        }
-    } catch (err) {
-        console.error('❌ خطأ في إرسال الاشتراك:', err);
-    }
-}
-
-// تحويل المفتاح العام من Base64 إلى Uint8Array
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
-// إلغاء الاشتراك من الإشعارات
-async function unsubscribeFromPush() {
-    try {
-        // إذا لم يكن هناك توكن، لا نحتاج لإلغاء الاشتراك
-        if (!token) {
-            console.log('ℹ️ لا يوجد توكن، تخطي إلغاء الاشتراك');
-            return;
-        }
-
-        if (!('serviceWorker' in navigator)) {
-            return;
-        }
-
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        
-        if (subscription) {
-            await subscription.unsubscribe();
-            console.log('✅ تم إلغاء الاشتراك من Push');
-            
-            // إعلام الخادم بحذف الاشتراك (فقط إذا كان هناك توكن)
-            await fetchWithAuth('/api/subscriptions/unsubscribe', {
-                method: 'DELETE',
-                body: JSON.stringify({ endpoint: subscription.endpoint }),
-            }).catch(err => {
-                // إذا فشل إعلام الخادم، لا نهتم كثيراً (الإشتراك ملغي محلياً)
-                console.warn('⚠️ فشل إعلام الخادم بحذف الاشتراك:', err);
-            });
-        }
-    } catch (err) {
-        console.error('❌ فشل إلغاء الاشتراك:', err);
-    }
 }
 
 function showRegister() {
@@ -398,138 +215,17 @@ function connectSocket() {
 }
 
 // ==========================================
-// دوال إشعارات الهاتف (Web Push)
-// ==========================================
-
-// طلب إذن الإشعارات وتسجيل الاشتراك
-async function requestNotificationPermission() {
-  if (!('Notification' in window)) {
-    console.warn('⚠️ هذا المتصفح لا يدعم الإشعارات');
-    return false;
-  }
-
-  if (Notification.permission === 'granted') {
-    console.log('✅ الإذن موجود مسبقاً');
-    await subscribeToPush();
-    return true;
-  }
-
-  if (Notification.permission === 'denied') {
-    console.warn('⚠️ تم رفض إذن الإشعارات');
-    return false;
-  }
-
-  // طلب الإذن
-  const permission = await Notification.requestPermission();
-  if (permission === 'granted') {
-    console.log('✅ تم منح الإذن');
-    await subscribeToPush();
-    return true;
-  } else {
-    console.warn('⚠️ تم رفض الإذن');
-    return false;
-  }
-}
-
-// تسجيل الاشتراك في الخادم
-async function subscribeToPush() {
-  try {
-    const registration = await navigator.serviceWorker.ready;
-
-    // التحقق من وجود اشتراك سابق
-    let subscription = await registration.pushManager.getSubscription();
-    if (subscription) {
-      console.log('✅ اشتراك موجود مسبقاً، يتم تحديثه');
-      // يمكن تحديثه أو إلغاؤه إذا أردت
-      // سنقوم بحذفه وإعادة تسجيله لتجديد المفاتيح (اختياري)
-      // await subscription.unsubscribe();
-    }
-
-    // إنشاء اشتراك جديد
-    const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
-    const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
-
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: convertedKey,
-    });
-
-    console.log('✅ اشتراك جديد:', subscription);
-
-    // إرسال الاشتراك إلى الخادم
-    const payload = {
-      subscription: {
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
-          auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))),
-        },
-      },
-      userEmail: currentUser ? currentUser.email : null,
-      role: currentUser ? currentUser.role : null,
-    };
-
-    const res = await fetchWithAuth('/api/subscriptions/subscribe', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok) {
-      console.log('✅ تم تسجيل الاشتراك في الخادم');
-    } else {
-      console.warn('❌ فشل تسجيل الاشتراك في الخادم');
-    }
-
-    return subscription;
-  } catch (err) {
-    console.error('❌ فشل الاشتراك في Push:', err);
-    return null;
-  }
-}
-
-// تحويل المفتاح العام من Base64 إلى Uint8Array (مطلوب لـ Push)
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-// إلغاء الاشتراك (اختياري)
-async function unsubscribeFromPush() {
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
-    if (subscription) {
-      await subscription.unsubscribe();
-      console.log('✅ تم إلغاء الاشتراك من Push');
-      
-      // إعلام الخادم بحذف الاشتراك
-      await fetchWithAuth('/api/subscriptions/unsubscribe', {
-        method: 'DELETE',
-        body: JSON.stringify({ endpoint: subscription.endpoint }),
-      });
-    }
-  } catch (err) {
-    console.error('❌ فشل إلغاء الاشتراك:', err);
-  }
-}
-
-// ==========================================
 // 7. دوال API مع التوكن
 // ==========================================
 function fetchWithAuth(url, options = {}) {
     const headers = {
         'Content-Type': 'application/json',
     };
-    
-    // إضافة التوكن فقط إذا كان موجوداً
     if (token) {
         headers['Authorization'] = 'Bearer ' + token;
+    } else {
+        console.warn('⚠️ fetchWithAuth: لا يوجد توكن');
+        return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
     }
 
     return fetch(API_BASE_URL + url, {
@@ -658,9 +354,8 @@ document.getElementById('settingsLogoUpload').addEventListener('change', functio
 });
 
 // ==========================================
-// 9. دوال QR Code (المسح والتحميل) - النسخة المُحسَّنة للتبديل
+// 9. دوال QR Code
 // ==========================================
-
 window.downloadQR = function(studentId) {
     fetchWithAuth('/api/students/' + studentId + '/qr')
         .then(res => {
@@ -682,7 +377,6 @@ window.downloadQR = function(studentId) {
         .catch(err => alert('فشل تحميل QR: ' + err.message));
 };
 
-// فتح الماسح الضوئي
 function openScanner() {
     const modal = document.getElementById('scannerModal');
     modal.style.display = 'flex';
@@ -694,7 +388,6 @@ function openScanner() {
         return;
     }
 
-    // إيقاف أي ماسح سابق بشكل آمن
     if (html5QrCode) {
         html5QrCode.stop()
             .then(() => {
@@ -715,36 +408,31 @@ function startScannerProcess() {
     const resultsContainer = document.getElementById('qr-reader-results');
     resultsContainer.innerHTML = '📷 جاري الوصول للكاميرا...';
 
-    // إنشاء كائن الماسح الجديد
     html5QrCode = new Html5Qrcode('qr-reader');
 
     Html5Qrcode.getCameras()
         .then(devices => {
             if (devices && devices.length > 0) {
                 availableCameras = devices;
-                // عرض معلومات الكاميرات في الكونسول للمساعدة في التصحيح
-                console.log('📷 الكاميرات المتاحة:', devices.map(d => d.label));
-
-                // اختيار الكاميرا الخلفية إن وجدت، وإلا أول كاميرا
                 let selectedCamera = devices[0];
                 const backCamera = devices.find(d => {
                     const label = d.label.toLowerCase();
-                    return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('خلفية');
+                    return label.includes('back') || label.includes('rear') || 
+                           label.includes('environment') || label.includes('خلفية');
                 });
                 if (backCamera) {
                     selectedCamera = backCamera;
                 } else {
-                    // حاول العثور على كاميرا ليست أمامية
                     const nonFront = devices.find(d => {
                         const label = d.label.toLowerCase();
-                        return !label.includes('front') && !label.includes('selfie') && !label.includes('أمامية');
+                        return !label.includes('front') && !label.includes('selfie') && 
+                               !label.includes('أمامية');
                     });
                     if (nonFront) selectedCamera = nonFront;
                 }
 
                 currentCameraId = selectedCamera.id;
                 resultsContainer.innerHTML = `✅ تم اختيار الكاميرا: ${selectedCamera.label || 'غير معروف'}`;
-                console.log('✅ الكاميرا المختارة:', selectedCamera.label);
                 
                 const switchBtn = document.getElementById('switchCameraBtn');
                 if (devices.length > 1) {
@@ -785,7 +473,6 @@ function startNewScanner(cameraId) {
     .then(() => {
         resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
         currentCameraId = cameraId;
-        console.log('✅ الكاميرا تعمل الآن:', cameraId);
     })
     .catch(err => {
         console.error('فشل تشغيل الكاميرا:', err);
@@ -796,33 +483,26 @@ function startNewScanner(cameraId) {
     });
 }
 
-// تبديل الكاميرا
 function switchCamera() {
     if (availableCameras.length < 2) {
         alert('لا توجد كاميرات أخرى');
         return;
     }
 
-    // اختيار الكاميرا التالية في القائمة
     const currentIndex = availableCameras.findIndex(d => d.id === currentCameraId);
     const nextIndex = (currentIndex + 1) % availableCameras.length;
     const nextCamera = availableCameras[nextIndex];
     
     console.log('🔄 تبديل الكاميرا إلى:', nextCamera.label || 'غير معروف');
-    const resultsContainer = document.getElementById('qr-reader-results');
-    resultsContainer.innerHTML = '🔄 جاري تبديل الكاميرا...';
-
-    // إيقاف الماسح الحالي وتشغيل الجديد
+    
     if (html5QrCode) {
         html5QrCode.stop()
             .then(() => {
                 html5QrCode.clear();
                 html5QrCode = null;
-                // نعيد تشغيل الماسح بالكاميرا الجديدة
                 startScannerProcess();
             })
-            .catch(err => {
-                console.warn('خطأ في إيقاف الماسح للتبديل:', err);
+            .catch(() => {
                 html5QrCode = null;
                 startScannerProcess();
             });
@@ -870,7 +550,7 @@ function onScanSuccess(decodedText, decodedResult) {
 }
 
 function onScanError(error) {
-    // تجاهل
+    // تجاهل الأخطاء العادية
 }
 
 function closeScanner() {
@@ -890,29 +570,160 @@ function closeScanner() {
     document.getElementById('switchCameraBtn').style.display = 'none';
 }
 
-// ربط الأحداث
 document.getElementById('openScannerBtn').addEventListener('click', openScanner);
 document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
 document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
 
 // ==========================================
-// 10. دوال التغيير الجماعي
+// 10. دوال الإشعارات (Web Push)
 // ==========================================
-async function toggleAllStudents(status) {
-    const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
-    const confirmed = await showConfirmModal('تغيير حالة جميع الطلاب', `هل أنت متأكد من تغيير حالة جميع الطلاب إلى ${statusText}؟`);
-    if (!confirmed) return;
+async function requestNotificationPermission() {
+    if (!('serviceWorker' in navigator)) {
+        console.warn('⚠️ Service Worker غير مدعوم');
+        return false;
+    }
+    if (!('Notification' in window)) {
+        console.warn('⚠️ هذا المتصفح لا يدعم الإشعارات');
+        return false;
+    }
+    if (!currentUser) {
+        console.warn('⚠️ لا يوجد مستخدم مسجل الدخول');
+        return false;
+    }
 
-    if (socket) {
-        socket.emit('toggle-all-status', { newStatus: status });
-        addLog(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`, new Date(), 'adminLogContainer');
-    } else {
-        alert('Socket غير متصل');
+    if (Notification.permission === 'granted') {
+        console.log('✅ الإذن موجود مسبقاً');
+        await subscribeToPush();
+        return true;
+    }
+
+    if (Notification.permission === 'denied') {
+        console.warn('⚠️ تم رفض إذن الإشعارات مسبقاً');
+        return false;
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            console.log('✅ تم منح الإذن');
+            await subscribeToPush();
+            return true;
+        } else {
+            console.warn('⚠️ تم رفض الإذن');
+            return false;
+        }
+    } catch (err) {
+        console.error('❌ خطأ في طلب الإذن:', err);
+        return false;
+    }
+}
+
+async function subscribeToPush() {
+    try {
+        if (!token) {
+            token = localStorage.getItem('token');
+            if (!token) {
+                console.warn('⚠️ لا يوجد توكن لتسجيل الاشتراك');
+                return null;
+            }
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
+        const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            console.log('✅ اشتراك موجود مسبقاً');
+            await sendSubscriptionToServer(subscription);
+            return subscription;
+        }
+
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedKey,
+        });
+
+        console.log('✅ اشتراك جديد تم إنشاؤه');
+        await sendSubscriptionToServer(subscription);
+        
+        return subscription;
+    } catch (err) {
+        console.error('❌ فشل الاشتراك في Push:', err);
+        return null;
+    }
+}
+
+async function sendSubscriptionToServer(subscription) {
+    try {
+        const payload = {
+            subscription: {
+                endpoint: subscription.endpoint,
+                keys: {
+                    p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
+                    auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))),
+                },
+            },
+            userEmail: currentUser ? currentUser.email : null,
+            role: currentUser ? currentUser.role : null,
+        };
+
+        const res = await fetchWithAuth('/api/subscriptions/subscribe', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+            console.log('✅ تم تسجيل الاشتراك في الخادم');
+        } else {
+            const error = await res.json();
+            console.warn('❌ فشل تسجيل الاشتراك:', error.message);
+        }
+    } catch (err) {
+        console.error('❌ خطأ في إرسال الاشتراك:', err);
+    }
+}
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function unsubscribeFromPush() {
+    try {
+        if (!token) {
+            console.log('ℹ️ لا يوجد توكن، تخطي إلغاء الاشتراك');
+            return;
+        }
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            await subscription.unsubscribe();
+            console.log('✅ تم إلغاء الاشتراك من Push');
+            
+            await fetchWithAuth('/api/subscriptions/unsubscribe', {
+                method: 'DELETE',
+                body: JSON.stringify({ endpoint: subscription.endpoint }),
+            }).catch(err => console.warn('⚠️ فشل إعلام الخادم:', err));
+        }
+    } catch (err) {
+        console.error('❌ فشل إلغاء الاشتراك:', err);
     }
 }
 
 // ==========================================
-// 11. دوال الإشعارات
+// 11. دوال الإشعارات (داخل التطبيق)
 // ==========================================
 async function loadAdminNotifications() {
     try {
@@ -1022,7 +833,23 @@ function toggleOldNotifications(show) {
 }
 
 // ==========================================
-// 12. دوال المدير
+// 12. دوال التغيير الجماعي
+// ==========================================
+async function toggleAllStudents(status) {
+    const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
+    const confirmed = await showConfirmModal('تغيير حالة جميع الطلاب', `هل أنت متأكد من تغيير حالة جميع الطلاب إلى ${statusText}؟`);
+    if (!confirmed) return;
+
+    if (socket) {
+        socket.emit('toggle-all-status', { newStatus: status });
+        addLog(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`, new Date(), 'adminLogContainer');
+    } else {
+        alert('Socket غير متصل');
+    }
+}
+
+// ==========================================
+// 13. دوال المدير
 // ==========================================
 async function loadAdminStudents() {
     try {
@@ -1061,6 +888,9 @@ function renderStudents(students, containerId, showAdminControls) {
                     ${showAdminControls ? `
                         <button class="btn-toggle ${toggleClass}" onclick="adminToggle('${s._id}')">${toggleText}</button>
                         <button class="btn-delete" onclick="adminDelete('${s._id}')">🗑️</button>
+                        <button class="btn-edit" onclick="openEditStudent('${s._id}')" style="background:#f39c12; color:white; border:none; padding:6px 12px; border-radius:40px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                            <i class="fas fa-edit"></i> تعديل
+                        </button>
                     ` : `
                         <span style="font-size:13px;color:#7b8b9e;">آخر دخول/خروج: ${formatFullTime(s.lastUpdate)}</span>
                     `}
@@ -1102,6 +932,114 @@ window.adminDelete = async function(id) {
         .catch(err => alert('خطأ في الحذف'));
 };
 
+// ==========================================
+// 14. تعديل معلومات الطالب
+// ==========================================
+window.openEditStudent = async function(studentId) {
+    try {
+        const res = await fetchWithAuth('/api/students');
+        if (!res.ok) throw new Error('فشل جلب بيانات الطالب');
+        const students = await res.json();
+        const student = students.find(s => s._id === studentId);
+        if (!student) {
+            alert('الطالب غير موجود');
+            return;
+        }
+
+        document.getElementById('editStudentId').value = student._id;
+        document.getElementById('editName').value = student.name || '';
+        document.getElementById('editParentName').value = student.parentName || '';
+        document.getElementById('editParentPhone').value = student.parentPhone || '';
+        document.getElementById('editParentEmail').value = student.parentEmail || '';
+        document.getElementById('editAddress').value = student.address || '';
+        document.getElementById('editStudentModal').style.display = 'flex';
+    } catch (err) {
+        alert('خطأ في جلب بيانات الطالب: ' + err.message);
+    }
+};
+
+document.getElementById('saveEditStudentBtn').addEventListener('click', async function() {
+    const id = document.getElementById('editStudentId').value;
+    const name = document.getElementById('editName').value.trim();
+    const parentName = document.getElementById('editParentName').value.trim();
+    const parentPhone = document.getElementById('editParentPhone').value.trim();
+    const parentEmail = document.getElementById('editParentEmail').value.trim();
+    const address = document.getElementById('editAddress').value.trim();
+
+    if (!name || !parentName || !parentPhone || !parentEmail) {
+        alert('جميع الحقول مطلوبة ما عدا العنوان');
+        return;
+    }
+
+    const confirmed = await showConfirmModal('تعديل الطالب', 'هل أنت متأكد من حفظ التعديلات؟');
+    if (!confirmed) return;
+
+    try {
+        const res = await fetchWithAuth('/api/students/' + id, {
+            method: 'PUT',
+            body: JSON.stringify({ name, parentName, parentPhone, parentEmail, address })
+        });
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل التعديل');
+        }
+        alert('✅ تم تعديل معلومات الطالب بنجاح');
+        document.getElementById('editStudentModal').style.display = 'none';
+        loadAdminStudents();
+        addLog('✏️ تم تعديل معلومات الطالب ' + name, new Date(), 'adminLogContainer');
+    } catch (err) {
+        alert('خطأ: ' + err.message);
+    }
+});
+
+document.getElementById('closeEditStudentBtn').addEventListener('click', function() {
+    document.getElementById('editStudentModal').style.display = 'none';
+});
+
+// ==========================================
+// 15. عرض جميع سجلات النشاطات في نافذة منبثقة
+// ==========================================
+document.getElementById('adminShowAllLogsBtn').addEventListener('click', function() {
+    const container = document.getElementById('allLogsContainer');
+    container.innerHTML = '';
+    
+    // ترتيب تنازلي (الأحدث أولاً)
+    const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    if (sortedLogs.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#8a9aaa; padding:20px;">لا توجد سجلات</div>';
+    } else {
+        sortedLogs.forEach(log => {
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+            container.appendChild(item);
+        });
+    }
+    
+    document.getElementById('allLogsModal').style.display = 'flex';
+});
+
+document.getElementById('closeAllLogsBtn').addEventListener('click', function() {
+    document.getElementById('allLogsModal').style.display = 'none';
+});
+
+// إغلاق النوافذ المنبثقة عند الضغط خارجها
+document.getElementById('allLogsModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+    }
+});
+
+document.getElementById('editStudentModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+    }
+});
+
+// ==========================================
+// 16. دوال المدير (إضافة طالب، إشعارات، إلخ)
+// ==========================================
 async function adminAddStudent() {
     const name = document.getElementById('adminStudentName').value.trim();
     const parentEmail = document.getElementById('adminParentEmail').value.trim();
@@ -1182,7 +1120,7 @@ async function adminSendParentNotification() {
 }
 
 // ==========================================
-// 13. دوال السجل
+// 17. دوال السجل (مع عرض آخر 5 سجلات فقط)
 // ==========================================
 function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
@@ -1209,12 +1147,14 @@ function renderAdminLogs(showOld) {
 
     document.getElementById('adminShowOldLogsBtn').style.display = 'none';
     document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+    document.getElementById('adminShowAllLogsBtn').style.display = 'none';
 
     if (adminLogs.length === 0) {
         container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد نشاطات بعد</div>';
         return;
     }
 
+    // ترتيب تنازلي (الأحدث أولاً)
     const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const todayLogs = sortedLogs.filter(log => isToday(log.date));
@@ -1224,17 +1164,28 @@ function renderAdminLogs(showOld) {
     let logsToShow = [];
 
     if (showOld) {
+        // ✅ إذا كان زر "عرض السجل السابق" مفعّلاً، نعرض جميع السجلات (للتوافق مع الوظيفة القديمة)
         logsToShow = sortedLogs;
         document.getElementById('adminShowOldLogsBtn').style.display = 'none';
         document.getElementById('adminHideOldLogsBtn').style.display = 'inline-flex';
+        // إخفاء زر "عرض جميع التفاصيل" لأننا بالفعل نعرض الكل
+        document.getElementById('adminShowAllLogsBtn').style.display = 'none';
     } else {
-        logsToShow = todayLogs;
-        if (oldLogs.length > 0) {
+        // ✅ العرض الافتراضي: آخر 5 سجلات فقط (من بين أحداث اليوم)
+        const todayOnly = todayLogs.length > 0 ? todayLogs : sortedLogs.slice(0, 5);
+        logsToShow = todayOnly.slice(0, 5); // آخر 5 فقط
+        
+        if (oldLogs.length > 0 || todayLogs.length > 5) {
             document.getElementById('adminShowOldLogsBtn').style.display = 'inline-flex';
             document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+            // ✅ إظهار زر "عرض جميع التفاصيل" إذا كان هناك سجلات إضافية
+            if (sortedLogs.length > 5) {
+                document.getElementById('adminShowAllLogsBtn').style.display = 'inline-flex';
+            }
         } else {
             document.getElementById('adminShowOldLogsBtn').style.display = 'none';
             document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+            document.getElementById('adminShowAllLogsBtn').style.display = 'none';
         }
     }
 
@@ -1260,7 +1211,7 @@ function toggleAdminOldLogs(show) {
 }
 
 // ==========================================
-// 14. دوال ولي الأمر
+// 18. دوال ولي الأمر
 // ==========================================
 async function loadParentStudents() {
     try {
@@ -1321,8 +1272,8 @@ function renderParentLogs(showOld) {
         document.getElementById('parentShowOldLogsBtn').style.display = 'none';
         document.getElementById('parentHideOldLogsBtn').style.display = 'inline-flex';
     } else {
-        logsToShow = todayLogs;
-        if (oldLogs.length > 0) {
+        logsToShow = todayLogs.slice(0, 5); // آخر 5 فقط
+        if (oldLogs.length > 0 || todayLogs.length > 5) {
             document.getElementById('parentShowOldLogsBtn').style.display = 'inline-flex';
             document.getElementById('parentHideOldLogsBtn').style.display = 'none';
         } else {
@@ -1353,7 +1304,7 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 15. أحداث المصادقة وربط الأحداث
+// 19. أحداث المصادقة وربط الأحداث
 // ==========================================
 function setupAuthEvents() {
     document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -1438,7 +1389,7 @@ function setupAuthEvents() {
 }
 
 // ==========================================
-// 16. بدء التطبيق
+// 20. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
     if ('Notification' in window && Notification.permission === 'default') {
