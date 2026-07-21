@@ -115,19 +115,23 @@
                 <div id="adminStudentsList" class="students-grid"></div>
 
                 <!-- سجل النشاطات -->
-                <div class="log-section">
-                    <div class="log-header">
-                        <h3><i class="fas fa-history"></i> 📋 سجل النشاطات</h3>
-                        <button id="adminShowOldLogsBtn" class="btn-show-old" style="display:none;">
-                            <i class="fas fa-chevron-down"></i> عرض السجل السابق
-                        </button>
-                        <button id="adminHideOldLogsBtn" class="btn-hide-old" style="display:none;">
-                            <i class="fas fa-chevron-up"></i> إخفاء السجل السابق
-                        </button>
-                    </div>
-                    <div id="adminLogContainer"></div>
-                </div>
-
+<div class="log-section">
+    <div class="log-header">
+        <h3><i class="fas fa-history"></i> 📋 سجل النشاطات</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button id="adminShowOldLogsBtn" class="btn-show-old" style="display:none;">
+                <i class="fas fa-chevron-down"></i> عرض السجل السابق
+            </button>
+            <button id="adminHideOldLogsBtn" class="btn-hide-old" style="display:none;">
+                <i class="fas fa-chevron-up"></i> إخفاء السجل السابق
+            </button>
+            <button id="adminShowAllLogsBtn" class="btn-show-old" style="display:none;">
+                <i class="fas fa-list"></i> عرض جميع التفاصيل
+            </button>
+        </div>
+    </div>
+    <div id="adminLogContainer"></div>
+</div>
                 <!-- إرسال الإشعارات -->
                 <div class="notification-forms">
                     <div class="notif-box">
@@ -234,5 +238,40 @@
     </script>
 
     <script src="js/app.js"></script>
+
+<!-- ========================================== -->
+<!-- نافذة عرض جميع سجلات النشاطات -->
+<!-- ========================================== -->
+<div id="allLogsModal" class="modal-overlay" style="display:none; z-index: 1000;">
+    <div class="modal-box" style="max-width: 700px; max-height: 80vh; overflow-y: auto; padding: 20px;">
+        <h3 style="text-align:center; margin-bottom:15px;">📋 جميع سجلات النشاطات</h3>
+        <div id="allLogsContainer" style="max-height: 50vh; overflow-y: auto;"></div>
+        <div style="text-align:center; margin-top:15px;">
+            <button id="closeAllLogsBtn" class="btn-secondary"><i class="fas fa-times"></i> إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- نافذة تعديل معلومات الطالب -->
+<!-- ========================================== -->
+<div id="editStudentModal" class="modal-overlay" style="display:none; z-index: 1000;">
+    <div class="modal-box" style="max-width: 600px; padding: 20px;">
+        <h3 style="text-align:center; margin-bottom:15px;">✏️ تعديل معلومات الطالب</h3>
+        <input type="hidden" id="editStudentId">
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+            <input type="text" id="editName" placeholder="اسم التلميذ">
+            <input type="text" id="editParentName" placeholder="اسم ولي الأمر">
+            <input type="text" id="editParentPhone" placeholder="هاتف ولي الأمر">
+            <input type="email" id="editParentEmail" placeholder="بريد ولي الأمر">
+            <input type="text" id="editAddress" placeholder="العنوان" style="grid-column: 1 / -1;">
+        </div>
+        <div style="text-align:center; margin-top:15px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button id="saveEditStudentBtn" class="btn-primary"><i class="fas fa-save"></i> حفظ التعديلات</button>
+            <button id="closeEditStudentBtn" class="btn-secondary"><i class="fas fa-times"></i> إلغاء</button>
+        </div>
+    </div>
+</div>
+    
 </body>
 </html>
