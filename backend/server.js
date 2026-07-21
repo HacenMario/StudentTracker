@@ -147,55 +147,66 @@ io.on('connection', (socket) => {
   // ----------------------
   // 1. تبديل حالة الطالب (مع إرسال إشعار للجميع مؤقتاً)
   // ----------------------
-  socket.on('toggle-status', async (studentId) => {
-    if (socket.user.role !== 'admin') {
-      socket.emit('error', { message: 'غير مصرح لك' });
+socket.on('toggle-status', async (studentId) => {
+  if (socket.user.role !== 'admin') {
+    socket.emit('error', { message: 'غير مصرح لك' });
+    return;
+  }
+
+  try {
+    const student = await Student.findById(studentId);
+    if (!student) {
+      socket.emit('error', { message: 'الطالب غير موجود' });
       return;
     }
 
-    try {
-      const student = await Student.findById(studentId);
-      if (!student) {
-        socket.emit('error', { message: 'الطالب غير موجود' });
-        return;
-      }
+    student.isInside = !student.isInside;
+    student.lastUpdate = new Date();
+    await student.save();
 
-      student.isInside = !student.isInside;
-      student.lastUpdate = new Date();
-      await student.save();
+    const attendance = new Attendance({
+      student: student._id,
+      status: student.isInside ? 'in' : 'out',
+      method: 'manual',
+    });
+    await attendance.save();
 
-      const attendance = new Attendance({
-        student: student._id,
-        status: student.isInside ? 'in' : 'out',
-        method: 'manual',
-      });
-      await attendance.save();
+    const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
+    const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-      const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
-      const message = `التلميذ ${student.name} أصبح ${statusText}`;
+    io.emit('status-changed', {
+      student: student,
+      message: message,
+      parentId: student.parent ? student.parent.toString() : null,
+      parentEmail: student.parentEmail,
+    });
 
-      // بث عبر Socket
-      io.emit('status-changed', {
-        student: student,
-        message: message,
-        parentId: student.parent ? student.parent.toString() : null,
-        parentEmail: student.parentEmail,
-      });
+    // ✅ إرسال الإشعار للجميع (اختبار)
+    console.log(`📤 إرسال إشعار تغيير حالة للجميع (اختبار)`);
+    await sendPushNotification(
+      'تحديث حالة ابنك (اختبار)',
+      message,
+      { url: '/parent-dashboard' },
+      null // إرسال للجميع
+    );
 
-      // ✅ إرسال إشعار Web Push لجميع المشتركين (للتأكد من وصولها لك)
-      console.log(`📤 إرسال إشعار تغيير حالة لجميع المشتركين: ${message}`);
+    // ✅ (لاحقاً) يمكنك إعادة تفعيل الإرسال للبريد المحدد
+    /*
+    if (student.parentEmail) {
       await sendPushNotification(
-        '🔔 تغيير حالة الطالب',
+        'تحديث حالة ابنك',
         message,
         { url: '/parent-dashboard' },
-        null // إرسال للجميع
+        student.parentEmail
       );
-
-    } catch (error) {
-      console.error('❌ خطأ في تغيير الحالة:', error);
-      socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
     }
-  });
+    */
+
+  } catch (error) {
+    console.error(error);
+    socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
+  }
+});
 
   // ----------------------
   // 2. إشعار عام من المدير
