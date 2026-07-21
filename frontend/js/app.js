@@ -1391,7 +1391,8 @@ async function loadAttendance(studentId) {
         if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
         parentLogs = records.map(r => ({
-            message: r.status === 'in' ? 'دخول' : 'خروج',
+            message: r.statusText || (r.status === 'in' ? translate('attendance.entry') : translate('attendance.exit')),
+            studentName: r.studentName || '',
             time: formatFullTime(r.timestamp),
             date: new Date(r.timestamp)
         }));
@@ -1443,9 +1444,11 @@ function renderParentLogs(showOld) {
     logsToShow.forEach(log => {
         const item = document.createElement('div');
         item.className = 'log-item';
-        item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+        const displayMessage = log.studentName ? `${log.studentName}: ${log.message}` : log.message;
+        item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${log.time}</span>`;
         container.appendChild(item);
     });
+}
 
     if (showOld && oldLogs.length > 0) {
         const divider = document.createElement('div');
