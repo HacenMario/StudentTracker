@@ -331,13 +331,13 @@ function fetchWithAuth(url, options = {}) {
 // 9. دوال إعدادات المدرسة (معدلة لتعمل بدون توكن في البداية)
 // ==========================================
 async function loadSchoolSettings() {
+    // فقط إذا كان المستخدم مسجل دخول ولديه صلاحية
+    if (!token || !currentUser) {
+        console.log('ℹ️ تخطي تحميل إعدادات المدرسة (غير مسجل)');
+        return;
+    }
     try {
-        // جلب الإعدادات العامة بدون مصادقة (لأنها تظهر في الهيدر قبل تسجيل الدخول)
-        const res = await fetch(`${API_BASE_URL}/api/settings`, {
-            headers: {
-                'x-tenant-subdomain': currentTenantSubdomain
-            }
-        });
+        const res = await fetchWithAuth('/api/settings');
         if (!res.ok) throw new Error('فشل جلب إعدادات المدرسة');
         schoolSettings = await res.json();
         applySchoolSettings();
@@ -1589,15 +1589,12 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.prepend(langSwitcher);
         }
     }
-
-    // تحميل إعدادات المدرسة (بدون مصادقة)
-    loadSchoolSettings();
     
     // ربط الأحداث بعد تحميل الـ DOM
     setupAuthEvents();
 
     // التحقق من وجود توكن ومستخدم مسجل
-    if (token) {
+   if (token) {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
             if (user) {
