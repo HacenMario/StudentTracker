@@ -2,8 +2,7 @@
   "school": {
     "name": "École Al-Nour Primaire",
     "address": "📍 Rue de la Paix, Cité Éducative",
-    "phone": "📞 Tél: 0555 123 456 | ✉️ info@school.edu",
-    "info": "Informations de l'établissement"
+    "phone": "📞 Tél: 0555 123 456 | ✉️ info@school.edu"
   },
   "auth": {
     "login": "Se connecter",
@@ -35,17 +34,19 @@
   },
   "student": {
     "add": "Ajouter un étudiant",
-    "edit": "Modifier",
+    "edit": "Modifier l'étudiant",
     "delete": "Supprimer l'étudiant",
     "name": "Nom de l'étudiant",
-    "parent_name": "Nom du parent",
+    "parent_name": "Parent",
     "parent_phone": "Téléphone du parent",
     "parent_email": "E-mail du parent",
     "address": "Adresse",
     "status": "Statut",
-    "inside": "À l'intérieur",
-    "outside": "À l'extérieur",
+    "inside": "À l'intérieur 🏫",
+    "outside": "À l'extérieur 🚪",
     "toggle": "Changer le statut",
+    "toggle_exit": "Enregistrer la sortie",
+    "entry": "Entrée",
     "student_id": "ID Étudiant",
     "last_update": "Dernière mise à jour",
     "no_students": "📭 Aucun étudiant",
@@ -57,16 +58,8 @@
     "confirm_toggle": "Êtes-vous sûr de vouloir changer le statut de cet étudiant ?",
     "confirm_edit": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
     "edit_title": "✏️ Modifier les informations de l'étudiant",
-    "parent": "Parent",
-    "last_entry_exit": "Dernière entrée/sortie",
-    "entry": "Entrée",
-    "exit": "Sortie",
-    "toggle_exit": "Enregistrer la sortie",
-    "confirm_add": "Confirmer l'ajout de l'étudiant \"{name}\" pour le parent \"{parentName}\" ?",
-    "added": "➕ Étudiant {name} ajouté",
-    "deleted": "🗑️ Étudiant supprimé",
-    "toggled": "🔄 Statut de l'étudiant modifié",
-    "edited": "✏️ Informations de l'étudiant {name} modifiées"
+    "for_parent": "pour le parent",
+    "confirm_add": "Confirmation d'ajout de l'étudiant"
   },
   "notification": {
     "title": "Nouvelle notification",
@@ -85,9 +78,7 @@
     "sent_private": "Notification privée envoyée avec succès",
     "confirm_general": "Êtes-vous sûr d'envoyer cette notification à tous les parents ?",
     "confirm_private": "Êtes-vous sûr d'envoyer cette notification au parent ({email}) ?",
-    "status_changed": "🔔 L'étudiant {name} est maintenant {status}",
-    "bulk_inside": "Tous les étudiants sont maintenant à l'intérieur 🏫",
-    "bulk_outside": "Tous les étudiants sont maintenant à l'extérieur 🚪"
+    "message_required": "Écrivez le message de notification"
   },
   "attendance": {
     "log": "Journal de présence",
@@ -101,7 +92,14 @@
     "hide_old_logs": "Masquer les anciens enregistrements",
     "show_old_logs": "Afficher les anciens enregistrements",
     "show_all": "Afficher tous les détails",
-    "my_children": "Journal d'entrée/sortie de mes enfants"
+    "my_children": "Journal d'entrée/sortie de mes enfants",
+    "last_entry_exit": "Dernière entrée/sortie",
+    "entry": "Entrée",
+    "exit": "Sortie",
+    "all_students_inside": "Tous les étudiants sont à l'intérieur 🏫",
+    "all_students_outside": "Tous les étudiants sont à l'extérieur 🚪",
+    "student_became_inside": "L'étudiant {name} est à l'intérieur 🏫",
+    "student_became_outside": "L'étudiant {name} est à l'extérieur 🚪"
   },
   "settings": {
     "school": "Paramètres de l'établissement",
@@ -114,15 +112,12 @@
     "confirm": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
     "success": "Paramètres de l'école enregistrés avec succès",
     "title": "Modifier les informations de l'école",
-    "info": "Informations de l'établissement",
     "close": "Fermer les paramètres"
   },
   "bulk": {
     "all_inside": "Tout changer à l'intérieur",
     "all_outside": "Tout changer à l'extérieur",
-    "confirm": "Êtes-vous sûr de vouloir changer le statut de tous les étudiants à {status} ?",
-    "status_inside": "à l'intérieur 🏫",
-    "status_outside": "à l'extérieur 🚪"
+    "confirm": "Êtes-vous sûr de vouloir changer le statut de tous les étudiants à {status} ?"
   },
   "tenant": {
     "add": "Ajouter un nouveau locataire",
@@ -139,22 +134,10 @@
     "deactivate": "Désactiver",
     "not_found": "Locataire non trouvé"
   },
-  "scanner": {
-    "requesting": "📷 Demande d'accès à la caméra...",
-    "accessing": "📷 Accès à la caméra...",
-    "no_camera": "❌ Aucune caméra disponible sur cet appareil.",
-    "permission_denied": "❌ Permission refusée. Veuillez autoriser l'accès à la caméra dans les paramètres du navigateur.",
-    "access_failed": "❌ Échec de l'accès à la caméra : {error}",
-    "starting": "⏳ Démarrage de la caméra...",
-    "working": "📸 Caméra active, placez le code devant elle",
-    "start_failed": "❌ Échec du démarrage de la caméra : {error}",
-    "not_allowed": "❌ Permission refusée. Veuillez autoriser l'accès dans les paramètres.",
-    "processing": "✅ Traitement du code...",
-    "success": "✅ {message}",
-    "error": "❌ {message}",
-    "server_error": "❌ Erreur de connexion au serveur",
-    "switch": "Changer de caméra",
-    "close": "Fermer"
+  "qr": {
+    "accessing_camera": "Accès à la caméra...",
+    "starting_camera": "Démarrage de la caméra...",
+    "camera_working": "Caméra active, placez le code devant"
   },
   "common": {
     "save": "Enregistrer",
@@ -178,32 +161,6 @@
     "switch_camera": "Changer de caméra",
     "close_scanner": "Fermer",
     "all_details": "Tous les détails",
-    "close_settings": "Fermer les paramètres",
-    "close_add_form": "Fermer le formulaire d'ajout",
-    "toggle_exit": "Enregistrer la sortie"
-  }
-}
-{
-  "student": {
-    "inside": "À l'intérieur 🏫",
-    "outside": "À l'extérieur 🚪",
-    "toggle_exit": "Enregistrer la sortie",
-    "entry": "Entrée",
-    "parent_name": "Parent",
-    "no_students": "📭 Aucun étudiant",
-    "last_update": "Dernière mise à jour"
-  },
-  "attendance": {
-    "last_entry_exit": "Dernière entrée/sortie"
-  },
-  "bulk": {
-    "all_inside": "Tout changer à l'intérieur",
-    "confirm": "Êtes-vous sûr de vouloir changer le statut de tous les étudiants à {status} ?"
-  },
-  "common": {
-    "delete": "Supprimer",
-    "edit": "Modifier",
-    "qr": "QR",
-    "error": "Une erreur est survenue"
+    "confirm_add": "Confirmation d'ajout"
   }
 }
