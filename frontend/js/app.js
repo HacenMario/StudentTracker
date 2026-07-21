@@ -31,65 +31,65 @@ let currentTenantSubdomain = localStorage.getItem('tenantSubdomain') || 'demo';
 let tenants = [];
 
 // ==========================================
-// 3. نظام الترجمات (i18n)
+// 3. نظام الترجمات (i18n) - مبسط
 // ==========================================
 let currentLanguage = localStorage.getItem('language') || 'ar';
 let translations = {};
 
 async function loadTranslations(lang) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/i18n/${lang}`);
-    if (!res.ok) throw new Error('فشل تحميل الترجمات');
-    translations = await res.json();
-    currentLanguage = lang;
-    localStorage.setItem('language', lang);
-    applyTranslations();
-  } catch (err) {
-    console.error('❌ خطأ في تحميل الترجمات:', err);
-  }
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/i18n/${lang}`);
+        if (!res.ok) throw new Error('فشل تحميل الترجمات');
+        translations = await res.json();
+        currentLanguage = lang;
+        localStorage.setItem('language', lang);
+        applyTranslations();
+    } catch (err) {
+        console.error('❌ خطأ في تحميل الترجمات:', err);
+    }
 }
 
 function applyTranslations() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    const translation = getTranslation(key);
-    if (translation) {
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        el.placeholder = translation;
-      } else {
-        el.textContent = translation;
-      }
-    }
-  });
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const translation = getTranslation(key);
+        if (translation) {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.placeholder = translation;
+            } else {
+                el.textContent = translation;
+            }
+        }
+    });
 }
 
 function getTranslation(key, params = {}) {
-  const keys = key.split('.');
-  let value = translations;
-  for (const k of keys) {
-    if (value && value[k] !== undefined) {
-      value = value[k];
-    } else {
-      return key;
+    const keys = key.split('.');
+    let value = translations;
+    for (const k of keys) {
+        if (value && value[k] !== undefined) {
+            value = value[k];
+        } else {
+            return key;
+        }
     }
-  }
-  if (typeof value === 'string') {
-    for (const [paramKey, paramValue] of Object.entries(params)) {
-      value = value.replace(`{${paramKey}}`, paramValue);
+    if (typeof value === 'string') {
+        for (const [paramKey, paramValue] of Object.entries(params)) {
+            value = value.replace(`{${paramKey}}`, paramValue);
+        }
     }
-  }
-  return value;
+    return value;
 }
 
 function switchLanguage(lang) {
-  if (lang === currentLanguage) return;
-  loadTranslations(lang);
-  const dir = lang === 'ar' ? 'rtl' : 'ltr';
-  document.documentElement.dir = dir;
-  document.documentElement.lang = lang;
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.lang === lang);
-  });
+    if (lang === currentLanguage) return;
+    loadTranslations(lang);
+    const dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = dir;
+    document.documentElement.lang = lang;
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
 }
 
 // ==========================================
@@ -154,7 +154,7 @@ document.getElementById('modalCancelBtn').addEventListener('click', function() {
 });
 
 // ==========================================
-// 6. دوال المصادقة
+// 6. دوال المصادقة والعرض
 // ==========================================
 function saveAuth(data) {
     token = data.token;
@@ -197,42 +197,18 @@ function logout() {
 }
 
 function showLogin() {
-    const login = document.getElementById('loginScreen');
-    const register = document.getElementById('registerScreen');
-    const admin = document.getElementById('adminDashboard');
-    const parent = document.getElementById('parentDashboard');
-    const superAdmin = document.getElementById('superAdminDashboard');
-    if (login) login.style.display = 'block';
-    if (register) register.style.display = 'none';
-    if (admin) admin.style.display = 'none';
-    if (parent) parent.style.display = 'none';
-    if (superAdmin) superAdmin.style.display = 'none';
+    hideAllScreens();
+    document.getElementById('loginScreen').style.display = 'block';
 }
 
 function showRegister() {
-    const login = document.getElementById('loginScreen');
-    const register = document.getElementById('registerScreen');
-    const admin = document.getElementById('adminDashboard');
-    const parent = document.getElementById('parentDashboard');
-    const superAdmin = document.getElementById('superAdminDashboard');
-    if (login) login.style.display = 'none';
-    if (register) register.style.display = 'block';
-    if (admin) admin.style.display = 'none';
-    if (parent) parent.style.display = 'none';
-    if (superAdmin) superAdmin.style.display = 'none';
+    hideAllScreens();
+    document.getElementById('registerScreen').style.display = 'block';
 }
 
 function showAdminDashboard() {
-    const login = document.getElementById('loginScreen');
-    const register = document.getElementById('registerScreen');
-    const admin = document.getElementById('adminDashboard');
-    const parent = document.getElementById('parentDashboard');
-    const superAdmin = document.getElementById('superAdminDashboard');
-    if (login) login.style.display = 'none';
-    if (register) register.style.display = 'none';
-    if (admin) admin.style.display = 'block';
-    if (parent) parent.style.display = 'none';
-    if (superAdmin) superAdmin.style.display = 'none';
+    hideAllScreens();
+    document.getElementById('adminDashboard').style.display = 'block';
     connectSocket();
     loadSchoolSettings();
     loadAdminStudents();
@@ -241,16 +217,8 @@ function showAdminDashboard() {
 }
 
 function showParentDashboard() {
-    const login = document.getElementById('loginScreen');
-    const register = document.getElementById('registerScreen');
-    const admin = document.getElementById('adminDashboard');
-    const parent = document.getElementById('parentDashboard');
-    const superAdmin = document.getElementById('superAdminDashboard');
-    if (login) login.style.display = 'none';
-    if (register) register.style.display = 'none';
-    if (admin) admin.style.display = 'none';
-    if (parent) parent.style.display = 'block';
-    if (superAdmin) superAdmin.style.display = 'none';
+    hideAllScreens();
+    document.getElementById('parentDashboard').style.display = 'block';
     connectSocket();
     loadParentStudents();
     loadParentLogs();
@@ -258,18 +226,17 @@ function showParentDashboard() {
 }
 
 function showSuperAdminDashboard() {
-    const login = document.getElementById('loginScreen');
-    const register = document.getElementById('registerScreen');
-    const admin = document.getElementById('adminDashboard');
-    const parent = document.getElementById('parentDashboard');
-    const superAdmin = document.getElementById('superAdminDashboard');
-    if (login) login.style.display = 'none';
-    if (register) register.style.display = 'none';
-    if (admin) admin.style.display = 'none';
-    if (parent) parent.style.display = 'none';
-    if (superAdmin) superAdmin.style.display = 'block';
+    hideAllScreens();
+    document.getElementById('superAdminDashboard').style.display = 'block';
     connectSocket();
     loadTenants();
+}
+
+function hideAllScreens() {
+    ['loginScreen', 'registerScreen', 'adminDashboard', 'parentDashboard', 'superAdminDashboard'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
 }
 
 // ==========================================
@@ -277,7 +244,7 @@ function showSuperAdminDashboard() {
 // ==========================================
 function connectSocket() {
     if (socket) { socket.disconnect(); socket = null; }
-    socket = io(SOCKET_URL, { 
+    socket = io(SOCKET_URL, {
         auth: { token },
         transportOptions: {
             polling: {
@@ -997,9 +964,8 @@ function toggleOldNotifications(show) {
     showOldNotifications = show;
     renderNotifications(showOldNotifications);
 }
-
 // ==========================================
-// 13. دوال التغيير الجماعي - ✅ إصلاح الأزرار
+// 13. دوال التغيير الجماعي
 // ==========================================
 async function toggleAllStudents(status) {
     const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
@@ -1009,7 +975,6 @@ async function toggleAllStudents(status) {
     if (socket) {
         socket.emit('toggle-all-status', { newStatus: status });
         addLog(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`, new Date(), 'adminLogContainer');
-        // تحديث القائمة فوراً
         loadAdminStudents();
     } else {
         alert('Socket غير متصل');
@@ -1509,7 +1474,7 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 20. دوال المدير العام (Super Admin) - إدارة المؤسسات - ✅ تم الإصلاح
+// 20. دوال المدير العام (Super Admin) - إدارة المؤسسات
 // ==========================================
 async function loadTenants() {
     try {
@@ -1561,7 +1526,7 @@ function renderTenants() {
 }
 
 // ==========================================
-// دوال المدير العام - إضافة/تعديل/حذف المؤسسات - ✅ تم الإصلاح
+// دوال المدير العام - إضافة/تعديل/حذف المؤسسات
 // ==========================================
 
 // فتح نافذة إضافة مؤسسة
@@ -1654,7 +1619,7 @@ if (editTenantModal) {
 }
 
 // ==========================================
-// حفظ تعديلات المؤسسة - ✅ تم الإصلاح
+// حفظ تعديلات المؤسسة
 // ==========================================
 const saveEditTenantBtn = document.getElementById('saveEditTenantBtn');
 if (saveEditTenantBtn) {
@@ -1711,7 +1676,7 @@ if (saveEditTenantBtn) {
 }
 
 // ==========================================
-// إضافة مؤسسة جديدة - ✅ تم الإصلاح
+// إضافة مؤسسة جديدة
 // ==========================================
 const saveNewTenantBtn = document.getElementById('saveNewTenantBtn');
 if (saveNewTenantBtn) {
@@ -1777,7 +1742,7 @@ if (saveNewTenantBtn) {
 }
 
 // ==========================================
-// تبديل حالة المؤسسة (تفعيل/تعطيل) - ✅ تم الإصلاح
+// تبديل حالة المؤسسة (تفعيل/تعطيل)
 // ==========================================
 window.toggleTenantStatus = async function(tenantId) {
     console.log('🔄 محاولة تغيير حالة المؤسسة:', tenantId);
@@ -1822,10 +1787,12 @@ window.toggleTenantStatus = async function(tenantId) {
 };
 
 // ==========================================
-// 21. أحداث المصادقة وربط الأحداث - ✅ تم التأكد من ربط جميع الأزرار
+// 21. أحداث المصادقة وربط الأحداث
 // ==========================================
 function setupAuthEvents() {
-    // زر تسجيل الدخول
+    console.log('🔧 جاري ربط الأحداث...');
+
+    // ---------- أزرار تسجيل الدخول والتسجيل ----------
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) {
         loginBtn.addEventListener('click', async () => {
@@ -1848,9 +1815,9 @@ function setupAuthEvents() {
                 alert(err.message || 'فشل تسجيل الدخول');
             }
         });
+        console.log('✅ ربط زر تسجيل الدخول');
     }
 
-    // زر التسجيل
     const registerBtn = document.getElementById('registerBtn');
     if (registerBtn) {
         registerBtn.addEventListener('click', async () => {
@@ -1877,71 +1844,164 @@ function setupAuthEvents() {
                 alert(err.message || 'فشل التسجيل');
             }
         });
+        console.log('✅ ربط زر التسجيل');
     }
 
-    // روابط التبديل بين الشاشات
+    // ---------- روابط التبديل بين الشاشات ----------
     const showRegisterLink = document.getElementById('showRegister');
-    if (showRegisterLink) showRegisterLink.addEventListener('click', showRegister);
+    if (showRegisterLink) { showRegisterLink.addEventListener('click', showRegister); console.log('✅ ربط showRegister'); }
     const showLoginLink = document.getElementById('showLogin');
-    if (showLoginLink) showLoginLink.addEventListener('click', showLogin);
+    if (showLoginLink) { showLoginLink.addEventListener('click', showLogin); console.log('✅ ربط showLogin'); }
 
-    // أزرار تسجيل الخروج
-    const logoutBtnAdmin = document.getElementById('logoutBtnAdmin');
-    if (logoutBtnAdmin) logoutBtnAdmin.addEventListener('click', logout);
-    const logoutBtnParent = document.getElementById('logoutBtnParent');
-    if (logoutBtnParent) logoutBtnParent.addEventListener('click', logout);
-    const logoutBtnSuperAdmin = document.getElementById('logoutBtnSuperAdmin');
-    if (logoutBtnSuperAdmin) logoutBtnSuperAdmin.addEventListener('click', logout);
+    // ---------- أزرار تسجيل الخروج ----------
+    const logoutBtns = ['logoutBtnAdmin', 'logoutBtnParent', 'logoutBtnSuperAdmin'];
+    logoutBtns.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) { btn.addEventListener('click', logout); console.log(`✅ ربط ${id}`); }
+    });
 
-    // إعدادات المدرسة
+    // ---------- إعدادات المدرسة ----------
     const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
-    if (toggleSettingsBtn) toggleSettingsBtn.addEventListener('click', toggleSettingsForm);
+    if (toggleSettingsBtn) { toggleSettingsBtn.addEventListener('click', toggleSettingsForm); console.log('✅ ربط toggleSettingsBtn'); }
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-    if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSchoolSettings);
+    if (saveSettingsBtn) { saveSettingsBtn.addEventListener('click', saveSchoolSettings); console.log('✅ ربط saveSettingsBtn'); }
 
-    // إضافة طالب
+    // ---------- إضافة طالب ----------
     const toggleAddStudentBtn = document.getElementById('toggleAddStudentBtn');
-    if (toggleAddStudentBtn) toggleAddStudentBtn.addEventListener('click', toggleAddStudentForm);
+    if (toggleAddStudentBtn) { toggleAddStudentBtn.addEventListener('click', toggleAddStudentForm); console.log('✅ ربط toggleAddStudentBtn'); }
     const adminAddBtn = document.getElementById('adminAddBtn');
-    if (adminAddBtn) adminAddBtn.addEventListener('click', adminAddStudent);
+    if (adminAddBtn) { adminAddBtn.addEventListener('click', adminAddStudent); console.log('✅ ربط adminAddBtn'); }
 
-    // إشعارات
+    // ---------- الإشعارات ----------
     const adminSendNotificationBtn = document.getElementById('adminSendNotificationBtn');
-    if (adminSendNotificationBtn) adminSendNotificationBtn.addEventListener('click', adminSendGeneralNotification);
+    if (adminSendNotificationBtn) { adminSendNotificationBtn.addEventListener('click', adminSendGeneralNotification); console.log('✅ ربط adminSendNotificationBtn'); }
     const adminSendParentNotificationBtn = document.getElementById('adminSendParentNotificationBtn');
-    if (adminSendParentNotificationBtn) adminSendParentNotificationBtn.addEventListener('click', adminSendParentNotification);
-    
-    // ✅ أزرار التغيير الجماعي - تم إصلاحها
+    if (adminSendParentNotificationBtn) { adminSendParentNotificationBtn.addEventListener('click', adminSendParentNotification); console.log('✅ ربط adminSendParentNotificationBtn'); }
+
+    // ---------- أزرار التغيير الجماعي (تم إصلاحها) ----------
     const toggleAllInsideBtn = document.getElementById('toggleAllInsideBtn');
     if (toggleAllInsideBtn) {
-        toggleAllInsideBtn.addEventListener('click', function() { 
-            toggleAllStudents(true); 
-        });
+        toggleAllInsideBtn.addEventListener('click', function() { toggleAllStudents(true); });
+        console.log('✅ ربط toggleAllInsideBtn');
+    } else {
+        console.warn('⚠️ toggleAllInsideBtn غير موجود');
     }
+
     const toggleAllOutsideBtn = document.getElementById('toggleAllOutsideBtn');
     if (toggleAllOutsideBtn) {
-        toggleAllOutsideBtn.addEventListener('click', function() { 
-            toggleAllStudents(false); 
-        });
+        toggleAllOutsideBtn.addEventListener('click', function() { toggleAllStudents(false); });
+        console.log('✅ ربط toggleAllOutsideBtn');
+    } else {
+        console.warn('⚠️ toggleAllOutsideBtn غير موجود');
     }
 
-    // أزرار السجل (المدير)
+    // ---------- أزرار سجل النشاطات (مدير) ----------
     const adminShowOldLogsBtn = document.getElementById('adminShowOldLogsBtn');
-    if (adminShowOldLogsBtn) adminShowOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(true); });
+    if (adminShowOldLogsBtn) { adminShowOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(true); }); console.log('✅ ربط adminShowOldLogsBtn'); }
     const adminHideOldLogsBtn = document.getElementById('adminHideOldLogsBtn');
-    if (adminHideOldLogsBtn) adminHideOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(false); });
+    if (adminHideOldLogsBtn) { adminHideOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(false); }); console.log('✅ ربط adminHideOldLogsBtn'); }
 
-    // أزرار السجل (ولي الأمر)
+    // ---------- أزرار سجل النشاطات (ولي أمر) ----------
     const parentShowOldLogsBtn = document.getElementById('parentShowOldLogsBtn');
-    if (parentShowOldLogsBtn) parentShowOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(true); });
+    if (parentShowOldLogsBtn) { parentShowOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(true); }); console.log('✅ ربط parentShowOldLogsBtn'); }
     const parentHideOldLogsBtn = document.getElementById('parentHideOldLogsBtn');
-    if (parentHideOldLogsBtn) parentHideOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(false); });
+    if (parentHideOldLogsBtn) { parentHideOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(false); }); console.log('✅ ربط parentHideOldLogsBtn'); }
 
-    // أزرار الإشعارات القديمة
+    // ---------- أزرار الإشعارات القديمة ----------
     const showOldNotificationsBtn = document.getElementById('showOldNotificationsBtn');
-    if (showOldNotificationsBtn) showOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(true); });
+    if (showOldNotificationsBtn) { showOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(true); }); console.log('✅ ربط showOldNotificationsBtn'); }
     const hideOldNotificationsBtn = document.getElementById('hideOldNotificationsBtn');
-    if (hideOldNotificationsBtn) hideOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(false); });
+    if (hideOldNotificationsBtn) { hideOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(false); }); console.log('✅ ربط hideOldNotificationsBtn'); }
+
+    // ---------- أزرار المدير العام (تم إصلاحها) ----------
+    const addTenantBtn = document.getElementById('addTenantBtn');
+    if (addTenantBtn) {
+        addTenantBtn.addEventListener('click', function() {
+            document.getElementById('addTenantModal').style.display = 'flex';
+        });
+        console.log('✅ ربط addTenantBtn');
+    } else {
+        console.warn('⚠️ addTenantBtn غير موجود');
+    }
+
+    const closeAddTenantBtn = document.getElementById('closeAddTenantBtn');
+    if (closeAddTenantBtn) {
+        closeAddTenantBtn.addEventListener('click', function() {
+            document.getElementById('addTenantModal').style.display = 'none';
+        });
+        console.log('✅ ربط closeAddTenantBtn');
+    }
+
+    const saveNewTenantBtn = document.getElementById('saveNewTenantBtn');
+    if (saveNewTenantBtn) {
+        saveNewTenantBtn.addEventListener('click', async function() {
+            const name = document.getElementById('newTenantName')?.value.trim();
+            const subdomain = document.getElementById('newTenantSubdomain')?.value.trim();
+            const address = document.getElementById('newTenantAddress')?.value.trim();
+            const phone = document.getElementById('newTenantPhone')?.value.trim();
+            const email = document.getElementById('newTenantEmail')?.value.trim();
+            const adminEmail = document.getElementById('newTenantAdminEmail')?.value.trim();
+            if (!name || !subdomain || !adminEmail) {
+                alert('اسم المؤسسة، النطاق الفرعي، وبريد المدير مطلوبة');
+                return;
+            }
+            const confirmed = await showConfirmModal('إضافة مؤسسة جديدة', `هل أنت متأكد من إضافة المؤسسة "${name}" بالنطاق الفرعي "${subdomain}"؟`);
+            if (!confirmed) return;
+            try {
+                const res = await fetchWithAuth('/api/tenants', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, subdomain, address, phone, email, adminEmail })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'فشل إضافة المؤسسة');
+                alert('✅ تم إضافة المؤسسة بنجاح');
+                document.getElementById('addTenantModal').style.display = 'none';
+                ['newTenantName','newTenantSubdomain','newTenantAddress','newTenantPhone','newTenantEmail','newTenantAdminEmail'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                loadTenants();
+            } catch (err) { alert('❌ ' + err.message); }
+        });
+        console.log('✅ ربط saveNewTenantBtn');
+    }
+
+    const closeEditTenantBtn = document.getElementById('closeEditTenantBtn');
+    if (closeEditTenantBtn) {
+        closeEditTenantBtn.addEventListener('click', function() {
+            document.getElementById('editTenantModal').style.display = 'none';
+        });
+        console.log('✅ ربط closeEditTenantBtn');
+    }
+
+    const saveEditTenantBtn = document.getElementById('saveEditTenantBtn');
+    if (saveEditTenantBtn) {
+        saveEditTenantBtn.addEventListener('click', async function() {
+            const id = document.getElementById('editTenantId')?.value;
+            const name = document.getElementById('editTenantName')?.value.trim();
+            const address = document.getElementById('editTenantAddress')?.value.trim();
+            const phone = document.getElementById('editTenantPhone')?.value.trim();
+            const email = document.getElementById('editTenantEmail')?.value.trim();
+            if (!id) { alert('خطأ: لم يتم العثور على معرف المؤسسة'); return; }
+            if (!name) { alert('اسم المؤسسة مطلوب'); return; }
+            const confirmed = await showConfirmModal('تعديل المؤسسة', `هل أنت متأكد من حفظ التعديلات للمؤسسة "${name}"؟`);
+            if (!confirmed) return;
+            try {
+                const res = await fetchWithAuth('/api/tenants/' + id, {
+                    method: 'PUT',
+                    body: JSON.stringify({ name, address, phone, email })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'فشل تحديث المؤسسة');
+                alert('✅ تم تحديث المؤسسة بنجاح');
+                document.getElementById('editTenantModal').style.display = 'none';
+                loadTenants();
+            } catch (err) { alert('❌ ' + err.message); }
+        });
+        console.log('✅ ربط saveEditTenantBtn');
+    }
+
+    console.log('🔧 تم ربط جميع الأحداث بنجاح!');
 }
 
 // ==========================================
@@ -1952,8 +2012,10 @@ document.addEventListener('DOMContentLoaded', function() {
         Notification.requestPermission();
     }
 
+    // تحميل الترجمات
     loadTranslations(currentLanguage);
     
+    // إضافة زر تبديل اللغة
     const langSwitcher = document.createElement('div');
     langSwitcher.className = 'lang-switcher';
     langSwitcher.innerHTML = `
