@@ -8,7 +8,30 @@ const API_BASE_URL = isLocal
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
-// 2. نظام الترجمات (i18n)
+// 2. إدارة التوكن والمستخدم والمتغيرات العامة
+// ==========================================
+let token = localStorage.getItem('token');
+let currentUser = null;
+let socket = null;
+let schoolSettings = null;
+let allNotifications = [];
+let showOldNotifications = false;
+let adminShowOldLogs = false;
+let parentShowOldLogs = false;
+let adminLogs = [];
+let parentLogs = [];
+
+// متغيرات الماسح الضوئي
+let html5QrCode = null;
+let currentCameraId = null;
+let availableCameras = [];
+
+// متغيرات النظام متعدد المؤسسات
+let currentTenantSubdomain = localStorage.getItem('tenantSubdomain') || 'demo';
+let tenants = [];
+
+// ==========================================
+// 3. نظام الترجمات (i18n)
 // ==========================================
 let currentLanguage = localStorage.getItem('language') || 'ar';
 let translations = {};
@@ -64,29 +87,11 @@ function switchLanguage(lang) {
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.dir = dir;
   document.documentElement.lang = lang;
+  // تحديث الأزرار النشطة
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === lang);
   });
 }
-
-// ==========================================
-// 3. إدارة التوكن والمستخدم والمتغيرات العامة
-// ==========================================
-let token = localStorage.getItem('token');
-let currentUser = null;
-let socket = null;
-let schoolSettings = null;
-let allNotifications = [];
-let showOldNotifications = false;
-let adminShowOldLogs = false;
-let parentShowOldLogs = false;
-let adminLogs = [];
-let parentLogs = [];
-
-// متغيرات الماسح الضوئي
-let html5QrCode = null;
-let currentCameraId = null;
-let availableCameras = [];
 
 // ==========================================
 // 4. دوال مساعدة
@@ -162,13 +167,11 @@ function saveAuth(data) {
         setTimeout(() => {
             requestNotificationPermission();
         }, 1500);
-        // ضبط اللغة المفضلة للمستخدم
-        if (currentUser.preferences && currentUser.preferences.language) {
-            switchLanguage(currentUser.preferences.language);
-        }
     }
 
-    if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+    if (currentUser.role === 'super_admin') {
+        showSuperAdminDashboard();
+    } else if (currentUser.role === 'admin') {
         showAdminDashboard();
     } else {
         showParentDashboard();
@@ -199,6 +202,7 @@ function showLogin() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'none';
+    document.getElementById('superAdminDashboard').style.display = 'none';
 }
 
 function showRegister() {
@@ -206,6 +210,7 @@ function showRegister() {
     document.getElementById('registerScreen').style.display = 'block';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'none';
+    document.getElementById('superAdminDashboard').style.display = 'none';
 }
 
 function showAdminDashboard() {
@@ -213,6 +218,7 @@ function showAdminDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'block';
     document.getElementById('parentDashboard').style.display = 'none';
+    document.getElementById('superAdminDashboard').style.display = 'none';
     connectSocket();
     loadSchoolSettings();
     loadAdminStudents();
@@ -225,10 +231,21 @@ function showParentDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
+    document.getElementById('superAdminDashboard').style.display = 'none';
     connectSocket();
     loadParentStudents();
     loadParentLogs();
     loadParentNotifications();
+}
+
+function showSuperAdminDashboard() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('parentDashboard').style.display = 'none';
+    document.getElementById('superAdminDashboard').style.display = 'block';
+    connectSocket();
+    loadTenants();
 }
 
 // ==========================================
@@ -236,7 +253,16 @@ function showParentDashboard() {
 // ==========================================
 function connectSocket() {
     if (socket) { socket.disconnect(); socket = null; }
-    socket = io(SOCKET_URL, { auth: { token } });
+    socket = io(SOCKET_URL, { 
+        auth: { token },
+        transportOptions: {
+            polling: {
+                extraHeaders: {
+                    'x-tenant-subdomain': currentTenantSubdomain
+                }
+            }
+        }
+    });
 
     socket.on('connect', () => console.log('✅ Socket متصل'));
 
@@ -286,6 +312,7 @@ function connectSocket() {
 function fetchWithAuth(url, options = {}) {
     const headers = {
         'Content-Type': 'application/json',
+        'x-tenant-subdomain': currentTenantSubdomain,
     };
     if (token) {
         headers['Authorization'] = 'Bearer ' + token;
@@ -305,7 +332,7 @@ function fetchWithAuth(url, options = {}) {
 // ==========================================
 async function loadSchoolSettings() {
     try {
-        const res = await fetch(API_BASE_URL + '/api/settings');
+        const res = await fetchWithAuth('/api/settings');
         if (!res.ok) throw new Error('فشل جلب إعدادات المدرسة');
         schoolSettings = await res.json();
         applySchoolSettings();
@@ -915,7 +942,7 @@ async function toggleAllStudents(status) {
 }
 
 // ==========================================
-// 14. دوال المدير
+// 14. دوال المدير (والمدير العام)
 // ==========================================
 async function loadAdminStudents() {
     try {
@@ -1360,7 +1387,56 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 20. أحداث المصادقة وربط الأحداث (مع التحقق من وجود العناصر)
+// 20. دوال المدير العام (Super Admin) - إدارة المؤسسات
+// ==========================================
+async function loadTenants() {
+    try {
+        const res = await fetchWithAuth('/api/tenants');
+        if (!res.ok) throw new Error('فشل جلب المؤسسات');
+        tenants = await res.json();
+        renderTenants();
+    } catch (err) {
+        console.error(err);
+        document.getElementById('tenantsList').innerHTML = '<div class="loading-state">❌ فشل تحميل المؤسسات</div>';
+    }
+}
+
+function renderTenants() {
+    const container = document.getElementById('tenantsList');
+    if (!container) return;
+
+    if (tenants.length === 0) {
+        container.innerHTML = '<div class="loading-state">📭 لا توجد مؤسسات مسجلة</div>';
+        return;
+    }
+
+    let html = '<div class="tenants-grid">';
+    tenants.forEach(t => {
+        html += `
+            <div class="tenant-card">
+                <div class="tenant-header">
+                    <h3>${t.name}</h3>
+                    <span class="tenant-status ${t.isActive ? 'active' : 'inactive'}">${t.isActive ? '✅ نشط' : '❌ غير نشط'}</span>
+                </div>
+                <div class="tenant-info">
+                    <p><strong>النطاق الفرعي:</strong> ${t.subdomain}</p>
+                    <p><strong>البريد:</strong> ${t.email || 'غير محدد'}</p>
+                    <p><strong>الهاتف:</strong> ${t.phone || 'غير محدد'}</p>
+                    <p><strong>المدير:</strong> ${t.adminId ? t.adminId.name : 'غير معين'}</p>
+                </div>
+                <div class="tenant-actions">
+                    <button class="btn-edit" onclick="editTenant('${t._id}')"><i class="fas fa-edit"></i> تعديل</button>
+                    <button class="btn-toggle" onclick="toggleTenantStatus('${t._id}')">${t.isActive ? 'تعطيل' : 'تفعيل'}</button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ==========================================
+// 21. أحداث المصادقة وربط الأحداث
 // ==========================================
 function setupAuthEvents() {
     document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -1370,7 +1446,10 @@ function setupAuthEvents() {
         try {
             const res = await fetch(API_BASE_URL + '/api/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-tenant-subdomain': currentTenantSubdomain 
+                },
                 body: JSON.stringify({ email, password })
             });
             const data = await res.json();
@@ -1392,7 +1471,10 @@ function setupAuthEvents() {
         try {
             const res = await fetch(API_BASE_URL + '/api/auth/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-tenant-subdomain': currentTenantSubdomain 
+                },
                 body: JSON.stringify({ name, email, password, phone, role })
             });
             const data = await res.json();
@@ -1407,6 +1489,7 @@ function setupAuthEvents() {
     document.getElementById('showLogin').addEventListener('click', showLogin);
     document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
     document.getElementById('logoutBtnParent').addEventListener('click', logout);
+    document.getElementById('logoutBtnSuperAdmin').addEventListener('click', logout);
 
     document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsForm);
     document.getElementById('saveSettingsBtn').addEventListener('click', saveSchoolSettings);
@@ -1442,43 +1525,44 @@ function setupAuthEvents() {
     document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
         toggleOldNotifications(false);
     });
-
-    // أزرار تبديل اللغة
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            switchLanguage(this.dataset.lang);
-        });
-    });
 }
 
 // ==========================================
-// 21. بدء التطبيق
+// 22. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
 
-    // تحميل إعدادات المدرسة أولاً
-    loadSchoolSettings();
-    
     // تحميل الترجمات
     loadTranslations(currentLanguage);
     
-    // ربط الأحداث
+    // إضافة زر تبديل اللغة
+    const langSwitcher = document.createElement('div');
+    langSwitcher.className = 'lang-switcher';
+    langSwitcher.innerHTML = `
+        <button data-lang="ar" class="lang-btn ${currentLanguage === 'ar' ? 'active' : ''}" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
+        <button data-lang="en" class="lang-btn ${currentLanguage === 'en' ? 'active' : ''}" onclick="switchLanguage('en')">🇬🇧 English</button>
+        <button data-lang="fr" class="lang-btn ${currentLanguage === 'fr' ? 'active' : ''}" onclick="switchLanguage('fr')">🇫🇷 Français</button>
+    `;
+    // إضافة إلى الهدر (يمكنك وضعه في المكان المناسب في HTML)
+    const header = document.querySelector('header');
+    if (header) {
+        header.appendChild(langSwitcher);
+    }
+
+    loadSchoolSettings();
     setupAuthEvents();
 
-    // التحقق من وجود توكن
     if (token) {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
             if (user) {
                 currentUser = user;
-                // ضبط اللغة المفضلة للمستخدم
-                if (currentUser.preferences && currentUser.preferences.language) {
-                    switchLanguage(currentUser.preferences.language);
-                }
-                if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+                if (currentUser.role === 'super_admin') {
+                    showSuperAdminDashboard();
+                } else if (currentUser.role === 'admin') {
                     showAdminDashboard();
                 } else {
                     showParentDashboard();
