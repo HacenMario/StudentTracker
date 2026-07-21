@@ -56,44 +56,29 @@ app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
 // ==========================================
-// ✅ Middleware للتحقق من المؤسسة (Tenant) - معدّل
+// Middleware للتحقق من المؤسسة (Tenant) مع استثناء المسارات العامة
 // ==========================================
+const publicPaths = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/i18n',
+  '/api/settings',    // جلب إعدادات المدرسة (عام)
+  '/api/tenants',     // إدارة المؤسسات (للمدير العام)
+];
+
 app.use(async (req, res, next) => {
-  // تخطي مسارات المصادقة العامة والترجمات (لا تحتاج مؤسسة)
-  const publicPaths = ['/api/auth/', '/api/i18n/', '/api/tenants/'];
-  if (publicPaths.some(path => req.path.startsWith(path))) {
+  // التحقق مما إذا كان المسار عاماً
+  const isPublic = publicPaths.some(path => req.path.startsWith(path));
+  if (isPublic) {
     return next();
   }
 
   // استخراج subdomain من الرأس
   const subdomain = req.headers['x-tenant-subdomain'];
-  
-  // ✅ إذا لم يكن هناك subdomain، نبحث عن tenantId من المستخدم (إن وجد)
-  // هذا يسمح بالتوافق مع الإصدار القديم
   if (!subdomain) {
-    // إذا كان الطلب يحمل توكن، نحاول استخراج tenantId من المستخدم
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (decoded.tenantId) {
-          const tenant = await Tenant.findOne({ _id: decoded.tenantId, isActive: true });
-          if (tenant) {
-            req.tenant = tenant;
-            return next();
-          }
-        }
-      } catch (err) {
-        // توكن غير صالح، نكمل بدون tenant
-      }
-    }
-    
-    // ✅ إذا كان المسار من نوع /api/settings، نسمح بالمرور دون tenant (للتوافق القديم)
-    // نبحث عن إعدادات المدرسة في قاعدة البيانات مباشرة (بدون فلتر tenant)
-    return next();
+    return res.status(400).json({ message: 'Subdomain is required' });
   }
 
-  // إذا كان هناك subdomain، نبحث عنه
   try {
     const tenant = await Tenant.findOne({ subdomain, isActive: true });
     if (!tenant) {
@@ -106,7 +91,7 @@ app.use(async (req, res, next) => {
   }
 });
 
-// تسجيل المسارات
+// تسجيل المسارات (يجب أن تكون بعد middleware)
 app.use('/api/auth', authRoutes);
 app.use('/api/i18n', i18nRoutes);
 app.use('/api/students', studentRoutes);
@@ -160,17 +145,11 @@ io.on('connection', (socket) => {
   // 1. إشعار عام من المدير
   // ----------------------
   socket.on('admin-notification', async (data) => {
-    if (socket.user.role !== 'admin' && socket.user.role !== 'super_admin') {
-      socket.emit('error', { message: 'غير مصرح لك' });
-      return;
-    }
+    if (socket.user.role !== 'admin' && socket.user.role !== 'super_admin') return;
 
     try {
       const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
-      if (!tenant) {
-        socket.emit('error', { message: 'المؤسسة غير موجودة' });
-        return;
-      }
+      if (!tenant) return;
 
       const notification = new Notification({
         target: 'all',
@@ -216,10 +195,7 @@ io.on('connection', (socket) => {
 
     try {
       const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
-      if (!tenant) {
-        socket.emit('error', { message: 'المؤسسة غير موجودة' });
-        return;
-      }
+      if (!tenant) return;
 
       const notification = new Notification({
         target: parentEmail,
@@ -272,10 +248,7 @@ io.on('connection', (socket) => {
     const { newStatus } = data;
     try {
       const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
-      if (!tenant) {
-        socket.emit('error', { message: 'المؤسسة غير موجودة' });
-        return;
-      }
+      if (!tenant) return;
 
       const students = await Student.find({ tenantId: tenant._id });
       const updatedParents = new Set();
@@ -355,43 +328,60 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err));
 
 // ==========================================
-// دالة تهيئة المدير العام
+// دالة تهيئة المدير العام والمؤسسة الافتراضية
 // ==========================================
 async function initializeSuperAdmin() {
   try {
-    // التحقق من وجود مدير عام
-    const superAdminExists = await User.findOne({ role: 'super_admin' });
-    if (!superAdminExists) {
-      // إنشاء مدير عام افتراضي
-      const superAdmin = new User({
-        name: 'Super Admin',
-        email: 'admin@system.com',
-        password: 'Admin@123456',
-        phone: '0000000000',
-        role: 'super_admin',
-        tenantId: null,
-        preferences: { language: 'ar' },
-      });
-      await superAdmin.save();
-      console.log('✅ تم إنشاء المدير العام: admin@system.com / Admin@123456');
-      
-      // إنشاء مؤسسة افتراضية
-      const defaultTenant = new Tenant({
+    // 1. التحقق من وجود مؤسسة افتراضية
+    let defaultTenant = await Tenant.findOne({ subdomain: 'demo' });
+    if (!defaultTenant) {
+      defaultTenant = new Tenant({
         name: 'المدرسة النموذجية',
         subdomain: 'demo',
         address: 'العنوان الافتراضي',
         phone: '0555000000',
         email: 'demo@school.com',
-        adminId: superAdmin._id,
+        isActive: true,
       });
       await defaultTenant.save();
       console.log('✅ تم إنشاء المؤسسة الافتراضية: demo');
+    }
+
+    // 2. التحقق من وجود مدير عام
+    let superAdmin = await User.findOne({ role: 'super_admin' });
+    if (!superAdmin) {
+      const bcrypt = require('bcryptjs');
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('Admin@123456', salt);
       
-      // تحديث المدير العام ليرتبط بالمؤسسة
+      superAdmin = new User({
+        name: 'Super Admin',
+        email: 'admin@system.com',
+        password: hashedPassword,
+        phone: '0000000000',
+        role: 'super_admin',
+        tenantId: null, // المدير العام لا يتبع مؤسسة معينة
+      });
+      await superAdmin.save();
+      console.log('✅ تم إنشاء المدير العام: admin@system.com / Admin@123456');
+    }
+
+    // 3. ربط المدير العام بالمؤسسة الافتراضية (إذا لم يكن مرتبطاً)
+    if (superAdmin.tenantId === null || superAdmin.tenantId === undefined) {
       superAdmin.tenantId = defaultTenant._id;
       await superAdmin.save();
+      console.log('✅ تم ربط المدير العام بالمؤسسة الافتراضية');
     }
+
+    // 4. التأكد من أن المؤسسة تشير إلى المدير العام كمدير لها
+    if (!defaultTenant.adminId) {
+      defaultTenant.adminId = superAdmin._id;
+      await defaultTenant.save();
+      console.log('✅ تم تعيين المدير العام كمدير للمؤسسة الافتراضية');
+    }
+
+    console.log('✅ تم تهيئة النظام بنجاح');
   } catch (err) {
-    console.error('❌ خطأ في تهيئة المدير العام:', err);
+    console.error('❌ خطأ في تهيئة النظام:', err);
   }
 }
