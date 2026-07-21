@@ -3,10 +3,11 @@ const router = express.Router();
 const Student = require('../models/Student');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
-const Notification = require('../models/Notification'); // ✅ تمت الإضافة
+const Notification = require('../models/Notification'); // ✅ تمت إضافة الاستيراد
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
 const { sendPushNotificationToAll } = require('../utils/notifications');
+const QRCode = require('qrcode');
 
 // ==========================================
 // 1. جلب الطلاب (حسب الدور)
@@ -57,7 +58,7 @@ router.post('/', auth, isAdmin, async (req, res) => {
 });
 
 // ==========================================
-// 3. تبديل حالة الطالب (للمدير فقط) - مع إصلاح خطأ Notification
+// 3. تبديل حالة الطالب (للمدير فقط) - مع الإشعارات
 // ==========================================
 router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
   try {
@@ -66,10 +67,12 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       return res.status(404).json({ message: 'الطالب غير موجود' });
     }
 
+    // تغيير الحالة
     student.isInside = !student.isInside;
     student.lastUpdate = new Date();
     await student.save();
 
+    // تسجيل في Attendance
     const attendance = new Attendance({
       student: student._id,
       status: student.isInside ? 'in' : 'out',
@@ -80,7 +83,7 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
     const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-    // ✅ الآن Notification معرف بشكل صحيح
+    // 1️⃣ حفظ الإشعار في قاعدة البيانات (موجه لولي الأمر)
     if (student.parentEmail) {
       const notification = new Notification({
         target: student.parentEmail,
@@ -90,6 +93,7 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       await notification.save();
     }
 
+    // 2️⃣ بث عبر Socket.io
     const io = req.app.get('io');
     io.emit('status-changed', {
       student: student,
@@ -98,6 +102,7 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       parentEmail: student.parentEmail,
     });
 
+    // 3️⃣ إرسال Web Push لجميع المشتركين
     await sendPushNotificationToAll(
       'تحديث حالة ابنك',
       message,
@@ -132,7 +137,7 @@ router.delete('/:id', auth, isAdmin, async (req, res) => {
 });
 
 // ==========================================
-// 5. جلب سجل الحضور لطالب معين (لولي الأمر أو المدير)
+// 5. جلب سجل الحضور لطالب معين
 // ==========================================
 router.get('/:id/attendance', auth, async (req, res) => {
   try {
@@ -154,14 +159,20 @@ router.get('/:id/attendance', auth, async (req, res) => {
 });
 
 // ==========================================
-// 6. مسح QR Code (تغيير حالة الطالب عبر QR)
+// 6. مسح QR Code
 // ==========================================
 router.post('/scan-qr', auth, async (req, res) => {
   try {
     const { qrData } = req.body;
     if (!qrData) return res.status(400).json({ success: false, message: 'بيانات QR مطلوبة' });
 
-    const student = await Student.findOne({ studentId: qrData });
+    const cleanData = qrData.trim();
+    let student = await Student.findOne({ studentId: cleanData });
+    
+    if (!student && cleanData.match(/^[0-9a-fA-F]{24}$/)) {
+      student = await Student.findById(cleanData);
+    }
+
     if (!student) {
       return res.status(404).json({ success: false, message: 'الطالب غير موجود' });
     }
@@ -183,17 +194,6 @@ router.post('/scan-qr', auth, async (req, res) => {
 
     const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
     const message = `التلميذ ${student.name} أصبح ${statusText} (عن طريق QR)`;
-    
-    // ✅ إرسال إشعار عند المسح عبر QR
-    if (student.parentEmail) {
-      const notification = new Notification({
-        target: student.parentEmail,
-        message: message,
-        sender: 'Admin',
-      });
-      await notification.save();
-    }
-
     const io = req.app.get('io');
     io.emit('status-changed', {
       student: student,
@@ -201,12 +201,6 @@ router.post('/scan-qr', auth, async (req, res) => {
       parentId: student.parent ? student.parent.toString() : null,
       parentEmail: student.parentEmail,
     });
-
-    await sendPushNotificationToAll(
-      'تحديث حالة ابنك (QR)',
-      message,
-      { url: '/parent-dashboard' }
-    );
 
     res.json({ success: true, message: `تم تغيير حالة ${student.name} إلى ${statusText}` });
   } catch (err) {
@@ -216,19 +210,12 @@ router.post('/scan-qr', auth, async (req, res) => {
 });
 
 // ==========================================
-// 7. تحميل QR Code كصورة (للمدير وولي الأمر)
+// 7. تحميل QR Code كصورة
 // ==========================================
 router.get('/:id/qr', auth, async (req, res) => {
   try {
-    let QRCode;
-    try {
-      QRCode = require('qrcode');
-    } catch (requireError) {
-      console.error('❌ فشل تحميل مكتبة qrcode:', requireError);
-      return res.status(500).json({ 
-        message: 'مكتبة QR Code غير مثبتة على الخادم',
-        error: requireError.message 
-      });
+    if (!QRCode) {
+      return res.status(500).json({ message: 'مكتبة QR Code غير مثبتة على الخادم' });
     }
 
     const student = await Student.findById(req.params.id);
@@ -240,17 +227,12 @@ router.get('/:id/qr', auth, async (req, res) => {
       return res.status(403).json({ message: 'غير مصرح لك بتحميل QR لهذا الطالب' });
     }
 
-    const qrData = String(student.studentId || student._id.toString());
-
-    console.log(`🔄 جاري توليد QR للطالب: ${student.name} (${qrData})`);
+    const qrData = student.studentId || student._id.toString();
     const qrCodeBuffer = await QRCode.toBuffer(qrData, {
       type: 'png',
       width: 300,
       margin: 4,
-      color: {
-        dark: '#1a365d',
-        light: '#ffffff',
-      },
+      color: { dark: '#1a365d', light: '#ffffff' },
       errorCorrectionLevel: 'H',
     });
 
