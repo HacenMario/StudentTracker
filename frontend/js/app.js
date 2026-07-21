@@ -1,5 +1,5 @@
 // ==========================================
-// 1. رابط الخادم
+// 1. رابط الخادم (تلقائي حسب البيئة)
 // ==========================================
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_BASE_URL = isLocal 
@@ -26,85 +26,9 @@ let html5QrCode = null;
 let currentCameraId = null;
 let availableCameras = [];
 
-// ✅ متغيرات النظام متعدد المؤسسات
+// متغيرات النظام متعدد المؤسسات
 let currentTenantSubdomain = localStorage.getItem('tenantSubdomain') || 'demo';
 let tenants = [];
-
-// ✅ دالة لتحديث subdomain في كل طلب
-function getTenantSubdomain() {
-    return currentTenantSubdomain;
-}
-
-// ==========================================
-// 3. دوال API مع التوكن (معدلة لإضافة subdomain)
-// ==========================================
-function fetchWithAuth(url, options = {}) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'x-tenant-subdomain': getTenantSubdomain(),
-    };
-    if (token) {
-        headers['Authorization'] = 'Bearer ' + token;
-    } else {
-        console.warn('⚠️ fetchWithAuth: لا يوجد توكن');
-        return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
-    }
-
-    return fetch(API_BASE_URL + url, {
-        ...options,
-        headers: { ...headers, ...options.headers }
-    });
-}
-
-// ==========================================
-// 4. دوال المصادقة (معدلة لإضافة subdomain في طلب login/register)
-// ==========================================
-function setupAuthEvents() {
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-        if (!email || !password) return alert('املأ جميع الحقول');
-        try {
-            const res = await fetch(API_BASE_URL + '/api/auth/login', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-tenant-subdomain': getTenantSubdomain()
-                },
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'فشل تسجيل الدخول');
-            saveAuth(data);
-        } catch (err) {
-            alert(err.message || 'فشل تسجيل الدخول');
-        }
-    });
-
-    document.getElementById('registerBtn').addEventListener('click', async () => {
-        const name = document.getElementById('regName').value.trim();
-        const email = document.getElementById('regEmail').value.trim();
-        const password = document.getElementById('regPassword').value.trim();
-        const phone = document.getElementById('regPhone').value.trim();
-        const role = document.getElementById('regRole').value;
-        if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
-        if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
-        try {
-            const res = await fetch(API_BASE_URL + '/api/auth/register', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-tenant-subdomain': getTenantSubdomain()
-                },
-                body: JSON.stringify({ name, email, password, phone, role })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'فشل التسجيل');
-            saveAuth(data);
-        } catch (err) {
-            alert(err.message || 'فشل التسجيل');
-        }
-    });
 
 // ==========================================
 // 3. نظام الترجمات (i18n)
@@ -113,59 +37,59 @@ let currentLanguage = localStorage.getItem('language') || 'ar';
 let translations = {};
 
 async function loadTranslations(lang) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/i18n/${lang}`);
-        if (!res.ok) throw new Error('فشل تحميل الترجمات');
-        translations = await res.json();
-        currentLanguage = lang;
-        localStorage.setItem('language', lang);
-        applyTranslations();
-    } catch (err) {
-        console.error('❌ خطأ في تحميل الترجمات:', err);
-    }
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/i18n/${lang}`);
+    if (!res.ok) throw new Error('فشل تحميل الترجمات');
+    translations = await res.json();
+    currentLanguage = lang;
+    localStorage.setItem('language', lang);
+    applyTranslations();
+  } catch (err) {
+    console.error('❌ خطأ في تحميل الترجمات:', err);
+  }
 }
 
 function applyTranslations() {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        const translation = getTranslation(key);
-        if (translation) {
-            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                el.placeholder = translation;
-            } else {
-                el.textContent = translation;
-            }
-        }
-    });
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const translation = getTranslation(key);
+    if (translation) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = translation;
+      } else {
+        el.textContent = translation;
+      }
+    }
+  });
 }
 
 function getTranslation(key, params = {}) {
-    const keys = key.split('.');
-    let value = translations;
-    for (const k of keys) {
-        if (value && value[k] !== undefined) {
-            value = value[k];
-        } else {
-            return key;
-        }
+  const keys = key.split('.');
+  let value = translations;
+  for (const k of keys) {
+    if (value && value[k] !== undefined) {
+      value = value[k];
+    } else {
+      return key;
     }
-    if (typeof value === 'string') {
-        for (const [paramKey, paramValue] of Object.entries(params)) {
-            value = value.replace(`{${paramKey}}`, paramValue);
-        }
+  }
+  if (typeof value === 'string') {
+    for (const [paramKey, paramValue] of Object.entries(params)) {
+      value = value.replace(`{${paramKey}}`, paramValue);
     }
-    return value;
+  }
+  return value;
 }
 
 function switchLanguage(lang) {
-    if (lang === currentLanguage) return;
-    loadTranslations(lang);
-    const dir = lang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.dir = dir;
-    document.documentElement.lang = lang;
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === lang);
-    });
+  if (lang === currentLanguage) return;
+  loadTranslations(lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.dir = dir;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
 }
 
 // ==========================================
@@ -244,28 +168,12 @@ function saveAuth(data) {
         }, 1500);
     }
 
-    const dashboard = document.getElementById(currentUser.role === 'super_admin' ? 'superAdminDashboard' : 
-                                           currentUser.role === 'admin' ? 'adminDashboard' : 'parentDashboard');
-    if (dashboard) {
-        // إخفاء جميع اللوحات
-        document.querySelectorAll('#adminDashboard, #parentDashboard, #superAdminDashboard').forEach(el => el.style.display = 'none');
-        dashboard.style.display = 'block';
-    }
-    
     if (currentUser.role === 'super_admin') {
-        connectSocket();
-        loadTenants();
+        showSuperAdminDashboard();
     } else if (currentUser.role === 'admin') {
-        connectSocket();
-        loadSchoolSettings();
-        loadAdminStudents();
-        loadAdminLogs();
-        loadAdminNotifications();
+        showAdminDashboard();
     } else {
-        connectSocket();
-        loadParentStudents();
-        loadParentLogs();
-        loadParentNotifications();
+        showParentDashboard();
     }
 }
 
@@ -289,19 +197,54 @@ function logout() {
 }
 
 function showLogin() {
-    const elements = ['loginScreen', 'registerScreen', 'adminDashboard', 'parentDashboard', 'superAdminDashboard'];
-    elements.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = id === 'loginScreen' ? 'block' : 'none';
-    });
+    document.getElementById('loginScreen').style.display = 'block';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('parentDashboard').style.display = 'none';
+    document.getElementById('superAdminDashboard').style.display = 'none';
 }
 
 function showRegister() {
-    const elements = ['loginScreen', 'registerScreen', 'adminDashboard', 'parentDashboard', 'superAdminDashboard'];
-    elements.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = id === 'registerScreen' ? 'block' : 'none';
-    });
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'block';
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('parentDashboard').style.display = 'none';
+    document.getElementById('superAdminDashboard').style.display = 'none';
+}
+
+function showAdminDashboard() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'block';
+    document.getElementById('parentDashboard').style.display = 'none';
+    document.getElementById('superAdminDashboard').style.display = 'none';
+    connectSocket();
+    loadSchoolSettings();
+    loadAdminStudents();
+    loadAdminLogs();
+    loadAdminNotifications();
+}
+
+function showParentDashboard() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('parentDashboard').style.display = 'block';
+    document.getElementById('superAdminDashboard').style.display = 'none';
+    connectSocket();
+    loadParentStudents();
+    loadParentLogs();
+    loadParentNotifications();
+}
+
+function showSuperAdminDashboard() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('parentDashboard').style.display = 'none';
+    document.getElementById('superAdminDashboard').style.display = 'block';
+    connectSocket();
+    loadTenants();
 }
 
 // ==========================================
@@ -363,21 +306,22 @@ function connectSocket() {
 }
 
 // ==========================================
-// 8. دوال API مع التوكن
+// 8. دوال API مع التوكن (معدلة لإضافة subdomain)
 // ==========================================
+function getTenantSubdomain() {
+    return currentTenantSubdomain;
+}
+
 function fetchWithAuth(url, options = {}) {
     const headers = {
         'Content-Type': 'application/json',
+        'x-tenant-subdomain': getTenantSubdomain(),
     };
     if (token) {
         headers['Authorization'] = 'Bearer ' + token;
     } else {
         console.warn('⚠️ fetchWithAuth: لا يوجد توكن');
         return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
-    }
-    // إضافة subdomain فقط إذا لم يكن الطلب للمسارات العامة
-    if (!url.startsWith('/api/auth/') && !url.startsWith('/api/i18n/')) {
-        headers['x-tenant-subdomain'] = currentTenantSubdomain;
     }
 
     return fetch(API_BASE_URL + url, {
@@ -387,7 +331,7 @@ function fetchWithAuth(url, options = {}) {
 }
 
 // ==========================================
-// 9. دوال إعدادات المدرسة (يتم استدعاؤها فقط عندما يكون المستخدم مديراً)
+// 9. دوال إعدادات المدرسة
 // ==========================================
 async function loadSchoolSettings() {
     try {
@@ -403,60 +347,43 @@ async function loadSchoolSettings() {
 
 function applySchoolSettings() {
     if (!schoolSettings) return;
-    const nameEl = document.getElementById('schoolName');
-    const addressEl = document.getElementById('schoolAddress');
-    const contactEl = document.getElementById('schoolContact');
+    document.getElementById('schoolName').textContent = schoolSettings.schoolName || 'مدرسة النور الابتدائية';
+    document.getElementById('schoolAddress').textContent = '📍 ' + (schoolSettings.address || 'العنوان غير محدد');
+    document.getElementById('schoolContact').textContent = '📞 ' + (schoolSettings.phone || '') + ' | ✉️ ' + (schoolSettings.email || '');
+    
     const logoImg = document.getElementById('schoolLogo');
-    
-    if (nameEl) nameEl.textContent = schoolSettings.schoolName || 'مدرسة النور الابتدائية';
-    if (addressEl) addressEl.textContent = '📍 ' + (schoolSettings.address || 'العنوان غير محدد');
-    if (contactEl) contactEl.textContent = '📞 ' + (schoolSettings.phone || '') + ' | ✉️ ' + (schoolSettings.email || '');
-    
-    if (logoImg) {
-        if (schoolSettings.logo && schoolSettings.logo.length > 0) {
-            logoImg.src = schoolSettings.logo;
-            logoImg.style.display = 'inline-block';
-        } else {
-            logoImg.style.display = 'none';
-        }
+    if (schoolSettings.logo && schoolSettings.logo.length > 0) {
+        logoImg.src = schoolSettings.logo;
+        logoImg.style.display = 'inline-block';
+    } else {
+        logoImg.style.display = 'none';
     }
 
     if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin')) {
-        const settingsForm = document.getElementById('settingsForm');
-        if (settingsForm) {
-            const inputs = {
-                settingsSchoolName: schoolSettings.schoolName || '',
-                settingsAddress: schoolSettings.address || '',
-                settingsPhone: schoolSettings.phone || '',
-                settingsEmail: schoolSettings.email || '',
-            };
-            Object.entries(inputs).forEach(([id, value]) => {
-                const el = document.getElementById(id);
-                if (el) el.value = value;
-            });
-            const preview = document.getElementById('logoPreview');
-            if (preview) {
-                if (schoolSettings.logo) {
-                    preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
-                } else {
-                    preview.innerHTML = '<span style="color:#8a9aaa;">لا يوجد شعار حالياً</span>';
-                }
-            }
+        document.getElementById('settingsSchoolName').value = schoolSettings.schoolName || '';
+        document.getElementById('settingsAddress').value = schoolSettings.address || '';
+        document.getElementById('settingsPhone').value = schoolSettings.phone || '';
+        document.getElementById('settingsEmail').value = schoolSettings.email || '';
+        const preview = document.getElementById('logoPreview');
+        if (schoolSettings.logo) {
+            preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
+        } else {
+            preview.innerHTML = '<span style="color:#8a9aaa;">لا يوجد شعار حالياً</span>';
         }
     }
 }
 
 async function saveSchoolSettings() {
-    const schoolName = document.getElementById('settingsSchoolName')?.value.trim() || '';
-    const address = document.getElementById('settingsAddress')?.value.trim() || '';
-    const phone = document.getElementById('settingsPhone')?.value.trim() || '';
-    const email = document.getElementById('settingsEmail')?.value.trim() || '';
+    const schoolName = document.getElementById('settingsSchoolName').value.trim();
+    const address = document.getElementById('settingsAddress').value.trim();
+    const phone = document.getElementById('settingsPhone').value.trim();
+    const email = document.getElementById('settingsEmail').value.trim();
     
     let logo = schoolSettings ? schoolSettings.logo : '';
     let logoFileName = schoolSettings ? schoolSettings.logoFileName : '';
     
     const fileInput = document.getElementById('settingsLogoUpload');
-    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+    if (fileInput.files && fileInput.files.length > 0) {
         const file = fileInput.files[0];
         const reader = new FileReader();
         const base64 = await new Promise((resolve) => {
@@ -480,10 +407,8 @@ async function saveSchoolSettings() {
         schoolSettings = data;
         applySchoolSettings();
         alert('تم حفظ إعدادات المدرسة بنجاح');
-        const form = document.getElementById('settingsForm');
-        if (form) form.style.display = 'none';
-        const btn = document.getElementById('toggleSettingsBtn');
-        if (btn) btn.innerHTML = '<i class="fas fa-cog"></i> إعدادات المؤسسة';
+        document.getElementById('settingsForm').style.display = 'none';
+        document.getElementById('toggleSettingsBtn').innerHTML = '<i class="fas fa-cog"></i> إعدادات المؤسسة';
     } catch (err) {
         alert('خطأ: ' + err.message);
     }
@@ -492,23 +417,19 @@ async function saveSchoolSettings() {
 function toggleSettingsForm() {
     const form = document.getElementById('settingsForm');
     const btn = document.getElementById('toggleSettingsBtn');
-    if (!form || !btn) return;
     if (form.style.display === 'none') {
         form.style.display = 'block';
         btn.innerHTML = '<i class="fas fa-times"></i> إغلاق الإعدادات';
         if (schoolSettings) {
-            const fields = ['settingsSchoolName', 'settingsAddress', 'settingsPhone', 'settingsEmail'];
-            fields.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = schoolSettings[id.replace('settings', '').toLowerCase()] || '';
-            });
+            document.getElementById('settingsSchoolName').value = schoolSettings.schoolName || '';
+            document.getElementById('settingsAddress').value = schoolSettings.address || '';
+            document.getElementById('settingsPhone').value = schoolSettings.phone || '';
+            document.getElementById('settingsEmail').value = schoolSettings.email || '';
             const preview = document.getElementById('logoPreview');
-            if (preview) {
-                if (schoolSettings.logo) {
-                    preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
-                } else {
-                    preview.innerHTML = '<span style="color:#8a9aaa;">لا يوجد شعار حالياً</span>';
-                }
+            if (schoolSettings.logo) {
+                preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
+            } else {
+                preview.innerHTML = '<span style="color:#8a9aaa;">لا يوجد شعار حالياً</span>';
             }
         }
     } else {
@@ -517,15 +438,13 @@ function toggleSettingsForm() {
     }
 }
 
-document.getElementById('settingsLogoUpload')?.addEventListener('change', function(e) {
+document.getElementById('settingsLogoUpload').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
         reader.onload = function(event) {
             const preview = document.getElementById('logoPreview');
-            if (preview) {
-                preview.innerHTML = `<img src="${event.target.result}" alt="الشعار الجديد">`;
-            }
+            preview.innerHTML = `<img src="${event.target.result}" alt="الشعار الجديد">`;
         };
         reader.readAsDataURL(file);
     }
@@ -557,13 +476,12 @@ window.downloadQR = function(studentId) {
 
 function openScanner() {
     const modal = document.getElementById('scannerModal');
-    if (!modal) return;
     modal.style.display = 'flex';
     const resultsContainer = document.getElementById('qr-reader-results');
-    if (resultsContainer) resultsContainer.innerHTML = '📷 جاري طلب الإذن للكاميرا...';
+    resultsContainer.innerHTML = '📷 جاري طلب الإذن للكاميرا...';
 
     if (typeof Html5Qrcode === 'undefined') {
-        if (resultsContainer) resultsContainer.innerHTML = '❌ مكتبة المسح غير محملة، تحقق من اتصال الإنترنت.';
+        resultsContainer.innerHTML = '❌ مكتبة المسح غير محملة، تحقق من اتصال الإنترنت.';
         return;
     }
 
@@ -585,7 +503,7 @@ function openScanner() {
 
 function startScannerProcess() {
     const resultsContainer = document.getElementById('qr-reader-results');
-    if (resultsContainer) resultsContainer.innerHTML = '📷 جاري الوصول للكاميرا...';
+    resultsContainer.innerHTML = '📷 جاري الوصول للكاميرا...';
 
     html5QrCode = new Html5Qrcode('qr-reader');
 
@@ -611,37 +529,33 @@ function startScannerProcess() {
                 }
 
                 currentCameraId = selectedCamera.id;
-                if (resultsContainer) resultsContainer.innerHTML = `✅ تم اختيار الكاميرا: ${selectedCamera.label || 'غير معروف'}`;
+                resultsContainer.innerHTML = `✅ تم اختيار الكاميرا: ${selectedCamera.label || 'غير معروف'}`;
                 
                 const switchBtn = document.getElementById('switchCameraBtn');
-                if (switchBtn) {
-                    if (devices.length > 1) {
-                        switchBtn.style.display = 'inline-block';
-                    } else {
-                        switchBtn.style.display = 'none';
-                    }
+                if (devices.length > 1) {
+                    switchBtn.style.display = 'inline-block';
+                } else {
+                    switchBtn.style.display = 'none';
                 }
 
                 startNewScanner(currentCameraId);
             } else {
-                if (resultsContainer) resultsContainer.innerHTML = '❌ لا توجد كاميرات متاحة على هذا الجهاز.';
+                resultsContainer.innerHTML = '❌ لا توجد كاميرات متاحة على هذا الجهاز.';
             }
         })
         .catch(err => {
             console.error('خطأ في الوصول للكاميرات:', err);
-            if (resultsContainer) {
-                if (err.message && err.message.includes('Permission')) {
-                    resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا في إعدادات المتصفح.';
-                } else {
-                    resultsContainer.innerHTML = `❌ فشل الوصول للكاميرا: ${err.message || 'خطأ غير معروف'}`;
-                }
+            if (err.message && err.message.includes('Permission')) {
+                resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا في إعدادات المتصفح.';
+            } else {
+                resultsContainer.innerHTML = `❌ فشل الوصول للكاميرا: ${err.message || 'خطأ غير معروف'}`;
             }
         });
 }
 
 function startNewScanner(cameraId) {
     const resultsContainer = document.getElementById('qr-reader-results');
-    if (resultsContainer) resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
+    resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
 
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode('qr-reader');
@@ -654,16 +568,14 @@ function startNewScanner(cameraId) {
         onScanError
     )
     .then(() => {
-        if (resultsContainer) resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
+        resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
         currentCameraId = cameraId;
     })
     .catch(err => {
         console.error('فشل تشغيل الكاميرا:', err);
-        if (resultsContainer) {
-            resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
-            if (err.message && err.message.includes('NotAllowedError')) {
-                resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح.';
-            }
+        resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
+        if (err.message && err.message.includes('NotAllowedError')) {
+            resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح.';
         }
     });
 }
@@ -698,7 +610,7 @@ function switchCamera() {
 
 function onScanSuccess(decodedText, decodedResult) {
     const resultsContainer = document.getElementById('qr-reader-results');
-    if (resultsContainer) resultsContainer.innerHTML = '✅ جاري معالجة الكود...';
+    resultsContainer.innerHTML = '✅ جاري معالجة الكود...';
 
     if (html5QrCode) {
         html5QrCode.pause();
@@ -713,7 +625,7 @@ function onScanSuccess(decodedText, decodedResult) {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            if (resultsContainer) resultsContainer.innerHTML = '✅ ' + data.message;
+            resultsContainer.innerHTML = '✅ ' + data.message;
             if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
                 loadAdminStudents();
                 loadAdminLogs();
@@ -723,12 +635,12 @@ function onScanSuccess(decodedText, decodedResult) {
             }
             setTimeout(closeScanner, 2000);
         } else {
-            if (resultsContainer) resultsContainer.innerHTML = '❌ ' + data.message;
+            resultsContainer.innerHTML = '❌ ' + data.message;
             if (html5QrCode) html5QrCode.resume();
         }
     })
     .catch(err => {
-        if (resultsContainer) resultsContainer.innerHTML = '❌ خطأ في الاتصال بالخادم';
+        resultsContainer.innerHTML = '❌ خطأ في الاتصال بالخادم';
         console.error(err);
         if (html5QrCode) html5QrCode.resume();
     });
@@ -750,18 +662,14 @@ function closeScanner() {
                 html5QrCode = null;
             });
     }
-    const modal = document.getElementById('scannerModal');
-    if (modal) modal.style.display = 'none';
-    const results = document.getElementById('qr-reader-results');
-    if (results) results.innerHTML = '';
-    const switchBtn = document.getElementById('switchCameraBtn');
-    if (switchBtn) switchBtn.style.display = 'none';
+    document.getElementById('scannerModal').style.display = 'none';
+    document.getElementById('qr-reader-results').innerHTML = '';
+    document.getElementById('switchCameraBtn').style.display = 'none';
 }
 
-// ربط أحداث الماسح
-document.getElementById('openScannerBtn')?.addEventListener('click', openScanner);
-document.getElementById('closeScannerBtn')?.addEventListener('click', closeScanner);
-document.getElementById('switchCameraBtn')?.addEventListener('click', switchCamera);
+document.getElementById('openScannerBtn').addEventListener('click', openScanner);
+document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
+document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
 
 // ==========================================
 // 11. دوال الإشعارات (Web Push)
@@ -941,15 +849,12 @@ async function loadParentNotifications() {
 
 function renderNotifications(showOld) {
     const list = document.getElementById('notificationList');
-    if (!list) return;
     list.innerHTML = '';
 
     if (allNotifications.length === 0) {
         list.innerHTML = '<li style="color:#8a9aaa; text-align:center; padding:20px;">📭 لا توجد إشعارات حالياً</li>';
-        const showBtn = document.getElementById('showOldNotificationsBtn');
-        const hideBtn = document.getElementById('hideOldNotificationsBtn');
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'none';
+        document.getElementById('showOldNotificationsBtn').style.display = 'none';
+        document.getElementById('hideOldNotificationsBtn').style.display = 'none';
         return;
     }
 
@@ -962,22 +867,18 @@ function renderNotifications(showOld) {
     if (showOld) {
         newNotifications = allNotifications;
         oldNotifications = [];
-        const showBtn = document.getElementById('showOldNotificationsBtn');
-        const hideBtn = document.getElementById('hideOldNotificationsBtn');
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'block';
+        document.getElementById('showOldNotificationsBtn').style.display = 'none';
+        document.getElementById('hideOldNotificationsBtn').style.display = 'block';
     } else {
         newNotifications = allNotifications.slice(0, recentCount);
         oldNotifications = allNotifications.slice(recentCount);
         
-        const showBtn = document.getElementById('showOldNotificationsBtn');
-        const hideBtn = document.getElementById('hideOldNotificationsBtn');
         if (oldNotifications.length > 0) {
-            if (showBtn) showBtn.style.display = 'inline-flex';
-            if (hideBtn) hideBtn.style.display = 'none';
+            document.getElementById('showOldNotificationsBtn').style.display = 'inline-flex';
+            document.getElementById('hideOldNotificationsBtn').style.display = 'none';
         } else {
-            if (showBtn) showBtn.style.display = 'none';
-            if (hideBtn) hideBtn.style.display = 'none';
+            document.getElementById('showOldNotificationsBtn').style.display = 'none';
+            document.getElementById('hideOldNotificationsBtn').style.display = 'none';
         }
     }
 
@@ -999,7 +900,6 @@ function renderNotifications(showOld) {
 
 function addNotificationToUI(message, createdAt, isRead = false, id = null) {
     const list = document.getElementById('notificationList');
-    if (!list) return;
     const li = document.createElement('li');
     const time = formatFullTime(createdAt);
     li.textContent = message + ' (وقت: ' + time + ')';
@@ -1046,7 +946,7 @@ async function toggleAllStudents(status) {
 }
 
 // ==========================================
-// 14. دوال المدير
+// 14. دوال المدير (والمدير العام)
 // ==========================================
 async function loadAdminStudents() {
     try {
@@ -1061,7 +961,6 @@ async function loadAdminStudents() {
 
 function renderStudents(students, containerId, showAdminControls) {
     const container = document.getElementById(containerId);
-    if (!container) return;
     if (!students || students.length === 0) {
         container.innerHTML = '<div class="loading-state">📭 لا يوجد تلاميذ</div>';
         return;
@@ -1140,32 +1039,25 @@ window.openEditStudent = async function(studentId) {
             return;
         }
 
-        const idEl = document.getElementById('editStudentId');
-        const nameEl = document.getElementById('editName');
-        const pNameEl = document.getElementById('editParentName');
-        const pPhoneEl = document.getElementById('editParentPhone');
-        const pEmailEl = document.getElementById('editParentEmail');
-        const addrEl = document.getElementById('editAddress');
-        if (idEl) idEl.value = student._id;
-        if (nameEl) nameEl.value = student.name || '';
-        if (pNameEl) pNameEl.value = student.parentName || '';
-        if (pPhoneEl) pPhoneEl.value = student.parentPhone || '';
-        if (pEmailEl) pEmailEl.value = student.parentEmail || '';
-        if (addrEl) addrEl.value = student.address || '';
-        const modal = document.getElementById('editStudentModal');
-        if (modal) modal.style.display = 'flex';
+        document.getElementById('editStudentId').value = student._id;
+        document.getElementById('editName').value = student.name || '';
+        document.getElementById('editParentName').value = student.parentName || '';
+        document.getElementById('editParentPhone').value = student.parentPhone || '';
+        document.getElementById('editParentEmail').value = student.parentEmail || '';
+        document.getElementById('editAddress').value = student.address || '';
+        document.getElementById('editStudentModal').style.display = 'flex';
     } catch (err) {
         alert('خطأ في جلب بيانات الطالب: ' + err.message);
     }
 };
 
-document.getElementById('saveEditStudentBtn')?.addEventListener('click', async function() {
-    const id = document.getElementById('editStudentId')?.value;
-    const name = document.getElementById('editName')?.value?.trim() || '';
-    const parentName = document.getElementById('editParentName')?.value?.trim() || '';
-    const parentPhone = document.getElementById('editParentPhone')?.value?.trim() || '';
-    const parentEmail = document.getElementById('editParentEmail')?.value?.trim() || '';
-    const address = document.getElementById('editAddress')?.value?.trim() || '';
+document.getElementById('saveEditStudentBtn').addEventListener('click', async function() {
+    const id = document.getElementById('editStudentId').value;
+    const name = document.getElementById('editName').value.trim();
+    const parentName = document.getElementById('editParentName').value.trim();
+    const parentPhone = document.getElementById('editParentPhone').value.trim();
+    const parentEmail = document.getElementById('editParentEmail').value.trim();
+    const address = document.getElementById('editAddress').value.trim();
 
     if (!name || !parentName || !parentPhone || !parentEmail) {
         alert('جميع الحقول مطلوبة ما عدا العنوان');
@@ -1185,8 +1077,7 @@ document.getElementById('saveEditStudentBtn')?.addEventListener('click', async f
             throw new Error(error.message || 'فشل التعديل');
         }
         alert('✅ تم تعديل معلومات الطالب بنجاح');
-        const modal = document.getElementById('editStudentModal');
-        if (modal) modal.style.display = 'none';
+        document.getElementById('editStudentModal').style.display = 'none';
         loadAdminStudents();
         addLog('✏️ تم تعديل معلومات الطالب ' + name, new Date(), 'adminLogContainer');
     } catch (err) {
@@ -1194,17 +1085,15 @@ document.getElementById('saveEditStudentBtn')?.addEventListener('click', async f
     }
 });
 
-document.getElementById('closeEditStudentBtn')?.addEventListener('click', function() {
-    const modal = document.getElementById('editStudentModal');
-    if (modal) modal.style.display = 'none';
+document.getElementById('closeEditStudentBtn').addEventListener('click', function() {
+    document.getElementById('editStudentModal').style.display = 'none';
 });
 
 // ==========================================
 // 16. عرض جميع سجلات النشاطات في نافذة منبثقة
 // ==========================================
-document.getElementById('adminShowAllLogsBtn')?.addEventListener('click', function() {
+document.getElementById('adminShowAllLogsBtn').addEventListener('click', function() {
     const container = document.getElementById('allLogsContainer');
-    if (!container) return;
     container.innerHTML = '';
     
     const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1220,23 +1109,21 @@ document.getElementById('adminShowAllLogsBtn')?.addEventListener('click', functi
         });
     }
     
-    const modal = document.getElementById('allLogsModal');
-    if (modal) modal.style.display = 'flex';
+    document.getElementById('allLogsModal').style.display = 'flex';
 });
 
-document.getElementById('closeAllLogsBtn')?.addEventListener('click', function() {
-    const modal = document.getElementById('allLogsModal');
-    if (modal) modal.style.display = 'none';
+document.getElementById('closeAllLogsBtn').addEventListener('click', function() {
+    document.getElementById('allLogsModal').style.display = 'none';
 });
 
 // إغلاق النوافذ المنبثقة عند الضغط خارجها
-document.getElementById('allLogsModal')?.addEventListener('click', function(e) {
+document.getElementById('allLogsModal').addEventListener('click', function(e) {
     if (e.target === this) {
         this.style.display = 'none';
     }
 });
 
-document.getElementById('editStudentModal')?.addEventListener('click', function(e) {
+document.getElementById('editStudentModal').addEventListener('click', function(e) {
     if (e.target === this) {
         this.style.display = 'none';
     }
@@ -1246,11 +1133,11 @@ document.getElementById('editStudentModal')?.addEventListener('click', function(
 // 17. دوال المدير (إضافة طالب، إشعارات، إلخ)
 // ==========================================
 async function adminAddStudent() {
-    const name = document.getElementById('adminStudentName')?.value?.trim() || '';
-    const parentEmail = document.getElementById('adminParentEmail')?.value?.trim() || '';
-    const parentName = document.getElementById('adminParentName')?.value?.trim() || '';
-    const parentPhone = document.getElementById('adminParentPhone')?.value?.trim() || '';
-    const address = document.getElementById('adminAddress')?.value?.trim() || '';
+    const name = document.getElementById('adminStudentName').value.trim();
+    const parentEmail = document.getElementById('adminParentEmail').value.trim();
+    const parentName = document.getElementById('adminParentName').value.trim();
+    const parentPhone = document.getElementById('adminParentPhone').value.trim();
+    const address = document.getElementById('adminAddress').value.trim();
     if (!name || !parentEmail || !parentName || !parentPhone) {
         alert('جميع الحقول مطلوبة ما عدا العنوان');
         return;
@@ -1264,17 +1151,15 @@ async function adminAddStudent() {
         body: JSON.stringify({ name, parentEmail, parentName, parentPhone, address })
     });
     if (res.ok) {
-        const inputs = ['adminStudentName', 'adminParentEmail', 'adminParentName', 'adminParentPhone', 'adminAddress'];
-        inputs.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
+        document.getElementById('adminStudentName').value = '';
+        document.getElementById('adminParentEmail').value = '';
+        document.getElementById('adminParentName').value = '';
+        document.getElementById('adminParentPhone').value = '';
+        document.getElementById('adminAddress').value = '';
         loadAdminStudents();
         addLog('➕ تم إضافة الطالب ' + name, new Date(), 'adminLogContainer');
-        const form = document.getElementById('addStudentForm');
-        if (form) form.style.display = 'none';
-        const btn = document.getElementById('toggleAddStudentBtn');
-        if (btn) btn.textContent = '➕ إضافة طالب جديد';
+        document.getElementById('addStudentForm').style.display = 'none';
+        document.getElementById('toggleAddStudentBtn').textContent = '➕ إضافة طالب جديد';
     } else {
         const data = await res.json();
         alert(data.message || 'حدث خطأ');
@@ -1284,7 +1169,6 @@ async function adminAddStudent() {
 function toggleAddStudentForm() {
     const form = document.getElementById('addStudentForm');
     const btn = document.getElementById('toggleAddStudentBtn');
-    if (!form || !btn) return;
     if (form.style.display === 'none') {
         form.style.display = 'block';
         btn.innerHTML = '<i class="fas fa-times"></i> إغلاق نموذج الإضافة';
@@ -1295,7 +1179,7 @@ function toggleAddStudentForm() {
 }
 
 async function adminSendGeneralNotification() {
-    const msg = document.getElementById('adminNotificationMsg')?.value?.trim() || '';
+    const msg = document.getElementById('adminNotificationMsg').value.trim();
     if (!msg) return alert('اكتب رسالة الإشعار');
     
     const confirmed = await showConfirmModal('إرسال إشعار عام', 'هل أنت متأكد من إرسال هذا الإشعار لجميع أولياء الأمور؟');
@@ -1303,8 +1187,7 @@ async function adminSendGeneralNotification() {
 
     if (socket) {
         socket.emit('admin-notification', { message: msg });
-        const el = document.getElementById('adminNotificationMsg');
-        if (el) el.value = '';
+        document.getElementById('adminNotificationMsg').value = '';
         addLog('📢 تم إرسال إشعار عام', new Date(), 'adminLogContainer');
     } else {
         alert('Socket غير متصل');
@@ -1312,8 +1195,8 @@ async function adminSendGeneralNotification() {
 }
 
 async function adminSendParentNotification() {
-    const email = document.getElementById('adminParentEmailInput')?.value?.trim() || '';
-    const msg = document.getElementById('adminParentNotificationMsg')?.value?.trim() || '';
+    const email = document.getElementById('adminParentEmailInput').value.trim();
+    const msg = document.getElementById('adminParentNotificationMsg').value.trim();
     if (!email || !msg) return alert('املأ جميع الحقول');
     
     const confirmed = await showConfirmModal('إرسال إشعار خاص', `هل أنت متأكد من إرسال هذا الإشعار لولي الأمر (${email})؟`);
@@ -1321,17 +1204,15 @@ async function adminSendParentNotification() {
 
     if (socket) {
         socket.emit('admin-notification-to-parent', { parentEmail: email, message: msg });
-        const emailEl = document.getElementById('adminParentEmailInput');
-        const msgEl = document.getElementById('adminParentNotificationMsg');
-        if (emailEl) emailEl.value = '';
-        if (msgEl) msgEl.value = '';
+        document.getElementById('adminParentEmailInput').value = '';
+        document.getElementById('adminParentNotificationMsg').value = '';
     } else {
         alert('Socket غير متصل');
     }
 }
 
 // ==========================================
-// 18. دوال السجل
+// 18. دوال السجل (مع عرض آخر 5 سجلات فقط)
 // ==========================================
 function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
@@ -1356,12 +1237,9 @@ function renderAdminLogs(showOld) {
     const container = document.getElementById('adminLogContainer');
     if (!container) return;
 
-    const showBtn = document.getElementById('adminShowOldLogsBtn');
-    const hideBtn = document.getElementById('adminHideOldLogsBtn');
-    const allBtn = document.getElementById('adminShowAllLogsBtn');
-    if (showBtn) showBtn.style.display = 'none';
-    if (hideBtn) hideBtn.style.display = 'none';
-    if (allBtn) allBtn.style.display = 'none';
+    document.getElementById('adminShowOldLogsBtn').style.display = 'none';
+    document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+    document.getElementById('adminShowAllLogsBtn').style.display = 'none';
 
     if (adminLogs.length === 0) {
         container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد نشاطات بعد</div>';
@@ -1378,21 +1256,23 @@ function renderAdminLogs(showOld) {
 
     if (showOld) {
         logsToShow = sortedLogs;
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'inline-flex';
-        if (allBtn) allBtn.style.display = 'none';
+        document.getElementById('adminShowOldLogsBtn').style.display = 'none';
+        document.getElementById('adminHideOldLogsBtn').style.display = 'inline-flex';
+        document.getElementById('adminShowAllLogsBtn').style.display = 'none';
     } else {
         const todayOnly = todayLogs.length > 0 ? todayLogs : sortedLogs.slice(0, 5);
         logsToShow = todayOnly.slice(0, 5);
         
         if (oldLogs.length > 0 || todayLogs.length > 5) {
-            if (showBtn) showBtn.style.display = 'inline-flex';
-            if (hideBtn) hideBtn.style.display = 'none';
-            if (sortedLogs.length > 5 && allBtn) allBtn.style.display = 'inline-flex';
+            document.getElementById('adminShowOldLogsBtn').style.display = 'inline-flex';
+            document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+            if (sortedLogs.length > 5) {
+                document.getElementById('adminShowAllLogsBtn').style.display = 'inline-flex';
+            }
         } else {
-            if (showBtn) showBtn.style.display = 'none';
-            if (hideBtn) hideBtn.style.display = 'none';
-            if (allBtn) allBtn.style.display = 'none';
+            document.getElementById('adminShowOldLogsBtn').style.display = 'none';
+            document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+            document.getElementById('adminShowAllLogsBtn').style.display = 'none';
         }
     }
 
@@ -1458,10 +1338,8 @@ function renderParentLogs(showOld) {
     const container = document.getElementById('parentLogContainer');
     if (!container) return;
 
-    const showBtn = document.getElementById('parentShowOldLogsBtn');
-    const hideBtn = document.getElementById('parentHideOldLogsBtn');
-    if (showBtn) showBtn.style.display = 'none';
-    if (hideBtn) hideBtn.style.display = 'none';
+    document.getElementById('parentShowOldLogsBtn').style.display = 'none';
+    document.getElementById('parentHideOldLogsBtn').style.display = 'none';
 
     if (parentLogs.length === 0) {
         container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد سجلات بعد</div>';
@@ -1478,16 +1356,16 @@ function renderParentLogs(showOld) {
 
     if (showOld) {
         logsToShow = sortedLogs;
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'inline-flex';
+        document.getElementById('parentShowOldLogsBtn').style.display = 'none';
+        document.getElementById('parentHideOldLogsBtn').style.display = 'inline-flex';
     } else {
         logsToShow = todayLogs.slice(0, 5);
         if (oldLogs.length > 0 || todayLogs.length > 5) {
-            if (showBtn) showBtn.style.display = 'inline-flex';
-            if (hideBtn) hideBtn.style.display = 'none';
+            document.getElementById('parentShowOldLogsBtn').style.display = 'inline-flex';
+            document.getElementById('parentHideOldLogsBtn').style.display = 'none';
         } else {
-            if (showBtn) showBtn.style.display = 'none';
-            if (hideBtn) hideBtn.style.display = 'none';
+            document.getElementById('parentShowOldLogsBtn').style.display = 'none';
+            document.getElementById('parentHideOldLogsBtn').style.display = 'none';
         }
     }
 
@@ -1513,7 +1391,7 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 20. دوال المدير العام (Super Admin)
+// 20. دوال المدير العام (Super Admin) - إدارة المؤسسات
 // ==========================================
 async function loadTenants() {
     try {
@@ -1523,8 +1401,10 @@ async function loadTenants() {
         renderTenants();
     } catch (err) {
         console.error(err);
-        const list = document.getElementById('tenantsList');
-        if (list) list.innerHTML = '<div class="loading-state">❌ فشل تحميل المؤسسات</div>';
+        const container = document.getElementById('tenantsList');
+        if (container) {
+            container.innerHTML = '<div class="loading-state">❌ فشل تحميل المؤسسات</div>';
+        }
     }
 }
 
@@ -1566,107 +1446,92 @@ function renderTenants() {
 // 21. أحداث المصادقة وربط الأحداث
 // ==========================================
 function setupAuthEvents() {
-    const loginBtn = document.getElementById('loginBtn');
-    const registerBtn = document.getElementById('registerBtn');
-    const showRegisterLink = document.getElementById('showRegister');
-    const showLoginLink = document.getElementById('showLogin');
-    const logoutBtns = ['logoutBtnAdmin', 'logoutBtnParent', 'logoutBtnSuperAdmin'];
-    const settingsBtn = document.getElementById('toggleSettingsBtn');
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-    const addStudentBtn = document.getElementById('toggleAddStudentBtn');
-    const adminAddBtn = document.getElementById('adminAddBtn');
-    const sendNotifBtn = document.getElementById('adminSendNotificationBtn');
-    const sendParentNotifBtn = document.getElementById('adminSendParentNotificationBtn');
-    const toggleInsideBtn = document.getElementById('toggleAllInsideBtn');
-    const toggleOutsideBtn = document.getElementById('toggleAllOutsideBtn');
-    const adminShowOldBtn = document.getElementById('adminShowOldLogsBtn');
-    const adminHideOldBtn = document.getElementById('adminHideOldLogsBtn');
-    const parentShowOldBtn = document.getElementById('parentShowOldLogsBtn');
-    const parentHideOldBtn = document.getElementById('parentHideOldLogsBtn');
-    const showOldNotifBtn = document.getElementById('showOldNotificationsBtn');
-    const hideOldNotifBtn = document.getElementById('hideOldNotificationsBtn');
-
-    if (loginBtn) {
-        loginBtn.addEventListener('click', async () => {
-            const email = document.getElementById('loginEmail')?.value || '';
-            const password = document.getElementById('loginPassword')?.value || '';
-            if (!email || !password) return alert('املأ جميع الحقول');
-            try {
-                const res = await fetch(API_BASE_URL + '/api/auth/login', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'x-tenant-subdomain': currentTenantSubdomain 
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
-                saveAuth(data);
-            } catch (err) {
-                alert(err.message || 'فشل تسجيل الدخول');
-            }
-        });
-    }
-
-    if (registerBtn) {
-        registerBtn.addEventListener('click', async () => {
-            const name = document.getElementById('regName')?.value?.trim() || '';
-            const email = document.getElementById('regEmail')?.value?.trim() || '';
-            const password = document.getElementById('regPassword')?.value?.trim() || '';
-            const phone = document.getElementById('regPhone')?.value?.trim() || '';
-            const role = document.getElementById('regRole')?.value || 'parent';
-            if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
-            if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
-            try {
-                const res = await fetch(API_BASE_URL + '/api/auth/register', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'x-tenant-subdomain': currentTenantSubdomain 
-                    },
-                    body: JSON.stringify({ name, email, password, phone, role })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
-                saveAuth(data);
-            } catch (err) {
-                alert(err.message || 'فشل التسجيل');
-            }
-        });
-    }
-
-    if (showRegisterLink) showRegisterLink.addEventListener('click', showRegister);
-    if (showLoginLink) showLoginLink.addEventListener('click', showLogin);
-    logoutBtns.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('click', logout);
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        if (!email || !password) return alert('املأ جميع الحقول');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/login', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-tenant-subdomain': getTenantSubdomain()
+                },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'فشل تسجيل الدخول');
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل تسجيل الدخول');
+        }
     });
 
-    if (settingsBtn) settingsBtn.addEventListener('click', toggleSettingsForm);
-    if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSchoolSettings);
-    if (addStudentBtn) addStudentBtn.addEventListener('click', toggleAddStudentForm);
-    if (adminAddBtn) adminAddBtn.addEventListener('click', adminAddStudent);
-    if (sendNotifBtn) sendNotifBtn.addEventListener('click', adminSendGeneralNotification);
-    if (sendParentNotifBtn) sendParentNotifBtn.addEventListener('click', adminSendParentNotification);
-    
-    if (toggleInsideBtn) {
-        toggleInsideBtn.addEventListener('click', function() {
-            toggleAllStudents(true);
-        });
-    }
-    if (toggleOutsideBtn) {
-        toggleOutsideBtn.addEventListener('click', function() {
-            toggleAllStudents(false);
-        });
-    }
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const role = document.getElementById('regRole').value;
+        if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
+        if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/register', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-tenant-subdomain': getTenantSubdomain()
+                },
+                body: JSON.stringify({ name, email, password, phone, role })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'فشل التسجيل');
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل التسجيل');
+        }
+    });
 
-    if (adminShowOldBtn) adminShowOldBtn.addEventListener('click', function() { toggleAdminOldLogs(true); });
-    if (adminHideOldBtn) adminHideOldBtn.addEventListener('click', function() { toggleAdminOldLogs(false); });
-    if (parentShowOldBtn) parentShowOldBtn.addEventListener('click', function() { toggleParentOldLogs(true); });
-    if (parentHideOldBtn) parentHideOldBtn.addEventListener('click', function() { toggleParentOldLogs(false); });
-    if (showOldNotifBtn) showOldNotifBtn.addEventListener('click', function() { toggleOldNotifications(true); });
-    if (hideOldNotifBtn) hideOldNotifBtn.addEventListener('click', function() { toggleOldNotifications(false); });
+    document.getElementById('showRegister').addEventListener('click', showRegister);
+    document.getElementById('showLogin').addEventListener('click', showLogin);
+    document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
+    document.getElementById('logoutBtnParent').addEventListener('click', logout);
+    document.getElementById('logoutBtnSuperAdmin').addEventListener('click', logout);
+
+    document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsForm);
+    document.getElementById('saveSettingsBtn').addEventListener('click', saveSchoolSettings);
+    document.getElementById('toggleAddStudentBtn').addEventListener('click', toggleAddStudentForm);
+    document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
+    document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
+    document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
+    
+    document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
+        toggleAllStudents(true);
+    });
+    document.getElementById('toggleAllOutsideBtn').addEventListener('click', function() {
+        toggleAllStudents(false);
+    });
+
+    document.getElementById('adminShowOldLogsBtn').addEventListener('click', function() {
+        toggleAdminOldLogs(true);
+    });
+    document.getElementById('adminHideOldLogsBtn').addEventListener('click', function() {
+        toggleAdminOldLogs(false);
+    });
+
+    document.getElementById('parentShowOldLogsBtn').addEventListener('click', function() {
+        toggleParentOldLogs(true);
+    });
+    document.getElementById('parentHideOldLogsBtn').addEventListener('click', function() {
+        toggleParentOldLogs(false);
+    });
+
+    document.getElementById('showOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(true);
+    });
+    document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(false);
+    });
 }
 
 // ==========================================
@@ -1680,23 +1545,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // تحميل الترجمات
     loadTranslations(currentLanguage);
     
-    // إضافة زر تبديل اللغة (إذا لم يكن موجوداً)
-    if (!document.querySelector('.lang-switcher')) {
-        const langSwitcher = document.createElement('div');
-        langSwitcher.className = 'lang-switcher';
-        langSwitcher.innerHTML = `
-            <button data-lang="ar" class="lang-btn ${currentLanguage === 'ar' ? 'active' : ''}" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
-            <button data-lang="en" class="lang-btn ${currentLanguage === 'en' ? 'active' : ''}" onclick="switchLanguage('en')">🇬🇧 English</button>
-            <button data-lang="fr" class="lang-btn ${currentLanguage === 'fr' ? 'active' : ''}" onclick="switchLanguage('fr')">🇫🇷 Français</button>
-        `;
-        const header = document.querySelector('header');
-        if (header) {
-            header.appendChild(langSwitcher);
-        }
+    // إضافة زر تبديل اللغة
+    const langSwitcher = document.createElement('div');
+    langSwitcher.className = 'lang-switcher';
+    langSwitcher.innerHTML = `
+        <button data-lang="ar" class="lang-btn ${currentLanguage === 'ar' ? 'active' : ''}" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
+        <button data-lang="en" class="lang-btn ${currentLanguage === 'en' ? 'active' : ''}" onclick="switchLanguage('en')">🇬🇧 English</button>
+        <button data-lang="fr" class="lang-btn ${currentLanguage === 'fr' ? 'active' : ''}" onclick="switchLanguage('fr')">🇫🇷 Français</button>
+    `;
+    // إضافة إلى الهدر (يمكنك وضعه في المكان المناسب في HTML)
+    const header = document.querySelector('header');
+    if (header) {
+        header.appendChild(langSwitcher);
     }
 
-    // تحميل إعدادات المدرسة (لكن فقط إذا كان المستخدم مديراً)
-    // لا نحاول تحميلها قبل تسجيل الدخول لتجنب أخطاء 404
+    loadSchoolSettings();
     setupAuthEvents();
 
     if (token) {
@@ -1705,32 +1568,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (user) {
                 currentUser = user;
                 if (currentUser.role === 'super_admin') {
-                    document.querySelectorAll('#adminDashboard, #parentDashboard, #superAdminDashboard').forEach(el => el.style.display = 'none');
-                    const dash = document.getElementById('superAdminDashboard');
-                    if (dash) dash.style.display = 'block';
-                    connectSocket();
-                    loadTenants();
+                    showSuperAdminDashboard();
                 } else if (currentUser.role === 'admin') {
-                    document.querySelectorAll('#adminDashboard, #parentDashboard, #superAdminDashboard').forEach(el => el.style.display = 'none');
-                    const dash = document.getElementById('adminDashboard');
-                    if (dash) dash.style.display = 'block';
-                    connectSocket();
-                    loadSchoolSettings();
-                    loadAdminStudents();
-                    loadAdminLogs();
-                    loadAdminNotifications();
+                    showAdminDashboard();
                 } else {
-                    document.querySelectorAll('#adminDashboard, #parentDashboard, #superAdminDashboard').forEach(el => el.style.display = 'none');
-                    const dash = document.getElementById('parentDashboard');
-                    if (dash) dash.style.display = 'block';
-                    connectSocket();
-                    loadParentStudents();
-                    loadParentLogs();
-                    loadParentNotifications();
+                    showParentDashboard();
                 }
                 return;
             }
         } catch(e) {}
     }
     showLogin();
-});
+}); // ✅ تم إغلاق جميع الأقواس بشكل صحيح
