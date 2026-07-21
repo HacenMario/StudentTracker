@@ -183,3 +183,27 @@
     "toggle_exit": "Enregistrer la sortie"
   }
 }
+{
+  "student": {
+    "inside": "À l'intérieur 🏫",
+    "outside": "À l'extérieur 🚪",
+    "toggle_exit": "Enregistrer la sortie",
+    "entry": "Entrée",
+    "parent_name": "Parent",
+    "no_students": "📭 Aucun étudiant",
+    "last_update": "Dernière mise à jour"
+  },
+  "attendance": {
+    "last_entry_exit": "Dernière entrée/sortie"
+  },
+  "bulk": {
+    "all_inside": "Tout changer à l'intérieur",
+    "confirm": "Êtes-vous sûr de vouloir changer le statut de tous les étudiants à {status} ?"
+  },
+  "common": {
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "qr": "QR",
+    "error": "Une erreur est survenue"
+  }
+}
