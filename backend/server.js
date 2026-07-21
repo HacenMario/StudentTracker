@@ -225,15 +225,13 @@ io.on('connection', (socket) => {
         
         // ✅ كحل احتياطي: إذا لم يكن هناك اشتراك، نرسل للجميع (اختياري)
         // جلب الاشتراكات للتحقق
-        const subs = await Subscription.find({ userEmail: student.parentEmail });
-        if (subs.length === 0) {
-          console.warn(`⚠️ لا يوجد اشتراك للبريد "${student.parentEmail}"، سيتم إرسال الإشعار لجميع المشتركين كحل بديل.`);
-          await sendPushNotification(
-            'تحديث حالة ابنك (بديل)',
-            message,
-            { url: '/parent-dashboard' },
-            null // إرسال للجميع
-          );
+console.log(`📤 محاولة إرسال إشعار تغيير حالة (للجميع) للطالب: ${student.name}`);
+await sendPushNotification(
+  'تحديث حالة ابنك (اختبار)',
+  message,
+  { url: '/parent-dashboard' },
+  null // ✅ إرسال للجميع بدلاً من البريد المحدد
+);
         }
       } else {
         console.warn(`⚠️ الطالب ${student.name} ليس له بريد ولي أمر، لم يتم إرسال إشعار`);
