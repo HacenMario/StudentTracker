@@ -1,4 +1,4 @@
-// =========================================
+// ==========================================
 // 1. رابط الخادم (تلقائي حسب البيئة)
 // ==========================================
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -8,7 +8,7 @@ const API_BASE_URL = isLocal
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
-// 2. المتغيرات العامة
+// 2. إدارة التوكن والمستخدم والمتغيرات العامة
 // ==========================================
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -26,74 +26,8 @@ let html5QrCode = null;
 let currentCameraId = null;
 let availableCameras = [];
 
-// متغيرات النظام متعدد المؤسسات
-let currentTenantSubdomain = localStorage.getItem('tenantSubdomain') || 'demo';
-let tenants = [];
-
 // ==========================================
-// 3. نظام الترجمات (i18n) - كامل
-// ==========================================
-let currentLanguage = localStorage.getItem('language') || 'ar';
-let translations = {};
-
-async function loadTranslations(lang) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/i18n/${lang}`);
-    if (!res.ok) throw new Error('فشل تحميل الترجمات');
-    translations = await res.json();
-    currentLanguage = lang;
-    localStorage.setItem('language', lang);
-    applyTranslations();
-  } catch (err) {
-    console.error('❌ خطأ في تحميل الترجمات:', err);
-  }
-}
-
-function applyTranslations() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    const translation = getTranslation(key);
-    if (translation) {
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        el.placeholder = translation;
-      } else {
-        el.textContent = translation;
-      }
-    }
-  });
-}
-
-function getTranslation(key, params = {}) {
-  const keys = key.split('.');
-  let value = translations;
-  for (const k of keys) {
-    if (value && value[k] !== undefined) {
-      value = value[k];
-    } else {
-      return key;
-    }
-  }
-  if (typeof value === 'string') {
-    for (const [paramKey, paramValue] of Object.entries(params)) {
-      value = value.replace(`{${paramKey}}`, paramValue);
-    }
-  }
-  return value;
-}
-
-function switchLanguage(lang) {
-  if (lang === currentLanguage) return;
-  loadTranslations(lang);
-  const dir = lang === 'ar' ? 'rtl' : 'ltr';
-  document.documentElement.dir = dir;
-  document.documentElement.lang = lang;
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.lang === lang);
-  });
-}
-
-// ==========================================
-// 4. دوال مساعدة
+// 3. دوال مساعدة
 // ==========================================
 function getStatusText(isInside) {
     return isInside ? 'داخل 🏫' : 'خارج 🚪';
@@ -130,37 +64,31 @@ function showBrowserNotification(title, body) {
 }
 
 // ==========================================
-// 5. نافذة التأكيد (Modal)
+// 4. نافذة التأكيد (Modal)
 // ==========================================
 let modalResolve = null;
 
 function showConfirmModal(title, message) {
     return new Promise((resolve) => {
-        const modal = document.getElementById('confirmModal');
-        if (!modal) {
-            console.warn('⚠️ confirmModal غير موجود');
-            resolve(false);
-            return;
-        }
         document.getElementById('modalTitle').textContent = title;
         document.getElementById('modalMessage').textContent = message;
-        modal.style.display = 'flex';
+        document.getElementById('confirmModal').style.display = 'flex';
         modalResolve = resolve;
     });
 }
 
-document.getElementById('modalConfirmBtn')?.addEventListener('click', function() {
+document.getElementById('modalConfirmBtn').addEventListener('click', function() {
     document.getElementById('confirmModal').style.display = 'none';
     if (modalResolve) modalResolve(true);
 });
 
-document.getElementById('modalCancelBtn')?.addEventListener('click', function() {
+document.getElementById('modalCancelBtn').addEventListener('click', function() {
     document.getElementById('confirmModal').style.display = 'none';
     if (modalResolve) modalResolve(false);
 });
 
 // ==========================================
-// 6. دوال المصادقة والعرض
+// 5. دوال المصادقة
 // ==========================================
 function saveAuth(data) {
     token = data.token;
@@ -174,9 +102,7 @@ function saveAuth(data) {
         }, 1500);
     }
 
-    if (currentUser.role === 'super_admin') {
-        showSuperAdminDashboard();
-    } else if (currentUser.role === 'admin') {
+    if (currentUser.role === 'admin') {
         showAdminDashboard();
     } else {
         showParentDashboard();
@@ -202,29 +128,25 @@ function logout() {
         });
 }
 
-function hideAllScreens() {
-    ['loginScreen', 'registerScreen', 'adminDashboard', 'parentDashboard', 'superAdminDashboard'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-}
-
 function showLogin() {
-    hideAllScreens();
-    const el = document.getElementById('loginScreen');
-    if (el) el.style.display = 'block';
+    document.getElementById('loginScreen').style.display = 'block';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('parentDashboard').style.display = 'none';
 }
 
 function showRegister() {
-    hideAllScreens();
-    const el = document.getElementById('registerScreen');
-    if (el) el.style.display = 'block';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'block';
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('parentDashboard').style.display = 'none';
 }
 
 function showAdminDashboard() {
-    hideAllScreens();
-    const el = document.getElementById('adminDashboard');
-    if (el) el.style.display = 'block';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'block';
+    document.getElementById('parentDashboard').style.display = 'none';
     connectSocket();
     loadSchoolSettings();
     loadAdminStudents();
@@ -233,43 +155,27 @@ function showAdminDashboard() {
 }
 
 function showParentDashboard() {
-    hideAllScreens();
-    const el = document.getElementById('parentDashboard');
-    if (el) el.style.display = 'block';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('parentDashboard').style.display = 'block';
     connectSocket();
     loadParentStudents();
     loadParentLogs();
     loadParentNotifications();
 }
 
-function showSuperAdminDashboard() {
-    hideAllScreens();
-    const el = document.getElementById('superAdminDashboard');
-    if (el) el.style.display = 'block';
-    connectSocket();
-    loadTenants();
-}
-
 // ==========================================
-// 7. Socket.io
+// 6. Socket.io
 // ==========================================
 function connectSocket() {
     if (socket) { socket.disconnect(); socket = null; }
-    socket = io(SOCKET_URL, { 
-        auth: { token },
-        transportOptions: {
-            polling: {
-                extraHeaders: {
-                    'x-tenant-subdomain': currentTenantSubdomain
-                }
-            }
-        }
-    });
+    socket = io(SOCKET_URL, { auth: { token } });
 
     socket.on('connect', () => console.log('✅ Socket متصل'));
 
     socket.on('status-changed', (data) => {
-        if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+        if (currentUser.role === 'admin') {
             loadAdminStudents();
             loadAdminLogs();
         } else {
@@ -292,7 +198,7 @@ function connectSocket() {
             allNotifications.unshift(newNotification);
             renderNotifications(showOldNotifications);
             showBrowserNotification('📢 إشعار من المدرسة', data.message);
-        } else if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+        } else if (currentUser.role === 'admin') {
             loadAdminLogs();
         }
     });
@@ -309,19 +215,11 @@ function connectSocket() {
 }
 
 // ==========================================
-// 8. دوال API مع التوكن
+// 7. دوال API مع التوكن
 // ==========================================
-function getTenantSubdomain() {
-    if (!currentTenantSubdomain) {
-        currentTenantSubdomain = localStorage.getItem('tenantSubdomain') || 'demo';
-    }
-    return currentTenantSubdomain;
-}
-
 function fetchWithAuth(url, options = {}) {
     const headers = {
         'Content-Type': 'application/json',
-        'x-tenant-subdomain': getTenantSubdomain(),
     };
     if (token) {
         headers['Authorization'] = 'Bearer ' + token;
@@ -337,15 +235,11 @@ function fetchWithAuth(url, options = {}) {
 }
 
 // ==========================================
-// 9. دوال إعدادات المدرسة
+// 8. دوال إعدادات المدرسة
 // ==========================================
 async function loadSchoolSettings() {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/settings`, {
-            headers: {
-                'x-tenant-subdomain': getTenantSubdomain()
-            }
-        });
+        const res = await fetch(API_BASE_URL + '/api/settings');
         if (!res.ok) throw new Error('فشل جلب إعدادات المدرسة');
         schoolSettings = await res.json();
         applySchoolSettings();
@@ -356,54 +250,43 @@ async function loadSchoolSettings() {
 
 function applySchoolSettings() {
     if (!schoolSettings) return;
-    const nameEl = document.getElementById('schoolName');
-    const addrEl = document.getElementById('schoolAddress');
-    const contactEl = document.getElementById('schoolContact');
-    const logoImg = document.getElementById('schoolLogo');
-    if (nameEl) nameEl.textContent = schoolSettings.schoolName || 'مدرسة النور الابتدائية';
-    if (addrEl) addrEl.textContent = '📍 ' + (schoolSettings.address || 'العنوان غير محدد');
-    if (contactEl) contactEl.textContent = '📞 ' + (schoolSettings.phone || '') + ' | ✉️ ' + (schoolSettings.email || '');
+    document.getElementById('schoolName').textContent = schoolSettings.schoolName || 'مدرسة النور الابتدائية';
+    document.getElementById('schoolAddress').textContent = '📍 ' + (schoolSettings.address || 'العنوان غير محدد');
+    document.getElementById('schoolContact').textContent = '📞 ' + (schoolSettings.phone || '') + ' | ✉️ ' + (schoolSettings.email || '');
     
-    if (logoImg) {
-        if (schoolSettings.logo && schoolSettings.logo.length > 0) {
-            logoImg.src = schoolSettings.logo;
-            logoImg.style.display = 'inline-block';
-        } else {
-            logoImg.style.display = 'none';
-        }
+    const logoImg = document.getElementById('schoolLogo');
+    if (schoolSettings.logo && schoolSettings.logo.length > 0) {
+        logoImg.src = schoolSettings.logo;
+        logoImg.style.display = 'inline-block';
+    } else {
+        logoImg.style.display = 'none';
     }
 
-    if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin')) {
-        const settingsName = document.getElementById('settingsSchoolName');
-        const settingsAddr = document.getElementById('settingsAddress');
-        const settingsPhone = document.getElementById('settingsPhone');
-        const settingsEmail = document.getElementById('settingsEmail');
+    if (currentUser && currentUser.role === 'admin') {
+        document.getElementById('settingsSchoolName').value = schoolSettings.schoolName || '';
+        document.getElementById('settingsAddress').value = schoolSettings.address || '';
+        document.getElementById('settingsPhone').value = schoolSettings.phone || '';
+        document.getElementById('settingsEmail').value = schoolSettings.email || '';
         const preview = document.getElementById('logoPreview');
-        if (settingsName) settingsName.value = schoolSettings.schoolName || '';
-        if (settingsAddr) settingsAddr.value = schoolSettings.address || '';
-        if (settingsPhone) settingsPhone.value = schoolSettings.phone || '';
-        if (settingsEmail) settingsEmail.value = schoolSettings.email || '';
-        if (preview) {
-            if (schoolSettings.logo) {
-                preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
-            } else {
-                preview.innerHTML = '<span style="color:#8a9aaa;">لا يوجد شعار حالياً</span>';
-            }
+        if (schoolSettings.logo) {
+            preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
+        } else {
+            preview.innerHTML = '<span style="color:#8a9aaa;">لا يوجد شعار حالياً</span>';
         }
     }
 }
 
 async function saveSchoolSettings() {
-    const schoolName = document.getElementById('settingsSchoolName')?.value.trim() || '';
-    const address = document.getElementById('settingsAddress')?.value.trim() || '';
-    const phone = document.getElementById('settingsPhone')?.value.trim() || '';
-    const email = document.getElementById('settingsEmail')?.value.trim() || '';
+    const schoolName = document.getElementById('settingsSchoolName').value.trim();
+    const address = document.getElementById('settingsAddress').value.trim();
+    const phone = document.getElementById('settingsPhone').value.trim();
+    const email = document.getElementById('settingsEmail').value.trim();
     
     let logo = schoolSettings ? schoolSettings.logo : '';
     let logoFileName = schoolSettings ? schoolSettings.logoFileName : '';
     
     const fileInput = document.getElementById('settingsLogoUpload');
-    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+    if (fileInput.files && fileInput.files.length > 0) {
         const file = fileInput.files[0];
         const reader = new FileReader();
         const base64 = await new Promise((resolve) => {
@@ -427,10 +310,8 @@ async function saveSchoolSettings() {
         schoolSettings = data;
         applySchoolSettings();
         alert('تم حفظ إعدادات المدرسة بنجاح');
-        const form = document.getElementById('settingsForm');
-        const btn = document.getElementById('toggleSettingsBtn');
-        if (form) form.style.display = 'none';
-        if (btn) btn.innerHTML = '<i class="fas fa-cog"></i> إعدادات المؤسسة';
+        document.getElementById('settingsForm').style.display = 'none';
+        document.getElementById('toggleSettingsBtn').innerHTML = '<i class="fas fa-cog"></i> إعدادات المؤسسة';
     } catch (err) {
         alert('خطأ: ' + err.message);
     }
@@ -439,26 +320,19 @@ async function saveSchoolSettings() {
 function toggleSettingsForm() {
     const form = document.getElementById('settingsForm');
     const btn = document.getElementById('toggleSettingsBtn');
-    if (!form || !btn) return;
     if (form.style.display === 'none') {
         form.style.display = 'block';
         btn.innerHTML = '<i class="fas fa-times"></i> إغلاق الإعدادات';
         if (schoolSettings) {
-            const settingsName = document.getElementById('settingsSchoolName');
-            const settingsAddr = document.getElementById('settingsAddress');
-            const settingsPhone = document.getElementById('settingsPhone');
-            const settingsEmail = document.getElementById('settingsEmail');
+            document.getElementById('settingsSchoolName').value = schoolSettings.schoolName || '';
+            document.getElementById('settingsAddress').value = schoolSettings.address || '';
+            document.getElementById('settingsPhone').value = schoolSettings.phone || '';
+            document.getElementById('settingsEmail').value = schoolSettings.email || '';
             const preview = document.getElementById('logoPreview');
-            if (settingsName) settingsName.value = schoolSettings.schoolName || '';
-            if (settingsAddr) settingsAddr.value = schoolSettings.address || '';
-            if (settingsPhone) settingsPhone.value = schoolSettings.phone || '';
-            if (settingsEmail) settingsEmail.value = schoolSettings.email || '';
-            if (preview) {
-                if (schoolSettings.logo) {
-                    preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
-                } else {
-                    preview.innerHTML = '<span style="color:#8a9aaa;">لا يوجد شعار حالياً</span>';
-                }
+            if (schoolSettings.logo) {
+                preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
+            } else {
+                preview.innerHTML = '<span style="color:#8a9aaa;">لا يوجد شعار حالياً</span>';
             }
         }
     } else {
@@ -467,25 +341,20 @@ function toggleSettingsForm() {
     }
 }
 
-const settingsLogoUpload = document.getElementById('settingsLogoUpload');
-if (settingsLogoUpload) {
-    settingsLogoUpload.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const preview = document.getElementById('logoPreview');
-                if (preview) {
-                    preview.innerHTML = `<img src="${event.target.result}" alt="الشعار الجديد">`;
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-}
+document.getElementById('settingsLogoUpload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const preview = document.getElementById('logoPreview');
+            preview.innerHTML = `<img src="${event.target.result}" alt="الشعار الجديد">`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
 
 // ==========================================
-// 10. دوال QR Code (كاملة)
+// 9. دوال QR Code
 // ==========================================
 window.downloadQR = function(studentId) {
     fetchWithAuth('/api/students/' + studentId + '/qr')
@@ -510,13 +379,12 @@ window.downloadQR = function(studentId) {
 
 function openScanner() {
     const modal = document.getElementById('scannerModal');
-    if (!modal) return;
     modal.style.display = 'flex';
     const resultsContainer = document.getElementById('qr-reader-results');
-    if (resultsContainer) resultsContainer.innerHTML = '📷 جاري طلب الإذن للكاميرا...';
+    resultsContainer.innerHTML = '📷 جاري طلب الإذن للكاميرا...';
 
     if (typeof Html5Qrcode === 'undefined') {
-        if (resultsContainer) resultsContainer.innerHTML = '❌ مكتبة المسح غير محملة، تحقق من اتصال الإنترنت.';
+        resultsContainer.innerHTML = '❌ مكتبة المسح غير محملة، تحقق من اتصال الإنترنت.';
         return;
     }
 
@@ -538,7 +406,7 @@ function openScanner() {
 
 function startScannerProcess() {
     const resultsContainer = document.getElementById('qr-reader-results');
-    if (resultsContainer) resultsContainer.innerHTML = '📷 جاري الوصول للكاميرا...';
+    resultsContainer.innerHTML = '📷 جاري الوصول للكاميرا...';
 
     html5QrCode = new Html5Qrcode('qr-reader');
 
@@ -564,37 +432,33 @@ function startScannerProcess() {
                 }
 
                 currentCameraId = selectedCamera.id;
-                if (resultsContainer) resultsContainer.innerHTML = `✅ تم اختيار الكاميرا: ${selectedCamera.label || 'غير معروف'}`;
+                resultsContainer.innerHTML = `✅ تم اختيار الكاميرا: ${selectedCamera.label || 'غير معروف'}`;
                 
                 const switchBtn = document.getElementById('switchCameraBtn');
-                if (switchBtn) {
-                    if (devices.length > 1) {
-                        switchBtn.style.display = 'inline-block';
-                    } else {
-                        switchBtn.style.display = 'none';
-                    }
+                if (devices.length > 1) {
+                    switchBtn.style.display = 'inline-block';
+                } else {
+                    switchBtn.style.display = 'none';
                 }
 
                 startNewScanner(currentCameraId);
             } else {
-                if (resultsContainer) resultsContainer.innerHTML = '❌ لا توجد كاميرات متاحة على هذا الجهاز.';
+                resultsContainer.innerHTML = '❌ لا توجد كاميرات متاحة على هذا الجهاز.';
             }
         })
         .catch(err => {
             console.error('خطأ في الوصول للكاميرات:', err);
-            if (resultsContainer) {
-                if (err.message && err.message.includes('Permission')) {
-                    resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا في إعدادات المتصفح.';
-                } else {
-                    resultsContainer.innerHTML = `❌ فشل الوصول للكاميرا: ${err.message || 'خطأ غير معروف'}`;
-                }
+            if (err.message && err.message.includes('Permission')) {
+                resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا في إعدادات المتصفح.';
+            } else {
+                resultsContainer.innerHTML = `❌ فشل الوصول للكاميرا: ${err.message || 'خطأ غير معروف'}`;
             }
         });
 }
 
 function startNewScanner(cameraId) {
     const resultsContainer = document.getElementById('qr-reader-results');
-    if (resultsContainer) resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
+    resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
 
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode('qr-reader');
@@ -607,16 +471,14 @@ function startNewScanner(cameraId) {
         onScanError
     )
     .then(() => {
-        if (resultsContainer) resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
+        resultsContainer.innerHTML = '📸 الكاميرا تعمل، ضع الكود أمامها';
         currentCameraId = cameraId;
     })
     .catch(err => {
         console.error('فشل تشغيل الكاميرا:', err);
-        if (resultsContainer) {
-            resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
-            if (err.message && err.message.includes('NotAllowedError')) {
-                resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح.';
-            }
+        resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
+        if (err.message && err.message.includes('NotAllowedError')) {
+            resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح.';
         }
     });
 }
@@ -651,7 +513,7 @@ function switchCamera() {
 
 function onScanSuccess(decodedText, decodedResult) {
     const resultsContainer = document.getElementById('qr-reader-results');
-    if (resultsContainer) resultsContainer.innerHTML = '✅ جاري معالجة الكود...';
+    resultsContainer.innerHTML = '✅ جاري معالجة الكود...';
 
     if (html5QrCode) {
         html5QrCode.pause();
@@ -666,8 +528,8 @@ function onScanSuccess(decodedText, decodedResult) {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            if (resultsContainer) resultsContainer.innerHTML = '✅ ' + data.message;
-            if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+            resultsContainer.innerHTML = '✅ ' + data.message;
+            if (currentUser.role === 'admin') {
                 loadAdminStudents();
                 loadAdminLogs();
             } else {
@@ -676,12 +538,12 @@ function onScanSuccess(decodedText, decodedResult) {
             }
             setTimeout(closeScanner, 2000);
         } else {
-            if (resultsContainer) resultsContainer.innerHTML = '❌ ' + data.message;
+            resultsContainer.innerHTML = '❌ ' + data.message;
             if (html5QrCode) html5QrCode.resume();
         }
     })
     .catch(err => {
-        if (resultsContainer) resultsContainer.innerHTML = '❌ خطأ في الاتصال بالخادم';
+        resultsContainer.innerHTML = '❌ خطأ في الاتصال بالخادم';
         console.error(err);
         if (html5QrCode) html5QrCode.resume();
     });
@@ -703,23 +565,17 @@ function closeScanner() {
                 html5QrCode = null;
             });
     }
-    const modal = document.getElementById('scannerModal');
-    if (modal) modal.style.display = 'none';
-    const resultsContainer = document.getElementById('qr-reader-results');
-    if (resultsContainer) resultsContainer.innerHTML = '';
-    const switchBtn = document.getElementById('switchCameraBtn');
-    if (switchBtn) switchBtn.style.display = 'none';
+    document.getElementById('scannerModal').style.display = 'none';
+    document.getElementById('qr-reader-results').innerHTML = '';
+    document.getElementById('switchCameraBtn').style.display = 'none';
 }
 
-const openScannerBtn = document.getElementById('openScannerBtn');
-if (openScannerBtn) openScannerBtn.addEventListener('click', openScanner);
-const closeScannerBtn = document.getElementById('closeScannerBtn');
-if (closeScannerBtn) closeScannerBtn.addEventListener('click', closeScanner);
-const switchCameraBtn = document.getElementById('switchCameraBtn');
-if (switchCameraBtn) switchCameraBtn.addEventListener('click', switchCamera);
+document.getElementById('openScannerBtn').addEventListener('click', openScanner);
+document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
+document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
 
 // ==========================================
-// 11. دوال الإشعارات (Web Push) - كاملة
+// 10. دوال الإشعارات (Web Push)
 // ==========================================
 async function requestNotificationPermission() {
     if (!('serviceWorker' in navigator)) {
@@ -867,7 +723,7 @@ async function unsubscribeFromPush() {
 }
 
 // ==========================================
-// 12. دوال الإشعارات (داخل التطبيق) - كاملة
+// 11. دوال الإشعارات (داخل التطبيق)
 // ==========================================
 async function loadAdminNotifications() {
     try {
@@ -896,15 +752,12 @@ async function loadParentNotifications() {
 
 function renderNotifications(showOld) {
     const list = document.getElementById('notificationList');
-    if (!list) return;
     list.innerHTML = '';
 
     if (allNotifications.length === 0) {
         list.innerHTML = '<li style="color:#8a9aaa; text-align:center; padding:20px;">📭 لا توجد إشعارات حالياً</li>';
-        const showOldBtn = document.getElementById('showOldNotificationsBtn');
-        const hideOldBtn = document.getElementById('hideOldNotificationsBtn');
-        if (showOldBtn) showOldBtn.style.display = 'none';
-        if (hideOldBtn) hideOldBtn.style.display = 'none';
+        document.getElementById('showOldNotificationsBtn').style.display = 'none';
+        document.getElementById('hideOldNotificationsBtn').style.display = 'none';
         return;
     }
 
@@ -917,21 +770,18 @@ function renderNotifications(showOld) {
     if (showOld) {
         newNotifications = allNotifications;
         oldNotifications = [];
-        const showOldBtn = document.getElementById('showOldNotificationsBtn');
-        const hideOldBtn = document.getElementById('hideOldNotificationsBtn');
-        if (showOldBtn) showOldBtn.style.display = 'none';
-        if (hideOldBtn) hideOldBtn.style.display = 'block';
+        document.getElementById('showOldNotificationsBtn').style.display = 'none';
+        document.getElementById('hideOldNotificationsBtn').style.display = 'block';
     } else {
         newNotifications = allNotifications.slice(0, recentCount);
         oldNotifications = allNotifications.slice(recentCount);
-        const showOldBtn = document.getElementById('showOldNotificationsBtn');
-        const hideOldBtn = document.getElementById('hideOldNotificationsBtn');
+        
         if (oldNotifications.length > 0) {
-            if (showOldBtn) showOldBtn.style.display = 'inline-flex';
-            if (hideOldBtn) hideOldBtn.style.display = 'none';
+            document.getElementById('showOldNotificationsBtn').style.display = 'inline-flex';
+            document.getElementById('hideOldNotificationsBtn').style.display = 'none';
         } else {
-            if (showOldBtn) showOldBtn.style.display = 'none';
-            if (hideOldBtn) hideOldBtn.style.display = 'none';
+            document.getElementById('showOldNotificationsBtn').style.display = 'none';
+            document.getElementById('hideOldNotificationsBtn').style.display = 'none';
         }
     }
 
@@ -953,7 +803,6 @@ function renderNotifications(showOld) {
 
 function addNotificationToUI(message, createdAt, isRead = false, id = null) {
     const list = document.getElementById('notificationList');
-    if (!list) return;
     const li = document.createElement('li');
     const time = formatFullTime(createdAt);
     li.textContent = message + ' (وقت: ' + time + ')';
@@ -984,7 +833,7 @@ function toggleOldNotifications(show) {
 }
 
 // ==========================================
-// 13. دوال التغيير الجماعي
+// 12. دوال التغيير الجماعي
 // ==========================================
 async function toggleAllStudents(status) {
     const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
@@ -994,14 +843,13 @@ async function toggleAllStudents(status) {
     if (socket) {
         socket.emit('toggle-all-status', { newStatus: status });
         addLog(`🔄 تم تغيير حالة جميع الطلاب إلى ${statusText}`, new Date(), 'adminLogContainer');
-        loadAdminStudents();
     } else {
         alert('Socket غير متصل');
     }
 }
 
 // ==========================================
-// 14. دوال المدير (والمدير العام) - كاملة
+// 13. دوال المدير
 // ==========================================
 async function loadAdminStudents() {
     try {
@@ -1016,7 +864,6 @@ async function loadAdminStudents() {
 
 function renderStudents(students, containerId, showAdminControls) {
     const container = document.getElementById(containerId);
-    if (!container) return;
     if (!students || students.length === 0) {
         container.innerHTML = '<div class="loading-state">📭 لا يوجد تلاميذ</div>';
         return;
@@ -1082,7 +929,7 @@ window.adminDelete = async function(id) {
 };
 
 // ==========================================
-// 15. تعديل معلومات الطالب
+// 14. تعديل معلومات الطالب
 // ==========================================
 window.openEditStudent = async function(studentId) {
     try {
@@ -1095,134 +942,105 @@ window.openEditStudent = async function(studentId) {
             return;
         }
 
-        const editId = document.getElementById('editStudentId');
-        const editName = document.getElementById('editName');
-        const editParentName = document.getElementById('editParentName');
-        const editParentPhone = document.getElementById('editParentPhone');
-        const editParentEmail = document.getElementById('editParentEmail');
-        const editAddress = document.getElementById('editAddress');
-        const modal = document.getElementById('editStudentModal');
-        if (editId) editId.value = student._id;
-        if (editName) editName.value = student.name || '';
-        if (editParentName) editParentName.value = student.parentName || '';
-        if (editParentPhone) editParentPhone.value = student.parentPhone || '';
-        if (editParentEmail) editParentEmail.value = student.parentEmail || '';
-        if (editAddress) editAddress.value = student.address || '';
-        if (modal) modal.style.display = 'flex';
+        document.getElementById('editStudentId').value = student._id;
+        document.getElementById('editName').value = student.name || '';
+        document.getElementById('editParentName').value = student.parentName || '';
+        document.getElementById('editParentPhone').value = student.parentPhone || '';
+        document.getElementById('editParentEmail').value = student.parentEmail || '';
+        document.getElementById('editAddress').value = student.address || '';
+        document.getElementById('editStudentModal').style.display = 'flex';
     } catch (err) {
         alert('خطأ في جلب بيانات الطالب: ' + err.message);
     }
 };
 
-const saveEditStudentBtn = document.getElementById('saveEditStudentBtn');
-if (saveEditStudentBtn) {
-    saveEditStudentBtn.addEventListener('click', async function() {
-        const id = document.getElementById('editStudentId')?.value;
-        const name = document.getElementById('editName')?.value.trim();
-        const parentName = document.getElementById('editParentName')?.value.trim();
-        const parentPhone = document.getElementById('editParentPhone')?.value.trim();
-        const parentEmail = document.getElementById('editParentEmail')?.value.trim();
-        const address = document.getElementById('editAddress')?.value.trim();
+document.getElementById('saveEditStudentBtn').addEventListener('click', async function() {
+    const id = document.getElementById('editStudentId').value;
+    const name = document.getElementById('editName').value.trim();
+    const parentName = document.getElementById('editParentName').value.trim();
+    const parentPhone = document.getElementById('editParentPhone').value.trim();
+    const parentEmail = document.getElementById('editParentEmail').value.trim();
+    const address = document.getElementById('editAddress').value.trim();
 
-        if (!name || !parentName || !parentPhone || !parentEmail) {
-            alert('جميع الحقول مطلوبة ما عدا العنوان');
-            return;
+    if (!name || !parentName || !parentPhone || !parentEmail) {
+        alert('جميع الحقول مطلوبة ما عدا العنوان');
+        return;
+    }
+
+    const confirmed = await showConfirmModal('تعديل الطالب', 'هل أنت متأكد من حفظ التعديلات؟');
+    if (!confirmed) return;
+
+    try {
+        const res = await fetchWithAuth('/api/students/' + id, {
+            method: 'PUT',
+            body: JSON.stringify({ name, parentName, parentPhone, parentEmail, address })
+        });
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل التعديل');
         }
+        alert('✅ تم تعديل معلومات الطالب بنجاح');
+        document.getElementById('editStudentModal').style.display = 'none';
+        loadAdminStudents();
+        addLog('✏️ تم تعديل معلومات الطالب ' + name, new Date(), 'adminLogContainer');
+    } catch (err) {
+        alert('خطأ: ' + err.message);
+    }
+});
 
-        const confirmed = await showConfirmModal('تعديل الطالب', 'هل أنت متأكد من حفظ التعديلات؟');
-        if (!confirmed) return;
-
-        try {
-            const res = await fetchWithAuth('/api/students/' + id, {
-                method: 'PUT',
-                body: JSON.stringify({ name, parentName, parentPhone, parentEmail, address })
-            });
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.message || 'فشل التعديل');
-            }
-            alert('✅ تم تعديل معلومات الطالب بنجاح');
-            const modal = document.getElementById('editStudentModal');
-            if (modal) modal.style.display = 'none';
-            loadAdminStudents();
-            addLog('✏️ تم تعديل معلومات الطالب ' + name, new Date(), 'adminLogContainer');
-        } catch (err) {
-            alert('خطأ: ' + err.message);
-        }
-    });
-}
-
-const closeEditStudentBtn = document.getElementById('closeEditStudentBtn');
-if (closeEditStudentBtn) {
-    closeEditStudentBtn.addEventListener('click', function() {
-        const modal = document.getElementById('editStudentModal');
-        if (modal) modal.style.display = 'none';
-    });
-}
-
-const editStudentModal = document.getElementById('editStudentModal');
-if (editStudentModal) {
-    editStudentModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-        }
-    });
-}
+document.getElementById('closeEditStudentBtn').addEventListener('click', function() {
+    document.getElementById('editStudentModal').style.display = 'none';
+});
 
 // ==========================================
-// 16. عرض جميع سجلات النشاطات - كاملة
+// 15. عرض جميع سجلات النشاطات في نافذة منبثقة
 // ==========================================
-const adminShowAllLogsBtn = document.getElementById('adminShowAllLogsBtn');
-if (adminShowAllLogsBtn) {
-    adminShowAllLogsBtn.addEventListener('click', function() {
-        const container = document.getElementById('allLogsContainer');
-        if (!container) return;
-        container.innerHTML = '';
-        
-        const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        if (sortedLogs.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#8a9aaa; padding:20px;">لا توجد سجلات</div>';
-        } else {
-            sortedLogs.forEach(log => {
-                const item = document.createElement('div');
-                item.className = 'log-item';
-                item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
-                container.appendChild(item);
-            });
-        }
-        
-        const modal = document.getElementById('allLogsModal');
-        if (modal) modal.style.display = 'flex';
-    });
-}
+document.getElementById('adminShowAllLogsBtn').addEventListener('click', function() {
+    const container = document.getElementById('allLogsContainer');
+    container.innerHTML = '';
+    
+    const sortedLogs = [...adminLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    if (sortedLogs.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#8a9aaa; padding:20px;">لا توجد سجلات</div>';
+    } else {
+        sortedLogs.forEach(log => {
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+            container.appendChild(item);
+        });
+    }
+    
+    document.getElementById('allLogsModal').style.display = 'flex';
+});
 
-const closeAllLogsBtn = document.getElementById('closeAllLogsBtn');
-if (closeAllLogsBtn) {
-    closeAllLogsBtn.addEventListener('click', function() {
-        const modal = document.getElementById('allLogsModal');
-        if (modal) modal.style.display = 'none';
-    });
-}
+document.getElementById('closeAllLogsBtn').addEventListener('click', function() {
+    document.getElementById('allLogsModal').style.display = 'none';
+});
 
-const allLogsModal = document.getElementById('allLogsModal');
-if (allLogsModal) {
-    allLogsModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-        }
-    });
-}
+// إغلاق النوافذ المنبثقة عند الضغط خارجها
+document.getElementById('allLogsModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+    }
+});
+
+document.getElementById('editStudentModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+    }
+});
 
 // ==========================================
-// 17. دوال المدير (إضافة طالب، إشعارات، إلخ)
+// 16. دوال المدير (إضافة طالب، إشعارات، إلخ)
 // ==========================================
 async function adminAddStudent() {
-    const name = document.getElementById('adminStudentName')?.value.trim();
-    const parentEmail = document.getElementById('adminParentEmail')?.value.trim();
-    const parentName = document.getElementById('adminParentName')?.value.trim();
-    const parentPhone = document.getElementById('adminParentPhone')?.value.trim();
-    const address = document.getElementById('adminAddress')?.value.trim();
+    const name = document.getElementById('adminStudentName').value.trim();
+    const parentEmail = document.getElementById('adminParentEmail').value.trim();
+    const parentName = document.getElementById('adminParentName').value.trim();
+    const parentPhone = document.getElementById('adminParentPhone').value.trim();
+    const address = document.getElementById('adminAddress').value.trim();
     if (!name || !parentEmail || !parentName || !parentPhone) {
         alert('جميع الحقول مطلوبة ما عدا العنوان');
         return;
@@ -1231,40 +1049,29 @@ async function adminAddStudent() {
     const confirmed = await showConfirmModal('إضافة طالب جديد', `تأكيد إضافة الطالب "${name}" لولي الأمر "${parentName}"؟`);
     if (!confirmed) return;
 
-    try {
-        const res = await fetchWithAuth('/api/students', {
-            method: 'POST',
-            body: JSON.stringify({ name, parentEmail, parentName, parentPhone, address })
-        });
-        if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.message || 'فشل الإضافة');
-        }
-        const studentNameInput = document.getElementById('adminStudentName');
-        const parentEmailInput = document.getElementById('adminParentEmail');
-        const parentNameInput = document.getElementById('adminParentName');
-        const parentPhoneInput = document.getElementById('adminParentPhone');
-        const addressInput = document.getElementById('adminAddress');
-        if (studentNameInput) studentNameInput.value = '';
-        if (parentEmailInput) parentEmailInput.value = '';
-        if (parentNameInput) parentNameInput.value = '';
-        if (parentPhoneInput) parentPhoneInput.value = '';
-        if (addressInput) addressInput.value = '';
+    const res = await fetchWithAuth('/api/students', {
+        method: 'POST',
+        body: JSON.stringify({ name, parentEmail, parentName, parentPhone, address })
+    });
+    if (res.ok) {
+        document.getElementById('adminStudentName').value = '';
+        document.getElementById('adminParentEmail').value = '';
+        document.getElementById('adminParentName').value = '';
+        document.getElementById('adminParentPhone').value = '';
+        document.getElementById('adminAddress').value = '';
         loadAdminStudents();
         addLog('➕ تم إضافة الطالب ' + name, new Date(), 'adminLogContainer');
-        const form = document.getElementById('addStudentForm');
-        const btn = document.getElementById('toggleAddStudentBtn');
-        if (form) form.style.display = 'none';
-        if (btn) btn.textContent = '➕ إضافة طالب جديد';
-    } catch (err) {
-        alert('خطأ: ' + err.message);
+        document.getElementById('addStudentForm').style.display = 'none';
+        document.getElementById('toggleAddStudentBtn').textContent = '➕ إضافة طالب جديد';
+    } else {
+        const data = await res.json();
+        alert(data.message || 'حدث خطأ');
     }
 }
 
 function toggleAddStudentForm() {
     const form = document.getElementById('addStudentForm');
     const btn = document.getElementById('toggleAddStudentBtn');
-    if (!form || !btn) return;
     if (form.style.display === 'none') {
         form.style.display = 'block';
         btn.innerHTML = '<i class="fas fa-times"></i> إغلاق نموذج الإضافة';
@@ -1275,7 +1082,7 @@ function toggleAddStudentForm() {
 }
 
 async function adminSendGeneralNotification() {
-    const msg = document.getElementById('adminNotificationMsg')?.value.trim();
+    const msg = document.getElementById('adminNotificationMsg').value.trim();
     if (!msg) return alert('اكتب رسالة الإشعار');
     
     const confirmed = await showConfirmModal('إرسال إشعار عام', 'هل أنت متأكد من إرسال هذا الإشعار لجميع أولياء الأمور؟');
@@ -1283,18 +1090,16 @@ async function adminSendGeneralNotification() {
 
     if (socket) {
         socket.emit('admin-notification', { message: msg });
-        const msgInput = document.getElementById('adminNotificationMsg');
-        if (msgInput) msgInput.value = '';
+        document.getElementById('adminNotificationMsg').value = '';
         addLog('📢 تم إرسال إشعار عام', new Date(), 'adminLogContainer');
-        alert('✅ تم إرسال الإشعار العام بنجاح');
     } else {
         alert('Socket غير متصل');
     }
 }
 
 async function adminSendParentNotification() {
-    const email = document.getElementById('adminParentEmailInput')?.value.trim();
-    const msg = document.getElementById('adminParentNotificationMsg')?.value.trim();
+    const email = document.getElementById('adminParentEmailInput').value.trim();
+    const msg = document.getElementById('adminParentNotificationMsg').value.trim();
     if (!email || !msg) return alert('املأ جميع الحقول');
     
     const confirmed = await showConfirmModal('إرسال إشعار خاص', `هل أنت متأكد من إرسال هذا الإشعار لولي الأمر (${email})؟`);
@@ -1302,18 +1107,15 @@ async function adminSendParentNotification() {
 
     if (socket) {
         socket.emit('admin-notification-to-parent', { parentEmail: email, message: msg });
-        const emailInput = document.getElementById('adminParentEmailInput');
-        const msgInput = document.getElementById('adminParentNotificationMsg');
-        if (emailInput) emailInput.value = '';
-        if (msgInput) msgInput.value = '';
-        alert('✅ تم إرسال الإشعار الخاص بنجاح');
+        document.getElementById('adminParentEmailInput').value = '';
+        document.getElementById('adminParentNotificationMsg').value = '';
     } else {
         alert('Socket غير متصل');
     }
 }
 
 // ==========================================
-// 18. دوال السجل (Logs) - كاملة
+// 17. دوال السجل (مع عرض آخر 5 سجلات فقط)
 // ==========================================
 function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
@@ -1338,12 +1140,9 @@ function renderAdminLogs(showOld) {
     const container = document.getElementById('adminLogContainer');
     if (!container) return;
 
-    const showOldBtn = document.getElementById('adminShowOldLogsBtn');
-    const hideOldBtn = document.getElementById('adminHideOldLogsBtn');
-    const showAllBtn = document.getElementById('adminShowAllLogsBtn');
-    if (showOldBtn) showOldBtn.style.display = 'none';
-    if (hideOldBtn) hideOldBtn.style.display = 'none';
-    if (showAllBtn) showAllBtn.style.display = 'none';
+    document.getElementById('adminShowOldLogsBtn').style.display = 'none';
+    document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+    document.getElementById('adminShowAllLogsBtn').style.display = 'none';
 
     if (adminLogs.length === 0) {
         container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد نشاطات بعد</div>';
@@ -1360,21 +1159,23 @@ function renderAdminLogs(showOld) {
 
     if (showOld) {
         logsToShow = sortedLogs;
-        if (showOldBtn) showOldBtn.style.display = 'none';
-        if (hideOldBtn) hideOldBtn.style.display = 'inline-flex';
-        if (showAllBtn) showAllBtn.style.display = 'none';
+        document.getElementById('adminShowOldLogsBtn').style.display = 'none';
+        document.getElementById('adminHideOldLogsBtn').style.display = 'inline-flex';
+        document.getElementById('adminShowAllLogsBtn').style.display = 'none';
     } else {
         const todayOnly = todayLogs.length > 0 ? todayLogs : sortedLogs.slice(0, 5);
         logsToShow = todayOnly.slice(0, 5);
         
         if (oldLogs.length > 0 || todayLogs.length > 5) {
-            if (showOldBtn) showOldBtn.style.display = 'inline-flex';
-            if (hideOldBtn) hideOldBtn.style.display = 'none';
-            if (sortedLogs.length > 5 && showAllBtn) showAllBtn.style.display = 'inline-flex';
+            document.getElementById('adminShowOldLogsBtn').style.display = 'inline-flex';
+            document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+            if (sortedLogs.length > 5) {
+                document.getElementById('adminShowAllLogsBtn').style.display = 'inline-flex';
+            }
         } else {
-            if (showOldBtn) showOldBtn.style.display = 'none';
-            if (hideOldBtn) hideOldBtn.style.display = 'none';
-            if (showAllBtn) showAllBtn.style.display = 'none';
+            document.getElementById('adminShowOldLogsBtn').style.display = 'none';
+            document.getElementById('adminHideOldLogsBtn').style.display = 'none';
+            document.getElementById('adminShowAllLogsBtn').style.display = 'none';
         }
     }
 
@@ -1400,7 +1201,7 @@ function toggleAdminOldLogs(show) {
 }
 
 // ==========================================
-// 19. دوال ولي الأمر - كاملة
+// 18. دوال ولي الأمر
 // ==========================================
 async function loadParentStudents() {
     try {
@@ -1440,10 +1241,8 @@ function renderParentLogs(showOld) {
     const container = document.getElementById('parentLogContainer');
     if (!container) return;
 
-    const showOldBtn = document.getElementById('parentShowOldLogsBtn');
-    const hideOldBtn = document.getElementById('parentHideOldLogsBtn');
-    if (showOldBtn) showOldBtn.style.display = 'none';
-    if (hideOldBtn) hideOldBtn.style.display = 'none';
+    document.getElementById('parentShowOldLogsBtn').style.display = 'none';
+    document.getElementById('parentHideOldLogsBtn').style.display = 'none';
 
     if (parentLogs.length === 0) {
         container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد سجلات بعد</div>';
@@ -1460,16 +1259,16 @@ function renderParentLogs(showOld) {
 
     if (showOld) {
         logsToShow = sortedLogs;
-        if (showOldBtn) showOldBtn.style.display = 'none';
-        if (hideOldBtn) hideOldBtn.style.display = 'inline-flex';
+        document.getElementById('parentShowOldLogsBtn').style.display = 'none';
+        document.getElementById('parentHideOldLogsBtn').style.display = 'inline-flex';
     } else {
         logsToShow = todayLogs.slice(0, 5);
         if (oldLogs.length > 0 || todayLogs.length > 5) {
-            if (showOldBtn) showOldBtn.style.display = 'inline-flex';
-            if (hideOldBtn) hideOldBtn.style.display = 'none';
+            document.getElementById('parentShowOldLogsBtn').style.display = 'inline-flex';
+            document.getElementById('parentHideOldLogsBtn').style.display = 'none';
         } else {
-            if (showOldBtn) showOldBtn.style.display = 'none';
-            if (hideOldBtn) hideOldBtn.style.display = 'none';
+            document.getElementById('parentShowOldLogsBtn').style.display = 'none';
+            document.getElementById('parentHideOldLogsBtn').style.display = 'none';
         }
     }
 
@@ -1495,497 +1294,96 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 20. دوال المدير العام (Super Admin) - كاملة
-// ==========================================
-async function loadTenants() {
-    try {
-        const res = await fetchWithAuth('/api/tenants');
-        if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.message || 'فشل جلب المؤسسات');
-        }
-        tenants = await res.json();
-        renderTenants();
-    } catch (err) {
-        console.error('❌ خطأ في جلب المؤسسات:', err);
-        const container = document.getElementById('tenantsList');
-        if (container) {
-            container.innerHTML = `<div class="loading-state">❌ فشل تحميل المؤسسات: ${err.message}</div>`;
-        }
-    }
-}
-
-function renderTenants() {
-    const container = document.getElementById('tenantsList');
-    if (!container) return;
-
-    if (tenants.length === 0) {
-        container.innerHTML = '<div class="loading-state">📭 لا توجد مؤسسات مسجلة</div>';
-        return;
-    }
-
-    let html = '<div class="tenants-grid">';
-    tenants.forEach(t => {
-        html += `
-            <div class="tenant-card">
-                <div class="tenant-header">
-                    <h3>${t.name}</h3>
-                    <span class="tenant-status ${t.isActive ? 'active' : 'inactive'}">${t.isActive ? '✅ نشط' : '❌ غير نشط'}</span>
-                </div>
-                <div class="tenant-info">
-                    <p><strong>النطاق الفرعي:</strong> ${t.subdomain}</p>
-                    <p><strong>البريد:</strong> ${t.email || 'غير محدد'}</p>
-                    <p><strong>الهاتف:</strong> ${t.phone || 'غير محدد'}</p>
-                    <p><strong>المدير:</strong> ${t.adminId ? t.adminId.name : 'غير معين'}</p>
-                </div>
-                <div class="tenant-actions">
-                    <button class="btn-edit" onclick="editTenant('${t._id}')"><i class="fas fa-edit"></i> تعديل</button>
-                    <button class="btn-toggle-status" onclick="toggleTenantStatus('${t._id}')">${t.isActive ? 'تعطيل' : 'تفعيل'}</button>
-                </div>
-            </div>
-        `;
-    });
-    html += '</div>';
-    container.innerHTML = html;
-}
-
-// ==========================================
-// 21. دوال المدير العام - الأزرار
-// ==========================================
-
-// فتح نافذة إضافة مؤسسة
-const addTenantBtn = document.getElementById('addTenantBtn');
-if (addTenantBtn) {
-    addTenantBtn.addEventListener('click', function() {
-        const modal = document.getElementById('addTenantModal');
-        if (modal) modal.style.display = 'flex';
-        console.log('✅ فتح نافذة إضافة مؤسسة');
-    });
-    console.log('✅ ربط addTenantBtn');
-} else {
-    console.warn('⚠️ addTenantBtn غير موجود');
-}
-
-// إغلاق نافذة إضافة مؤسسة
-const closeAddTenantBtn = document.getElementById('closeAddTenantBtn');
-if (closeAddTenantBtn) {
-    closeAddTenantBtn.addEventListener('click', function() {
-        const modal = document.getElementById('addTenantModal');
-        if (modal) modal.style.display = 'none';
-        console.log('✅ إغلاق نافذة إضافة مؤسسة');
-    });
-    console.log('✅ ربط closeAddTenantBtn');
-} else {
-    console.warn('⚠️ closeAddTenantBtn غير موجود');
-}
-
-// إغلاق النافذة عند الضغط خارجها
-const addTenantModal = document.getElementById('addTenantModal');
-if (addTenantModal) {
-    addTenantModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-        }
-    });
-}
-
-// حفظ إضافة مؤسسة جديدة
-const saveNewTenantBtn = document.getElementById('saveNewTenantBtn');
-if (saveNewTenantBtn) {
-    saveNewTenantBtn.addEventListener('click', async function() {
-        console.log('💾 محاولة إضافة مؤسسة جديدة...');
-        
-        const name = document.getElementById('newTenantName')?.value.trim();
-        const subdomain = document.getElementById('newTenantSubdomain')?.value.trim();
-        const address = document.getElementById('newTenantAddress')?.value.trim();
-        const phone = document.getElementById('newTenantPhone')?.value.trim();
-        const email = document.getElementById('newTenantEmail')?.value.trim();
-        const adminEmail = document.getElementById('newTenantAdminEmail')?.value.trim();
-
-        if (!name || !subdomain || !adminEmail) {
-            alert('اسم المؤسسة، النطاق الفرعي، وبريد المدير مطلوبة');
-            return;
-        }
-
-        const confirmed = await showConfirmModal(
-            'إضافة مؤسسة جديدة',
-            `هل أنت متأكد من إضافة المؤسسة "${name}" بالنطاق الفرعي "${subdomain}"؟`
-        );
-        if (!confirmed) return;
-
-        try {
-            const res = await fetchWithAuth('/api/tenants', {
-                method: 'POST',
-                body: JSON.stringify({ name, subdomain, address, phone, email, adminEmail })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'فشل إضافة المؤسسة');
-            
-            alert('✅ تم إضافة المؤسسة بنجاح');
-            const modal = document.getElementById('addTenantModal');
-            if (modal) modal.style.display = 'none';
-            
-            ['newTenantName','newTenantSubdomain','newTenantAddress','newTenantPhone','newTenantEmail','newTenantAdminEmail'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
-            
-            loadTenants();
-        } catch (err) {
-            alert('❌ ' + err.message);
-        }
-    });
-    console.log('✅ ربط saveNewTenantBtn');
-} else {
-    console.warn('⚠️ saveNewTenantBtn غير موجود');
-}
-
-// ==========================================
-// 22. دوال تعديل المؤسسة
-// ==========================================
-window.editTenant = async function(tenantId) {
-    try {
-        const res = await fetchWithAuth('/api/tenants');
-        if (!res.ok) throw new Error('فشل جلب بيانات المؤسسات');
-        const allTenants = await res.json();
-        const tenant = allTenants.find(t => t._id === tenantId);
-        if (!tenant) {
-            alert('المؤسسة غير موجودة');
-            return;
-        }
-
-        document.getElementById('editTenantId').value = tenant._id;
-        document.getElementById('editTenantName').value = tenant.name || '';
-        document.getElementById('editTenantAddress').value = tenant.address || '';
-        document.getElementById('editTenantPhone').value = tenant.phone || '';
-        document.getElementById('editTenantEmail').value = tenant.email || '';
-        document.getElementById('editTenantModal').style.display = 'flex';
-    } catch (err) {
-        alert('خطأ في جلب بيانات المؤسسة: ' + err.message);
-    }
-};
-
-// إغلاق نافذة تعديل المؤسسة
-const closeEditTenantBtn = document.getElementById('closeEditTenantBtn');
-if (closeEditTenantBtn) {
-    closeEditTenantBtn.addEventListener('click', function() {
-        document.getElementById('editTenantModal').style.display = 'none';
-    });
-    console.log('✅ ربط closeEditTenantBtn');
-} else {
-    console.warn('⚠️ closeEditTenantBtn غير موجود');
-}
-
-// إغلاق النافذة عند الضغط خارجها
-const editTenantModal = document.getElementById('editTenantModal');
-if (editTenantModal) {
-    editTenantModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-        }
-    });
-}
-
-// حفظ تعديلات المؤسسة
-const saveEditTenantBtn = document.getElementById('saveEditTenantBtn');
-if (saveEditTenantBtn) {
-    saveEditTenantBtn.addEventListener('click', async function() {
-        const id = document.getElementById('editTenantId')?.value;
-        const name = document.getElementById('editTenantName')?.value.trim();
-        const address = document.getElementById('editTenantAddress')?.value.trim();
-        const phone = document.getElementById('editTenantPhone')?.value.trim();
-        const email = document.getElementById('editTenantEmail')?.value.trim();
-
-        if (!id) { alert('خطأ: لم يتم العثور على معرف المؤسسة'); return; }
-        if (!name) { alert('اسم المؤسسة مطلوب'); return; }
-
-        const confirmed = await showConfirmModal(
-            'تعديل المؤسسة',
-            `هل أنت متأكد من حفظ التعديلات للمؤسسة "${name}"؟`
-        );
-        if (!confirmed) return;
-
-        try {
-            const res = await fetchWithAuth('/api/tenants/' + id, {
-                method: 'PUT',
-                body: JSON.stringify({ name, address, phone, email })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'فشل تحديث المؤسسة');
-            
-            alert('✅ تم تحديث المؤسسة بنجاح');
-            document.getElementById('editTenantModal').style.display = 'none';
-            loadTenants();
-        } catch (err) {
-            alert('❌ ' + err.message);
-        }
-    });
-    console.log('✅ ربط saveEditTenantBtn');
-} else {
-    console.warn('⚠️ saveEditTenantBtn غير موجود');
-}
-
-// ==========================================
-// 23. تبديل حالة المؤسسة (تفعيل/تعطيل)
-// ==========================================
-window.toggleTenantStatus = async function(tenantId) {
-    try {
-        const res = await fetchWithAuth('/api/tenants');
-        if (!res.ok) throw new Error('فشل جلب بيانات المؤسسات');
-        const allTenants = await res.json();
-        const tenant = allTenants.find(t => t._id === tenantId);
-        if (!tenant) {
-            alert('المؤسسة غير موجودة');
-            return;
-        }
-
-        const newStatus = !tenant.isActive;
-        const statusText = newStatus ? 'تفعيل' : 'تعطيل';
-        const confirmed = await showConfirmModal(
-            `${statusText} المؤسسة`,
-            `هل أنت متأكد من ${statusText} المؤسسة "${tenant.name}"؟`
-        );
-        if (!confirmed) return;
-
-        const updateRes = await fetchWithAuth('/api/tenants/' + tenantId, {
-            method: 'PUT',
-            body: JSON.stringify({ isActive: newStatus })
-        });
-        const data = await updateRes.json();
-        if (!updateRes.ok) throw new Error(data.message || 'فشل تغيير الحالة');
-        
-        alert(`✅ تم ${statusText} المؤسسة بنجاح`);
-        loadTenants();
-    } catch (err) {
-        alert('❌ ' + err.message);
-    }
-};
-
-// ==========================================
-// 24. وظيفة ربط أحداث المصادقة (المدخل الرئيسي)
+// 19. أحداث المصادقة وربط الأحداث (مع التحقق من وجود العناصر)
 // ==========================================
 function setupAuthEvents() {
-    console.log('🔧 جاري ربط أحداث المصادقة...');
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        if (!email || !password) return alert('املأ جميع الحقول');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل تسجيل الدخول');
+        }
+    });
 
-    // ---------- زر تسجيل الدخول ----------
-    const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', async function() {
-            console.log('🔑 محاولة تسجيل الدخول...');
-            const email = document.getElementById('loginEmail')?.value.trim();
-            const password = document.getElementById('loginPassword')?.value.trim();
-            
-            if (!email || !password) {
-                alert('الرجاء إدخال البريد الإلكتروني وكلمة المرور');
-                return;
-            }
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const role = document.getElementById('regRole').value;
+        if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
+        if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, phone, role })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل التسجيل');
+        }
+    });
 
-            try {
-                const res = await fetch(API_BASE_URL + '/api/auth/login', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'x-tenant-subdomain': getTenantSubdomain()
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.message || 'فشل تسجيل الدخول');
-                }
-                console.log('✅ تم تسجيل الدخول بنجاح:', data.user);
-                saveAuth(data);
-            } catch (err) {
-                console.error('❌ خطأ في تسجيل الدخول:', err);
-                alert(err.message || 'فشل تسجيل الدخول');
-            }
-        });
-        console.log('✅ ربط زر تسجيل الدخول (loginBtn)');
-    } else {
-        console.warn('⚠️ loginBtn غير موجود في الصفحة');
-    }
+    document.getElementById('showRegister').addEventListener('click', showRegister);
+    document.getElementById('showLogin').addEventListener('click', showLogin);
+    document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
+    document.getElementById('logoutBtnParent').addEventListener('click', logout);
 
-    // ---------- زر التسجيل ----------
-    const registerBtn = document.getElementById('registerBtn');
-    if (registerBtn) {
-        registerBtn.addEventListener('click', async function() {
-            console.log('📝 محاولة التسجيل...');
-            const name = document.getElementById('regName')?.value.trim();
-            const email = document.getElementById('regEmail')?.value.trim();
-            const password = document.getElementById('regPassword')?.value.trim();
-            const phone = document.getElementById('regPhone')?.value.trim();
-            const role = document.getElementById('regRole')?.value || 'parent';
+    document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsForm);
+    document.getElementById('saveSettingsBtn').addEventListener('click', saveSchoolSettings);
+    document.getElementById('toggleAddStudentBtn').addEventListener('click', toggleAddStudentForm);
+    document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
+    document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
+    document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
+    
+    document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
+        toggleAllStudents(true);
+    });
+    document.getElementById('toggleAllOutsideBtn').addEventListener('click', function() {
+        toggleAllStudents(false);
+    });
 
-            if (!name || !email || !password || !phone) {
-                alert('الرجاء ملء جميع الحقول');
-                return;
-            }
-            if (password.length < 6) {
-                alert('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-                return;
-            }
+    document.getElementById('adminShowOldLogsBtn').addEventListener('click', function() {
+        toggleAdminOldLogs(true);
+    });
+    document.getElementById('adminHideOldLogsBtn').addEventListener('click', function() {
+        toggleAdminOldLogs(false);
+    });
 
-            try {
-                const res = await fetch(API_BASE_URL + '/api/auth/register', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'x-tenant-subdomain': getTenantSubdomain()
-                    },
-                    body: JSON.stringify({ name, email, password, phone, role })
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.message || 'فشل التسجيل');
-                }
-                console.log('✅ تم التسجيل بنجاح:', data.user);
-                saveAuth(data);
-            } catch (err) {
-                console.error('❌ خطأ في التسجيل:', err);
-                alert(err.message || 'فشل التسجيل');
-            }
-        });
-        console.log('✅ ربط زر التسجيل (registerBtn)');
-    } else {
-        console.warn('⚠️ registerBtn غير موجود في الصفحة');
-    }
+    document.getElementById('parentShowOldLogsBtn').addEventListener('click', function() {
+        toggleParentOldLogs(true);
+    });
+    document.getElementById('parentHideOldLogsBtn').addEventListener('click', function() {
+        toggleParentOldLogs(false);
+    });
 
-    // ---------- روابط التبديل بين الشاشات ----------
-    const showRegisterLink = document.getElementById('showRegister');
-    if (showRegisterLink) {
-        showRegisterLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            showRegister();
-        });
-        console.log('✅ ربط showRegister');
-    }
-
-    const showLoginLink = document.getElementById('showLogin');
-    if (showLoginLink) {
-        showLoginLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            showLogin();
-        });
-        console.log('✅ ربط showLogin');
-    }
-
-    // ---------- أزرار تسجيل الخروج ----------
-    const logoutBtnAdmin = document.getElementById('logoutBtnAdmin');
-    if (logoutBtnAdmin) logoutBtnAdmin.addEventListener('click', logout);
-    const logoutBtnParent = document.getElementById('logoutBtnParent');
-    if (logoutBtnParent) logoutBtnParent.addEventListener('click', logout);
-    const logoutBtnSuperAdmin = document.getElementById('logoutBtnSuperAdmin');
-    if (logoutBtnSuperAdmin) logoutBtnSuperAdmin.addEventListener('click', logout);
-
-    // ---------- أزرار التغيير الجماعي ----------
-    const toggleAllInsideBtn = document.getElementById('toggleAllInsideBtn');
-    if (toggleAllInsideBtn) {
-        toggleAllInsideBtn.addEventListener('click', function() { toggleAllStudents(true); });
-        console.log('✅ ربط toggleAllInsideBtn');
-    }
-    const toggleAllOutsideBtn = document.getElementById('toggleAllOutsideBtn');
-    if (toggleAllOutsideBtn) {
-        toggleAllOutsideBtn.addEventListener('click', function() { toggleAllStudents(false); });
-        console.log('✅ ربط toggleAllOutsideBtn');
-    }
-
-    // ---------- أزرار الإشعارات ----------
-    const adminSendNotificationBtn = document.getElementById('adminSendNotificationBtn');
-    if (adminSendNotificationBtn) {
-        adminSendNotificationBtn.addEventListener('click', adminSendGeneralNotification);
-        console.log('✅ ربط adminSendNotificationBtn');
-    }
-    const adminSendParentNotificationBtn = document.getElementById('adminSendParentNotificationBtn');
-    if (adminSendParentNotificationBtn) {
-        adminSendParentNotificationBtn.addEventListener('click', adminSendParentNotification);
-        console.log('✅ ربط adminSendParentNotificationBtn');
-    }
-
-    // ---------- أزرار السجل ----------
-    const adminShowOldLogsBtn = document.getElementById('adminShowOldLogsBtn');
-    if (adminShowOldLogsBtn) {
-        adminShowOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(true); });
-        console.log('✅ ربط adminShowOldLogsBtn');
-    }
-    const adminHideOldLogsBtn = document.getElementById('adminHideOldLogsBtn');
-    if (adminHideOldLogsBtn) {
-        adminHideOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(false); });
-        console.log('✅ ربط adminHideOldLogsBtn');
-    }
-
-    // ---------- أزرار الإشعارات القديمة ----------
-    const showOldNotificationsBtn = document.getElementById('showOldNotificationsBtn');
-    if (showOldNotificationsBtn) {
-        showOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(true); });
-        console.log('✅ ربط showOldNotificationsBtn');
-    }
-    const hideOldNotificationsBtn = document.getElementById('hideOldNotificationsBtn');
-    if (hideOldNotificationsBtn) {
-        hideOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(false); });
-        console.log('✅ ربط hideOldNotificationsBtn');
-    }
-
-    // ---------- أزرار ولي الأمر ----------
-    const parentShowOldLogsBtn = document.getElementById('parentShowOldLogsBtn');
-    if (parentShowOldLogsBtn) {
-        parentShowOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(true); });
-        console.log('✅ ربط parentShowOldLogsBtn');
-    }
-    const parentHideOldLogsBtn = document.getElementById('parentHideOldLogsBtn');
-    if (parentHideOldLogsBtn) {
-        parentHideOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(false); });
-        console.log('✅ ربط parentHideOldLogsBtn');
-    }
-
-    // ---------- أزرار إعدادات المدرسة ----------
-    const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
-    if (toggleSettingsBtn) {
-        toggleSettingsBtn.addEventListener('click', toggleSettingsForm);
-        console.log('✅ ربط toggleSettingsBtn');
-    }
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-    if (saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', saveSchoolSettings);
-        console.log('✅ ربط saveSettingsBtn');
-    }
-
-    // ---------- أزرار إضافة طالب ----------
-    const toggleAddStudentBtn = document.getElementById('toggleAddStudentBtn');
-    if (toggleAddStudentBtn) {
-        toggleAddStudentBtn.addEventListener('click', toggleAddStudentForm);
-        console.log('✅ ربط toggleAddStudentBtn');
-    }
-    const adminAddBtn = document.getElementById('adminAddBtn');
-    if (adminAddBtn) {
-        adminAddBtn.addEventListener('click', adminAddStudent);
-        console.log('✅ ربط adminAddBtn');
-    }
-
-    console.log('🔧 تم ربط جميع الأحداث بنجاح!');
+    document.getElementById('showOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(true);
+    });
+    document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(false);
+    });
 }
 
 // ==========================================
-// 25. بدء التطبيق
+// 20. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 بدء التطبيق...');
-
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
-    }
-
-    loadTranslations(currentLanguage);
-    
-    const langSwitcher = document.createElement('div');
-    langSwitcher.className = 'lang-switcher';
-    langSwitcher.innerHTML = `
-        <button data-lang="ar" class="lang-btn ${currentLanguage === 'ar' ? 'active' : ''}" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
-        <button data-lang="en" class="lang-btn ${currentLanguage === 'en' ? 'active' : ''}" onclick="switchLanguage('en')">🇬🇧 English</button>
-        <button data-lang="fr" class="lang-btn ${currentLanguage === 'fr' ? 'active' : ''}" onclick="switchLanguage('fr')">🇫🇷 Français</button>
-    `;
-    const header = document.querySelector('header');
-    if (header) {
-        header.appendChild(langSwitcher);
     }
 
     loadSchoolSettings();
@@ -1996,18 +1394,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const user = JSON.parse(localStorage.getItem('user'));
             if (user) {
                 currentUser = user;
-                if (currentUser.role === 'super_admin') {
-                    showSuperAdminDashboard();
-                } else if (currentUser.role === 'admin') {
+                if (currentUser.role === 'admin') {
                     showAdminDashboard();
                 } else {
                     showParentDashboard();
                 }
                 return;
             }
-        } catch(e) {
-            console.error('خطأ في قراءة المستخدم:', e);
-        }
+        } catch(e) {}
     }
     showLogin();
 });
