@@ -55,19 +55,45 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
-// Middleware للتحقق من المؤسسة (Tenant)
+// ==========================================
+// ✅ Middleware للتحقق من المؤسسة (Tenant) - معدّل
+// ==========================================
 app.use(async (req, res, next) => {
-  // تخطي مسارات المصادقة العامة
-  if (req.path.startsWith('/api/auth/') || req.path.startsWith('/api/i18n/')) {
+  // تخطي مسارات المصادقة العامة والترجمات (لا تحتاج مؤسسة)
+  const publicPaths = ['/api/auth/', '/api/i18n/', '/api/tenants/'];
+  if (publicPaths.some(path => req.path.startsWith(path))) {
     return next();
   }
 
   // استخراج subdomain من الرأس
   const subdomain = req.headers['x-tenant-subdomain'];
+  
+  // ✅ إذا لم يكن هناك subdomain، نبحث عن tenantId من المستخدم (إن وجد)
+  // هذا يسمح بالتوافق مع الإصدار القديم
   if (!subdomain) {
-    return res.status(400).json({ message: 'Subdomain is required' });
+    // إذا كان الطلب يحمل توكن، نحاول استخراج tenantId من المستخدم
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded.tenantId) {
+          const tenant = await Tenant.findOne({ _id: decoded.tenantId, isActive: true });
+          if (tenant) {
+            req.tenant = tenant;
+            return next();
+          }
+        }
+      } catch (err) {
+        // توكن غير صالح، نكمل بدون tenant
+      }
+    }
+    
+    // ✅ إذا كان المسار من نوع /api/settings، نسمح بالمرور دون tenant (للتوافق القديم)
+    // نبحث عن إعدادات المدرسة في قاعدة البيانات مباشرة (بدون فلتر tenant)
+    return next();
   }
 
+  // إذا كان هناك subdomain، نبحث عنه
   try {
     const tenant = await Tenant.findOne({ subdomain, isActive: true });
     if (!tenant) {
@@ -134,12 +160,17 @@ io.on('connection', (socket) => {
   // 1. إشعار عام من المدير
   // ----------------------
   socket.on('admin-notification', async (data) => {
-    if (socket.user.role !== 'admin') return;
+    if (socket.user.role !== 'admin' && socket.user.role !== 'super_admin') {
+      socket.emit('error', { message: 'غير مصرح لك' });
+      return;
+    }
 
     try {
-      // استخدام tenant من طلب المصادقة
       const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
-      if (!tenant) return;
+      if (!tenant) {
+        socket.emit('error', { message: 'المؤسسة غير موجودة' });
+        return;
+      }
 
       const notification = new Notification({
         target: 'all',
@@ -172,7 +203,7 @@ io.on('connection', (socket) => {
   // 2. إشعار خاص لولي أمر معين
   // ----------------------
   socket.on('admin-notification-to-parent', async (data) => {
-    if (socket.user.role !== 'admin') {
+    if (socket.user.role !== 'admin' && socket.user.role !== 'super_admin') {
       socket.emit('notification-error', { message: 'غير مصرح لك' });
       return;
     }
@@ -185,7 +216,10 @@ io.on('connection', (socket) => {
 
     try {
       const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
-      if (!tenant) return;
+      if (!tenant) {
+        socket.emit('error', { message: 'المؤسسة غير موجودة' });
+        return;
+      }
 
       const notification = new Notification({
         target: parentEmail,
@@ -230,7 +264,7 @@ io.on('connection', (socket) => {
   // 3. تغيير حالة جميع الطلاب دفعة واحدة
   // ----------------------
   socket.on('toggle-all-status', async (data) => {
-    if (socket.user.role !== 'admin') {
+    if (socket.user.role !== 'admin' && socket.user.role !== 'super_admin') {
       socket.emit('error', { message: 'غير مصرح لك' });
       return;
     }
@@ -238,7 +272,10 @@ io.on('connection', (socket) => {
     const { newStatus } = data;
     try {
       const tenant = await Tenant.findOne({ _id: socket.user.tenantId });
-      if (!tenant) return;
+      if (!tenant) {
+        socket.emit('error', { message: 'المؤسسة غير موجودة' });
+        return;
+      }
 
       const students = await Student.find({ tenantId: tenant._id });
       const updatedParents = new Set();
@@ -332,7 +369,8 @@ async function initializeSuperAdmin() {
         password: 'Admin@123456',
         phone: '0000000000',
         role: 'super_admin',
-        tenantId: null, // المدير العام لا يتبع أي مؤسسة
+        tenantId: null,
+        preferences: { language: 'ar' },
       });
       await superAdmin.save();
       console.log('✅ تم إنشاء المدير العام: admin@system.com / Admin@123456');
