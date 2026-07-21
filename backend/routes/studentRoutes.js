@@ -6,7 +6,7 @@ const Attendance = require('../models/Attendance');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
-const { sendPushNotificationToAll } = require('../utils/notifications');
+const { sendPushNotificationToParent } = require('../utils/notifications'); // ✅ استيراد الدالة الجديدة
 const QRCode = require('qrcode');
 
 // ==========================================
@@ -102,12 +102,15 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       parentEmail: student.parentEmail,
     });
 
-    // 3️⃣ إرسال Web Push لجميع المشتركين
-    await sendPushNotificationToAll(
-      'تحديث حالة ابنك',
-      message,
-      { url: '/parent-dashboard' }
-    );
+    // 3️⃣ إرسال Web Push لولي الأمر فقط ✅ (تم التعديل هنا)
+    if (student.parentEmail) {
+      await sendPushNotificationToParent(
+        'تحديث حالة ابنك',
+        message,
+        { url: '/parent-dashboard' },
+        student.parentEmail // ✅ نرسل فقط لهذا البريد
+      );
+    }
 
     res.json(student);
   } catch (err) {
@@ -210,7 +213,7 @@ router.post('/scan-qr', auth, async (req, res) => {
 });
 
 // ==========================================
-// 7. تحميل QR Code كصورة
+// 7. تحميل QR Code كصورة (مع ترميز اسم الملف)
 // ==========================================
 router.get('/:id/qr', auth, async (req, res) => {
   try {
@@ -236,8 +239,12 @@ router.get('/:id/qr', auth, async (req, res) => {
       errorCorrectionLevel: 'H',
     });
 
+    // ✅ تصحيح اسم الملف الذي يحتوي على أحرف عربية
+    const fileName = `QR_${student.name}_${student.studentId}.png`;
+    const encodedFileName = encodeURIComponent(fileName); // ترميز اسم الملف
+
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Content-Disposition', `attachment; filename=QR_${student.name}_${student.studentId}.png`);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
     res.send(qrCodeBuffer);
 
   } catch (err) {
