@@ -1,5 +1,5 @@
 // ==========================================
-// 1. رابط الخادم (تلقائي حسب البيئة)
+// 1. رابط الخادم
 // ==========================================
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_BASE_URL = isLocal 
@@ -20,15 +20,91 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
-let tenants = [];
 
 // متغيرات الماسح الضوئي
 let html5QrCode = null;
 let currentCameraId = null;
 let availableCameras = [];
 
-// متغيرات النظام متعدد المؤسسات
+// ✅ متغيرات النظام متعدد المؤسسات
 let currentTenantSubdomain = localStorage.getItem('tenantSubdomain') || 'demo';
+let tenants = [];
+
+// ✅ دالة لتحديث subdomain في كل طلب
+function getTenantSubdomain() {
+    return currentTenantSubdomain;
+}
+
+// ==========================================
+// 3. دوال API مع التوكن (معدلة لإضافة subdomain)
+// ==========================================
+function fetchWithAuth(url, options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'x-tenant-subdomain': getTenantSubdomain(),
+    };
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    } else {
+        console.warn('⚠️ fetchWithAuth: لا يوجد توكن');
+        return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
+    }
+
+    return fetch(API_BASE_URL + url, {
+        ...options,
+        headers: { ...headers, ...options.headers }
+    });
+}
+
+// ==========================================
+// 4. دوال المصادقة (معدلة لإضافة subdomain في طلب login/register)
+// ==========================================
+function setupAuthEvents() {
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        if (!email || !password) return alert('املأ جميع الحقول');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/login', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-tenant-subdomain': getTenantSubdomain()
+                },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'فشل تسجيل الدخول');
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل تسجيل الدخول');
+        }
+    });
+
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const role = document.getElementById('regRole').value;
+        if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
+        if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/register', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-tenant-subdomain': getTenantSubdomain()
+                },
+                body: JSON.stringify({ name, email, password, phone, role })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'فشل التسجيل');
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل التسجيل');
+        }
+    });
 
 // ==========================================
 // 3. نظام الترجمات (i18n)
