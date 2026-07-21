@@ -8,7 +8,69 @@ const API_BASE_URL = isLocal
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
-// 2. إدارة التوكن والمستخدم والمتغيرات العامة
+// 2. نظام الترجمات (i18n)
+// ==========================================
+let currentLanguage = localStorage.getItem('language') || 'ar';
+let translations = {};
+
+async function loadTranslations(lang) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/i18n/${lang}`);
+    if (!res.ok) throw new Error('فشل تحميل الترجمات');
+    translations = await res.json();
+    currentLanguage = lang;
+    localStorage.setItem('language', lang);
+    applyTranslations();
+  } catch (err) {
+    console.error('❌ خطأ في تحميل الترجمات:', err);
+  }
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const translation = getTranslation(key);
+    if (translation) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = translation;
+      } else {
+        el.textContent = translation;
+      }
+    }
+  });
+}
+
+function getTranslation(key, params = {}) {
+  const keys = key.split('.');
+  let value = translations;
+  for (const k of keys) {
+    if (value && value[k] !== undefined) {
+      value = value[k];
+    } else {
+      return key;
+    }
+  }
+  if (typeof value === 'string') {
+    for (const [paramKey, paramValue] of Object.entries(params)) {
+      value = value.replace(`{${paramKey}}`, paramValue);
+    }
+  }
+  return value;
+}
+
+function switchLanguage(lang) {
+  if (lang === currentLanguage) return;
+  loadTranslations(lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.dir = dir;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+}
+
+// ==========================================
+// 3. إدارة التوكن والمستخدم والمتغيرات العامة
 // ==========================================
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -27,7 +89,7 @@ let currentCameraId = null;
 let availableCameras = [];
 
 // ==========================================
-// 3. دوال مساعدة
+// 4. دوال مساعدة
 // ==========================================
 function getStatusText(isInside) {
     return isInside ? 'داخل 🏫' : 'خارج 🚪';
@@ -64,7 +126,7 @@ function showBrowserNotification(title, body) {
 }
 
 // ==========================================
-// 4. نافذة التأكيد (Modal)
+// 5. نافذة التأكيد (Modal)
 // ==========================================
 let modalResolve = null;
 
@@ -88,7 +150,7 @@ document.getElementById('modalCancelBtn').addEventListener('click', function() {
 });
 
 // ==========================================
-// 5. دوال المصادقة
+// 6. دوال المصادقة
 // ==========================================
 function saveAuth(data) {
     token = data.token;
@@ -100,9 +162,13 @@ function saveAuth(data) {
         setTimeout(() => {
             requestNotificationPermission();
         }, 1500);
+        // ضبط اللغة المفضلة للمستخدم
+        if (currentUser.preferences && currentUser.preferences.language) {
+            switchLanguage(currentUser.preferences.language);
+        }
     }
 
-    if (currentUser.role === 'admin') {
+    if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
         showAdminDashboard();
     } else {
         showParentDashboard();
@@ -166,7 +232,7 @@ function showParentDashboard() {
 }
 
 // ==========================================
-// 6. Socket.io
+// 7. Socket.io
 // ==========================================
 function connectSocket() {
     if (socket) { socket.disconnect(); socket = null; }
@@ -175,7 +241,7 @@ function connectSocket() {
     socket.on('connect', () => console.log('✅ Socket متصل'));
 
     socket.on('status-changed', (data) => {
-        if (currentUser.role === 'admin') {
+        if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
             loadAdminStudents();
             loadAdminLogs();
         } else {
@@ -198,7 +264,7 @@ function connectSocket() {
             allNotifications.unshift(newNotification);
             renderNotifications(showOldNotifications);
             showBrowserNotification('📢 إشعار من المدرسة', data.message);
-        } else if (currentUser.role === 'admin') {
+        } else if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
             loadAdminLogs();
         }
     });
@@ -215,7 +281,7 @@ function connectSocket() {
 }
 
 // ==========================================
-// 7. دوال API مع التوكن
+// 8. دوال API مع التوكن
 // ==========================================
 function fetchWithAuth(url, options = {}) {
     const headers = {
@@ -235,7 +301,7 @@ function fetchWithAuth(url, options = {}) {
 }
 
 // ==========================================
-// 8. دوال إعدادات المدرسة
+// 9. دوال إعدادات المدرسة
 // ==========================================
 async function loadSchoolSettings() {
     try {
@@ -262,7 +328,7 @@ function applySchoolSettings() {
         logoImg.style.display = 'none';
     }
 
-    if (currentUser && currentUser.role === 'admin') {
+    if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin')) {
         document.getElementById('settingsSchoolName').value = schoolSettings.schoolName || '';
         document.getElementById('settingsAddress').value = schoolSettings.address || '';
         document.getElementById('settingsPhone').value = schoolSettings.phone || '';
@@ -354,7 +420,7 @@ document.getElementById('settingsLogoUpload').addEventListener('change', functio
 });
 
 // ==========================================
-// 9. دوال QR Code
+// 10. دوال QR Code
 // ==========================================
 window.downloadQR = function(studentId) {
     fetchWithAuth('/api/students/' + studentId + '/qr')
@@ -529,7 +595,7 @@ function onScanSuccess(decodedText, decodedResult) {
     .then(data => {
         if (data.success) {
             resultsContainer.innerHTML = '✅ ' + data.message;
-            if (currentUser.role === 'admin') {
+            if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
                 loadAdminStudents();
                 loadAdminLogs();
             } else {
@@ -575,7 +641,7 @@ document.getElementById('closeScannerBtn').addEventListener('click', closeScanne
 document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
 
 // ==========================================
-// 10. دوال الإشعارات (Web Push)
+// 11. دوال الإشعارات (Web Push)
 // ==========================================
 async function requestNotificationPermission() {
     if (!('serviceWorker' in navigator)) {
@@ -723,7 +789,7 @@ async function unsubscribeFromPush() {
 }
 
 // ==========================================
-// 11. دوال الإشعارات (داخل التطبيق)
+// 12. دوال الإشعارات (داخل التطبيق)
 // ==========================================
 async function loadAdminNotifications() {
     try {
@@ -833,7 +899,7 @@ function toggleOldNotifications(show) {
 }
 
 // ==========================================
-// 12. دوال التغيير الجماعي
+// 13. دوال التغيير الجماعي
 // ==========================================
 async function toggleAllStudents(status) {
     const statusText = status ? 'داخل 🏫' : 'خارج 🚪';
@@ -849,7 +915,7 @@ async function toggleAllStudents(status) {
 }
 
 // ==========================================
-// 13. دوال المدير
+// 14. دوال المدير
 // ==========================================
 async function loadAdminStudents() {
     try {
@@ -929,7 +995,7 @@ window.adminDelete = async function(id) {
 };
 
 // ==========================================
-// 14. تعديل معلومات الطالب
+// 15. تعديل معلومات الطالب
 // ==========================================
 window.openEditStudent = async function(studentId) {
     try {
@@ -993,7 +1059,7 @@ document.getElementById('closeEditStudentBtn').addEventListener('click', functio
 });
 
 // ==========================================
-// 15. عرض جميع سجلات النشاطات في نافذة منبثقة
+// 16. عرض جميع سجلات النشاطات في نافذة منبثقة
 // ==========================================
 document.getElementById('adminShowAllLogsBtn').addEventListener('click', function() {
     const container = document.getElementById('allLogsContainer');
@@ -1033,7 +1099,7 @@ document.getElementById('editStudentModal').addEventListener('click', function(e
 });
 
 // ==========================================
-// 16. دوال المدير (إضافة طالب، إشعارات، إلخ)
+// 17. دوال المدير (إضافة طالب، إشعارات، إلخ)
 // ==========================================
 async function adminAddStudent() {
     const name = document.getElementById('adminStudentName').value.trim();
@@ -1115,7 +1181,7 @@ async function adminSendParentNotification() {
 }
 
 // ==========================================
-// 17. دوال السجل (مع عرض آخر 5 سجلات فقط)
+// 18. دوال السجل (مع عرض آخر 5 سجلات فقط)
 // ==========================================
 function addLog(message, date, containerId) {
     const container = document.getElementById(containerId);
@@ -1201,7 +1267,7 @@ function toggleAdminOldLogs(show) {
 }
 
 // ==========================================
-// 18. دوال ولي الأمر
+// 19. دوال ولي الأمر
 // ==========================================
 async function loadParentStudents() {
     try {
@@ -1294,7 +1360,7 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
-// 19. أحداث المصادقة وربط الأحداث (مع التحقق من وجود العناصر)
+// 20. أحداث المصادقة وربط الأحداث (مع التحقق من وجود العناصر)
 // ==========================================
 function setupAuthEvents() {
     document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -1376,25 +1442,43 @@ function setupAuthEvents() {
     document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
         toggleOldNotifications(false);
     });
+
+    // أزرار تبديل اللغة
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            switchLanguage(this.dataset.lang);
+        });
+    });
 }
 
 // ==========================================
-// 20. بدء التطبيق
+// 21. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
 
+    // تحميل إعدادات المدرسة أولاً
     loadSchoolSettings();
+    
+    // تحميل الترجمات
+    loadTranslations(currentLanguage);
+    
+    // ربط الأحداث
     setupAuthEvents();
 
+    // التحقق من وجود توكن
     if (token) {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
             if (user) {
                 currentUser = user;
-                if (currentUser.role === 'admin') {
+                // ضبط اللغة المفضلة للمستخدم
+                if (currentUser.preferences && currentUser.preferences.language) {
+                    switchLanguage(currentUser.preferences.language);
+                }
+                if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
                     showAdminDashboard();
                 } else {
                     showParentDashboard();
