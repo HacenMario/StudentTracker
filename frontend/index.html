@@ -12,9 +12,46 @@
         .lang-switcher {
             display: flex;
             gap: 8px;
-            margin: 0 15px;
+            margin: 10px 0;
+            justify-content: center;
         }
         .lang-btn {
+            background: transparent;
+            border: 2px solid #e2eaf2;
+            color: #1a365d;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.3s;
+            font-family: 'Tajawal', sans-serif;
+        }
+        .lang-btn:hover {
+            background: rgba(43, 108, 176, 0.1);
+            border-color: #2b6cb0;
+        }
+        .lang-btn.active {
+            background: #2b6cb0;
+            color: white;
+            border-color: #2b6cb0;
+        }
+        .lang-btn i {
+            margin-left: 4px;
+        }
+        html[dir="ltr"] .app-wrapper {
+            direction: ltr;
+        }
+        html[dir="rtl"] .app-wrapper {
+            direction: rtl;
+        }
+        /* زر اللغة في الهيدر (للوحات الداخلية) */
+        .header-lang-switcher {
+            display: flex;
+            gap: 8px;
+            margin: 0 15px;
+        }
+        .header-lang-btn {
             background: transparent;
             border: 2px solid rgba(255,255,255,0.2);
             color: #1a365d;
@@ -26,33 +63,27 @@
             transition: 0.3s;
             font-family: 'Tajawal', sans-serif;
         }
-        .lang-btn:hover {
+        .header-lang-btn:hover {
             background: rgba(43, 108, 176, 0.1);
         }
-        .lang-btn.active {
+        .header-lang-btn.active {
             background: #2b6cb0;
             color: white;
             border-color: #2b6cb0;
         }
-        html[dir="ltr"] .app-wrapper {
-            direction: ltr;
-        }
-        html[dir="rtl"] .app-wrapper {
-            direction: rtl;
-        }
     </style>
 </head>
 <body>
-    <!-- =================================== -->
+    <!-- ========================================== -->
     <!-- قسم اسم المؤسسة مع الشعار -->
-    <!-- =================================== -->
+    <!-- ========================================== -->
     <div class="school-header" id="schoolHeader">
         <div class="school-info">
             <div class="school-logo-container">
                 <img id="schoolLogo" src="" alt="شعار المدرسة" style="display:none; max-height:60px; border-radius:12px;">
                 <h1 id="schoolName" data-i18n="school.name">🏫 مدرسة النور الابتدائية</h1>
             </div>
-            <p id="schoolAddress" data-i18n="school.address">📍 المدينة التعليمية</p>
+            <p id="schoolAddress" data-i18n="school.address">📍 شارع السلام، المدينة التعليمية</p>
             <p id="schoolContact" data-i18n="school.phone">📞 الهاتف: 0555 123 456 | ✉️ info@school.edu</p>
         </div>
     </div>
@@ -60,16 +91,27 @@
     <div class="app-wrapper">
         <div class="container" id="appContainer">
 
+            <!-- ========================================== -->
             <!-- شاشة تسجيل الدخول -->
+            <!-- ========================================== -->
             <div id="loginScreen">
                 <h2 data-i18n="auth.login">🔐 تسجيل الدخول</h2>
                 <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" data-i18n="auth.email">
                 <input type="password" id="loginPassword" placeholder="كلمة المرور" data-i18n="auth.password">
                 <button id="loginBtn"><span data-i18n="auth.login">دخول</span> <i class="fas fa-arrow-left"></i></button>
+                
+                <!-- ✅ زر تغيير اللغة في شاشة تسجيل الدخول -->
+                <div class="lang-switcher">
+                    <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')"><i class="fas fa-flag"></i> 🇸🇦 عربي</button>
+                    <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')"><i class="fas fa-flag"></i> 🇫🇷 Français</button>
+                </div>
+                
                 <p><span data-i18n="auth.no_account">ليس لديك حساب؟</span> <a href="#" id="showRegister" data-i18n="auth.register_now">سجل الآن</a></p>
             </div>
 
+            <!-- ========================================== -->
             <!-- شاشة التسجيل -->
+            <!-- ========================================== -->
             <div id="registerScreen" style="display:none;">
                 <h2 data-i18n="auth.register">📝 إنشاء حساب</h2>
                 <input type="text" id="regName" placeholder="الاسم الكامل" data-i18n="auth.name">
@@ -81,6 +123,13 @@
                     <option value="admin" data-i18n="auth.admin">مدير/موظف</option>
                 </select>
                 <button id="registerBtn"><span data-i18n="auth.register">تسجيل</span> <i class="fas fa-user-plus"></i></button>
+                
+                <!-- ✅ زر تغيير اللغة في شاشة التسجيل -->
+                <div class="lang-switcher">
+                    <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')"><i class="fas fa-flag"></i> 🇸🇦 عربي</button>
+                    <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')"><i class="fas fa-flag"></i> 🇫🇷 Français</button>
+                </div>
+                
                 <p><span data-i18n="auth.have_account">لديك حساب؟</span> <a href="#" id="showLogin" data-i18n="auth.login_now">سجل دخول</a></p>
             </div>
 
@@ -91,10 +140,13 @@
                 <header>
                     <h1><i class="fas fa-user-cog"></i> <span data-i18n="dashboard.admin">لوحة المدير</span></h1>
                     <span class="live-badge"><i class="fas fa-circle"></i> <span data-i18n="dashboard.live">مباشر</span></span>
-                    <div class="lang-switcher">
-                        <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
-                        <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
+                    
+                    <!-- ✅ زر تغيير اللغة في لوحة المدير -->
+                    <div class="header-lang-switcher">
+                        <button data-lang="ar" class="header-lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
+                        <button data-lang="fr" class="header-lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
                     </div>
+                    
                     <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span data-i18n="auth.logout">خروج</span></button>
                 </header>
 
@@ -191,10 +243,13 @@
                 <header>
                     <h1><i class="fas fa-user-friends"></i> <span data-i18n="dashboard.parent">لوحة ولي الأمر</span></h1>
                     <span class="live-badge"><i class="fas fa-circle"></i> <span data-i18n="dashboard.live">مباشر</span></span>
-                    <div class="lang-switcher">
-                        <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
-                        <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
+                    
+                    <!-- ✅ زر تغيير اللغة في لوحة ولي الأمر -->
+                    <div class="header-lang-switcher">
+                        <button data-lang="ar" class="header-lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
+                        <button data-lang="fr" class="header-lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
                     </div>
+                    
                     <button id="logoutBtnParent" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span data-i18n="auth.logout">خروج</span></button>
                 </header>
 
