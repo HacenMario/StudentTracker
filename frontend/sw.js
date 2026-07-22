@@ -1,4 +1,5 @@
 // sw.js - Service Worker للإشعارات
+console.log('✅ Service Worker loaded');
 
 self.addEventListener('install', (event) => {
   console.log('✅ Service Worker installed');
