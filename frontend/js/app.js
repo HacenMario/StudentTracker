@@ -1,7 +1,7 @@
 // =========================================
 // 1. رابط الخادم
 // =========================================
-const API_BASE_URL = 'https://studenttracker-zgom.onrender.com';
+const API_BASE_URL = 'https://studenttracker-ib8y.onrender.com';
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
