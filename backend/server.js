@@ -37,6 +37,10 @@ app.set('io', io);
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
+setInterval(() => {
+  io.emit('ping', { timestamp: Date.now() });
+}, 60000); // كل 60 ثانية
+
 // تسجيل المسارات
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
