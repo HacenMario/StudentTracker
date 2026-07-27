@@ -170,6 +170,7 @@
     "switch_camera": "تبديل الكاميرا",
     "close_scanner": "إغلاق",
     "all_details": "جميع التفاصيل",
-    "confirm_add": "تأكيد الإضافة"
+    "confirm_add": "تأكيد الإضافة",
+    "enable_notifications": "تفعيل الإشعارات"
   }
 }
