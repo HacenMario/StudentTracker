@@ -16,6 +16,7 @@
     "mongoose": "^7.0.3",
     "qrcode": "^1.5.3",
     "socket.io": "^4.5.4",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "node-cron": "^3.0.0"
   }
 }
