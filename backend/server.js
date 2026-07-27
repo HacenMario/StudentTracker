@@ -50,6 +50,88 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 
 // ==========================================
+// مسار اختبار الإشعارات المبكرة (للاختبار اليدوي)
+// ==========================================
+app.get('/api/test-leaving', async (req, res) => {
+  try {
+    const settings = await SchoolSettings.findOne();
+    if (!settings) {
+      return res.status(404).json({ message: 'لا توجد إعدادات' });
+    }
+
+    const students = await Student.find({ isInside: true });
+    if (students.length === 0) {
+      return res.json({ message: 'لا يوجد طلاب داخل المدرسة' });
+    }
+
+    let sentCount = 0;
+    for (const student of students) {
+      if (!student.parentEmail) continue;
+      await sendPushNotificationToParent(
+        '🧪 تنبيه خروج (اختبار)',
+        `اختبار: باقي ${settings.notificationBeforeMinutes} دقيقة على خروج ${student.name}`,
+        { url: '/parent-dashboard' },
+        student.parentEmail
+      );
+      sentCount++;
+    }
+
+    res.json({ message: `✅ تم إرسال ${sentCount} إشعار اختبار بنجاح` });
+  } catch (err) {
+    console.error('❌ خطأ في اختبار الإشعارات:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// مسار الإشعارات المبكرة الفعلي (للاستخدام في cron-job)
+// ==========================================
+app.get('/api/trigger-leaving', async (req, res) => {
+  try {
+    const settings = await SchoolSettings.findOne();
+    if (!settings) {
+      return res.status(404).json({ message: 'لا توجد إعدادات' });
+    }
+
+    const students = await Student.find({ isInside: true });
+    if (students.length === 0) {
+      return res.json({ message: '📭 لا يوجد طلاب داخل المدرسة' });
+    }
+
+    const notifyMinutesBefore = settings.notificationBeforeMinutes || 30;
+    let sentCount = 0;
+
+    for (const student of students) {
+      if (!student.parentEmail) continue;
+
+      const message = `⏰ تنبيه: باقي ${notifyMinutesBefore} دقيقة على خروج ${student.name} من المدرسة`;
+
+      // حفظ في قاعدة البيانات
+      await new Notification({
+        target: student.parentEmail,
+        message: message,
+        sender: 'System',
+      }).save();
+
+      // إرسال Web Push
+      await sendPushNotificationToParent(
+        '⏰ تنبيه الخروج',
+        message,
+        { url: '/parent-dashboard' },
+        student.parentEmail
+      );
+      sentCount++;
+    }
+
+    console.log(`✅ تم إرسال ${sentCount} إشعار خروج مبكر بنجاح`);
+    res.json({ message: `✅ تم إرسال ${sentCount} إشعار خروج مبكر بنجاح` });
+  } catch (err) {
+    console.error('❌ خطأ في إرسال الإشعارات المبكرة:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
 // إعداد Web Push (VAPID)
 // ==========================================
 const vapidKeys = {
@@ -446,32 +528,7 @@ mongoose.connect(process.env.MONGO_URI, {
   
   // ✅ بدء خدمة الجدولة للإشعارات التلقائية
   startNotificationScheduler();
-
-  // مسار اختبار الإشعارات المبكرة (يُرسل فوراً)
-app.get('/api/test-leaving', async (req, res) => {
-  try {
-    const settings = await SchoolSettings.findOne();
-    if (!settings) return res.status(404).json({ message: 'لا توجد إعدادات' });
-
-    const students = await Student.find({ isInside: true });
-    if (students.length === 0) return res.json({ message: 'لا يوجد طلاب داخل المدرسة' });
-
-    for (const student of students) {
-      if (!student.parentEmail) continue;
-      await sendPushNotificationToParent(
-        '🧪 تنبيه خروج (اختبار)',
-        `اختبار: باقي ${settings.notificationBeforeMinutes} دقيقة على خروج ${student.name}`,
-        { url: '/parent-dashboard' },
-        student.parentEmail
-      );
-    }
-
-    res.json({ message: `تم إرسال الإشعارات لـ ${students.length} طالب` });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-  
+ 
   server.listen(PORT, () => {
     console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
   });
