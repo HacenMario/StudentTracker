@@ -169,6 +169,7 @@
     "close_scanner": "Fermer",
     "all_details": "Tous les détails",
     "confirm_add": "Confirmation d'ajout",
-    "parent": "Parent"
+    "parent": "Parent",
+    "enable_notifications": "Activer les notifications"
   }
 }
