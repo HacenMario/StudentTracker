@@ -9,7 +9,6 @@ router.get('/', async (req, res) => {
   try {
     let settings = await SchoolSettings.findOne();
     if (!settings) {
-      // إنشاء إعدادات افتراضية إذا لم توجد
       settings = new SchoolSettings();
       await settings.save();
     }
@@ -22,7 +21,10 @@ router.get('/', async (req, res) => {
 // تحديث إعدادات المدرسة (للمدير فقط)
 router.put('/', auth, isAdmin, async (req, res) => {
   try {
-    const { schoolName, address, phone, email, logo, logoFileName } = req.body;
+    const { 
+      schoolName, address, phone, email, logo, logoFileName,
+      schoolEndTime, notificationBeforeMinutes 
+    } = req.body;
     
     let settings = await SchoolSettings.findOne();
     if (!settings) {
@@ -35,11 +37,17 @@ router.put('/', auth, isAdmin, async (req, res) => {
     if (email !== undefined) settings.email = email;
     if (logo !== undefined) settings.logo = logo;
     if (logoFileName !== undefined) settings.logoFileName = logoFileName;
+    
+    // ✅ الحقول الجديدة
+    if (schoolEndTime !== undefined) settings.schoolEndTime = schoolEndTime;
+    if (notificationBeforeMinutes !== undefined) settings.notificationBeforeMinutes = notificationBeforeMinutes;
+    
     settings.updatedAt = new Date();
 
     await settings.save();
     res.json(settings);
   } catch (err) {
+    console.error('❌ خطأ في حفظ إعدادات المدرسة:', err);
     res.status(500).json({ message: err.message });
   }
 });
