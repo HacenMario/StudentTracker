@@ -789,6 +789,17 @@ document.getElementById('closeScannerBtn').addEventListener('click', closeScanne
 document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
 
 // ==========================================
+// زر تفعيل الإشعارات اليدوي
+// ==========================================
+document.getElementById('enableNotificationsBtn')?.addEventListener('click', function() {
+    if (!currentUser) {
+        alert('الرجاء تسجيل الدخول أولاً');
+        return;
+    }
+    requestNotificationPermission();
+});
+
+// ==========================================
 // 10. دوال الإشعارات (Web Push)
 // ==========================================
 async function requestNotificationPermission() {
@@ -796,14 +807,17 @@ async function requestNotificationPermission() {
     
     if (!('serviceWorker' in navigator)) {
         console.warn('⚠️ Service Worker غير مدعوم');
+        alert('المتصفح لا يدعم الإشعارات');
         return false;
     }
     if (!('Notification' in window)) {
         console.warn('⚠️ هذا المتصفح لا يدعم الإشعارات');
+        alert('المتصفح لا يدعم الإشعارات');
         return false;
     }
     if (!currentUser) {
         console.warn('⚠️ لا يوجد مستخدم مسجل الدخول');
+        alert('الرجاء تسجيل الدخول أولاً');
         return false;
     }
 
@@ -815,7 +829,7 @@ async function requestNotificationPermission() {
 
     if (Notification.permission === 'denied') {
         console.warn('⚠️ تم رفض إذن الإشعارات مسبقاً');
-        alert('تم رفض الإشعارات مسبقاً. يرجى السماح بها من إعدادات المتصفح.');
+        alert('تم رفض الإشعارات مسبقاً. يرجى السماح بها من إعدادات المتصفح (الإعدادات → الخصوصية والأمان → إعدادات الموقع → الإشعارات).');
         return false;
     }
 
@@ -824,13 +838,16 @@ async function requestNotificationPermission() {
         if (permission === 'granted') {
             console.log('✅ تم منح الإذن');
             await subscribeToPush();
+            alert('✅ تم تفعيل الإشعارات بنجاح');
             return true;
         } else {
             console.warn('⚠️ تم رفض الإذن');
+            alert('تم رفض الإشعارات. يمكنك تفعيلها لاحقاً من إعدادات المتصفح.');
             return false;
         }
     } catch (err) {
         console.error('❌ خطأ في طلب الإذن:', err);
+        alert('حدث خطأ أثناء طلب الإشعارات');
         return false;
     }
 }
@@ -846,6 +863,8 @@ async function subscribeToPush() {
         }
 
         const registration = await navigator.serviceWorker.ready;
+        console.log('✅ Service Worker جاهز:', registration);
+
         const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
         const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
 
@@ -864,10 +883,10 @@ async function subscribeToPush() {
 
         console.log('✅ اشتراك جديد تم إنشاؤه');
         await sendSubscriptionToServer(subscription);
-        
         return subscription;
     } catch (err) {
         console.error('❌ فشل الاشتراك في Push:', err);
+        alert('فشل تسجيل الإشعارات: ' + err.message);
         return null;
     }
 }
