@@ -446,6 +446,31 @@ mongoose.connect(process.env.MONGO_URI, {
   
   // ✅ بدء خدمة الجدولة للإشعارات التلقائية
   startNotificationScheduler();
+
+  // مسار اختبار الإشعارات المبكرة (يُرسل فوراً)
+app.get('/api/test-leaving', async (req, res) => {
+  try {
+    const settings = await SchoolSettings.findOne();
+    if (!settings) return res.status(404).json({ message: 'لا توجد إعدادات' });
+
+    const students = await Student.find({ isInside: true });
+    if (students.length === 0) return res.json({ message: 'لا يوجد طلاب داخل المدرسة' });
+
+    for (const student of students) {
+      if (!student.parentEmail) continue;
+      await sendPushNotificationToParent(
+        '🧪 تنبيه خروج (اختبار)',
+        `اختبار: باقي ${settings.notificationBeforeMinutes} دقيقة على خروج ${student.name}`,
+        { url: '/parent-dashboard' },
+        student.parentEmail
+      );
+    }
+
+    res.json({ message: `تم إرسال الإشعارات لـ ${students.length} طالب` });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
   
   server.listen(PORT, () => {
     console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
