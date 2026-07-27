@@ -22,24 +22,25 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
+// ✅ استيراد خدمة الجدولة للإشعارات التلقائية
+const { startNotificationScheduler } = require('./services/notificationScheduler');
+
 const app = express();
 const server = http.createServer(app);
 
-// تعريف io
+// تعريف io مع إعدادات CORS
 const io = socketIo(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"]
-  }
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
 });
 
 app.set('io', io);
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
-
-setInterval(() => {
-  io.emit('ping', { timestamp: Date.now() });
-}, 60000); // كل 60 ثانية
 
 // تسجيل المسارات
 app.use('/api/auth', authRoutes);
@@ -68,7 +69,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
 }
 
 // ==========================================
-// دالة إرسال إشعار لولي أمر محدد (بدلاً من الجميع)
+// دالة إرسال إشعار لولي أمر محدد
 // ==========================================
 async function sendPushNotificationToParent(title, body, data = {}, parentEmail) {
   try {
@@ -82,7 +83,6 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
       return;
     }
 
-    // البحث عن الاشتراكات المرتبطة ببريد ولي الأمر هذا فقط
     const subscriptions = await Subscription.find({ userEmail: parentEmail });
     console.log(`📊 عدد المشتركين للبريد ${parentEmail}: ${subscriptions.length}`);
 
@@ -129,7 +129,7 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
 }
 
 // ==========================================
-// دالة إرسال إشعار لجميع المشتركين (للإشعارات العامة فقط)
+// دالة إرسال إشعار لجميع المشتركين
 // ==========================================
 async function sendPushNotificationToAll(title, body, data = {}) {
   try {
@@ -206,7 +206,7 @@ io.on('connection', (socket) => {
   console.log(`🟢 عميل متصل: ${userEmail} (الدور: ${socket.user.role})`);
 
   // ----------------------
-  // 1. تبديل حالة الطالب (للمدير) - ✅ إصلاح الإشعارات
+  // 1. تبديل حالة الطالب
   // ----------------------
   socket.on('toggle-status', async (studentId) => {
     if (socket.user.role !== 'admin') {
@@ -221,12 +221,10 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // تغيير الحالة
       student.isInside = !student.isInside;
       student.lastUpdate = new Date();
       await student.save();
 
-      // تسجيل الحضور
       const attendance = new Attendance({
         student: student._id,
         status: student.isInside ? 'in' : 'out',
@@ -237,7 +235,6 @@ io.on('connection', (socket) => {
       const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
       const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-      // 1️⃣ بث التحديث عبر Socket (لجميع العملاء)
       io.emit('status-changed', {
         student: student,
         message: message,
@@ -245,7 +242,6 @@ io.on('connection', (socket) => {
         parentEmail: student.parentEmail,
       });
 
-      // 2️⃣ إنشاء إشعار في قاعدة البيانات (موجه لولي الأمر)
       if (student.parentEmail) {
         const notification = new Notification({
           target: student.parentEmail,
@@ -255,7 +251,6 @@ io.on('connection', (socket) => {
         await notification.save();
       }
 
-      // 3️⃣ إرسال الإشعار عبر Socket للمستخدم المتصل (إن وجد)
       if (student.parentEmail) {
         const targetSocketId = userSockets.get(student.parentEmail);
         if (targetSocketId) {
@@ -268,7 +263,6 @@ io.on('connection', (socket) => {
         }
       }
 
-      // 4️⃣ ✅ إرسال إشعار Web Push لولي الأمر فقط (وليس للجميع)
       if (student.parentEmail) {
         console.log(`📤 محاولة إرسال إشعار Web Push لولي الأمر: ${student.parentEmail}`);
         await sendPushNotificationToParent(
@@ -288,7 +282,7 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 2. إشعار عام من المدير
+  // 2. إشعار عام
   // ----------------------
   socket.on('admin-notification', async (data) => {
     if (socket.user.role !== 'admin') return;
@@ -307,7 +301,6 @@ io.on('connection', (socket) => {
         createdAt: notification.createdAt,
       });
 
-      // إرسال إشعار Web Push لجميع المشتركين (العام)
       await sendPushNotificationToAll(
         '📢 إشعار من المدرسة',
         data.message,
@@ -322,7 +315,7 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 3. إشعار خاص لولي أمر معين
+  // 3. إشعار خاص لولي أمر
   // ----------------------
   socket.on('admin-notification-to-parent', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -362,7 +355,6 @@ io.on('connection', (socket) => {
         });
       }
 
-      // إرسال إشعار Web Push لولي الأمر المحدد فقط
       await sendPushNotificationToParent(
         '📩 إشعار خاص من المدرسة',
         message,
@@ -377,7 +369,7 @@ io.on('connection', (socket) => {
   });
 
   // ----------------------
-  // 4. تغيير حالة جميع الطلاب دفعة واحدة
+  // 4. تغيير حالة جميع الطلاب
   // ----------------------
   socket.on('toggle-all-status', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -413,7 +405,6 @@ io.on('connection', (socket) => {
         isBulk: true,
       });
 
-      // إنشاء إشعارات لكل ولي أمر
       for (const email of updatedParents) {
         const notification = new Notification({
           target: email,
@@ -422,7 +413,6 @@ io.on('connection', (socket) => {
         });
         await notification.save();
 
-        // ✅ إرسال إشعار لكل ولي أمر على حدة
         await sendPushNotificationToParent(
           'تحديث جماعي',
           message,
@@ -453,6 +443,10 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .then(() => {
   console.log('✅ متصل بـ MongoDB بنجاح');
+  
+  // ✅ بدء خدمة الجدولة للإشعارات التلقائية
+  startNotificationScheduler();
+  
   server.listen(PORT, () => {
     console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
   });
