@@ -49,6 +49,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 
+// إرسال Ping كل 60 ثانية لإبقاء الخادم نشطاً (لـ WebSocket)
+setInterval(() => {
+  io.emit('ping', { timestamp: Date.now() });
+}, 60000);
+
 // ==========================================
 // مسار اختبار الإشعارات المبكرة (للاختبار اليدوي)
 // ==========================================
@@ -511,6 +516,15 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
     console.log(`🔴 عميل غير متصل: ${userEmail}`);
+  });
+});
+
+// مسار خفيف للتحقق من صحة الخادم (يُستخدم في UptimeRobot)
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    message: '🚀 Student Tracker API is running',
+    timestamp: new Date().toISOString(),
   });
 });
 
