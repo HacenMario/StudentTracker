@@ -83,6 +83,7 @@ async function loadTranslations() {
     try {
         const arRes = await fetch('/locales/ar.json');
         const frRes = await fetch('/locales/fr.json');
+        const enRes = await fetch('/locales/en.json');
         
         if (!arRes.ok || !frRes.ok) {
             throw new Error('فشل تحميل ملفات الترجمة');
@@ -90,7 +91,8 @@ async function loadTranslations() {
         
         window.translations = {
             ar: await arRes.json(),
-            fr: await frRes.json()
+            fr: await frRes.json(),
+            en: await enRes.json()
         };
         
         translationsLoaded = true;
@@ -148,6 +150,12 @@ function switchLanguage(lang) {
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
     });
+    document.querySelectorAll('.header-lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+    // تحديث حالة الأزرار في كل مكان
+    updateLanguageButtons(lang);
+    console.log(`🌍 تم تغيير اللغة إلى: ${lang}`);
 }
 
 // تطبيق الترجمات على جميع العناصر
