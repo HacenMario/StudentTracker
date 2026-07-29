@@ -1,9 +1,20 @@
 const webpush = require('web-push');
 const Subscription = require('../models/Subscription');
 const User = require('../models/User');
-const i18n = require('./i18n');
+const { translate } = require('./i18n');
 
-async function sendPushNotificationToParent(title, body, data = {}, parentEmail) {
+// دالة مساعدة لجلب لغة المستخدم
+async function getUserLanguage(email) {
+  try {
+    const user = await User.findOne({ email });
+    return user?.preferences?.language || 'ar';
+  } catch {
+    return 'ar';
+  }
+}
+
+// إرسال إشعار لولي أمر محدد مع ترجمة حسب لغته
+async function sendPushNotificationToParent(titleKey, bodyKey, data = {}, parentEmail) {
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
       console.warn('⚠️ مفاتيح VAPID غير متوفرة');
@@ -15,13 +26,13 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
       return;
     }
 
-    // ✅ جلب تفضيلات اللغة لولي الأمر
-    const user = await User.findOne({ email: parentEmail });
-    const lang = user?.preferences?.language || 'ar';
+    // ✅ جلب لغة المستخدم
+    const lang = await getUserLanguage(parentEmail);
+    console.log(`🌍 لغة المستخدم ${parentEmail}: ${lang}`);
 
-    // ✅ ترجمة العنوان والرسالة
-    const translatedTitle = i18n.translate(lang, title) || title;
-    const translatedBody = i18n.translate(lang, body, data) || body;
+    // ✅ ترجمة النصوص
+    const title = translate(lang, titleKey);
+    const body = translate(lang, bodyKey, data);
 
     const subscriptions = await Subscription.find({ userEmail: parentEmail });
     console.log(`📊 عدد المشتركين للبريد ${parentEmail}: ${subscriptions.length}`);
@@ -32,8 +43,8 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
     }
 
     const payload = JSON.stringify({
-      title: translatedTitle,
-      body: translatedBody,
+      title,
+      body,
       icon: '/favicon.ico',
       badge: '/favicon.ico',
       data,
@@ -68,14 +79,15 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
   }
 }
 
+// دالة الإشعارات العامة (ترسل لجميع المشتركين دون ترجمة، أو يمكن ترجمتها حسب لغة كل مستخدم)
 async function sendPushNotificationToAll(title, body, data = {}) {
-  // ... (يمكن تركها كما هي أو تطبيق الترجمة حسب اللغة الافتراضية)
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
       console.warn('⚠️ مفاتيح VAPID غير متوفرة');
       return;
     }
 
+    // للإشعارات العامة، نرسل نفس النص لجميع المستخدمين (يمكن ترجمته لاحقاً)
     const subscriptions = await Subscription.find({});
     console.log(`📊 عدد المشتركين الكلي: ${subscriptions.length}`);
 
