@@ -454,6 +454,8 @@ function applySchoolSettings() {
         document.getElementById('settingsAddress').value = schoolSettings.address || '';
         document.getElementById('settingsPhone').value = schoolSettings.phone || '';
         document.getElementById('settingsEmail').value = schoolSettings.email || '';
+        document.getElementById('settingsEndTime').value = schoolSettings.schoolEndTime || '16:00';
+        document.getElementById('settingsNotifyBefore').value = schoolSettings.notificationBeforeMinutes || 30;
         const preview = document.getElementById('logoPreview');
         if (schoolSettings.logo) {
             preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
@@ -468,6 +470,9 @@ async function saveSchoolSettings() {
     const address = document.getElementById('settingsAddress').value.trim();
     const phone = document.getElementById('settingsPhone').value.trim();
     const email = document.getElementById('settingsEmail').value.trim();
+    const schoolEndTime = document.getElementById('settingsEndTime').value || '16:00';
+    const notificationBeforeMinutes = parseInt(document.getElementById('settingsNotifyBefore').value) || 30;
+
     
     let logo = schoolSettings ? schoolSettings.logo : '';
     let logoFileName = schoolSettings ? schoolSettings.logoFileName : '';
@@ -493,7 +498,7 @@ async function saveSchoolSettings() {
     try {
         const res = await fetchWithAuth('/api/settings', {
             method: 'PUT',
-            body: JSON.stringify({ schoolName, address, phone, email, logo, logoFileName })
+            body: JSON.stringify({ schoolName, address, phone, email, logo, logoFileName, schoolEndTime, notificationBeforeMinutes, })
         });
         if (!res.ok) throw new Error(translate('common.error'));
         const data = await res.json();
