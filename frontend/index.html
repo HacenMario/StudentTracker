@@ -167,6 +167,66 @@
                     </button>
                 </div>
 
+ <!-- ========================================== -->
+<!-- شريط البحث عن التلميذ -->
+<!-- ========================================== -->
+<div class="search-section" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center;">
+    <div style="flex:1; min-width:200px; position:relative;">
+        <input type="text" id="searchStudentInput" placeholder="🔍 ابحث عن تلميذ بالاسم..." style="width:100%; padding:12px 20px; border:2px solid #e2eaf2; border-radius:60px; font-size:16px; font-family:'Tajawal', sans-serif; background:white; transition:0.3s; outline:none;">
+        <i class="fas fa-search" style="position:absolute; left:18px; top:50%; transform:translateY(-50%); color:#8a9aaa;"></i>
+    </div>
+    <button id="searchByQRBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483); padding:10px 20px; margin:0;">
+        <i class="fas fa-qrcode"></i> مسح QR
+    </button>
+    <button id="clearSearchBtn" class="btn-secondary" style="display:none; padding:10px 20px; background:#e2eaf2; border:none; border-radius:40px; cursor:pointer; font-weight:600; font-family:'Tajawal', sans-serif;">
+        <i class="fas fa-times"></i> إلغاء البحث
+    </button>
+</div>
+
+                <!-- قائمة الطلاب -->
+                <div id="adminStudentsList" class="students-grid"></div>
+
+                <!-- سجل النشاطات -->
+                <div class="log-section">
+                    <div class="log-header">
+                        <h3><i class="fas fa-history"></i> <span data-i18n="attendance.log">📋 سجل النشاطات</span></h3>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button id="adminShowOldLogsBtn" class="btn-show-old" style="display:none;">
+                                <i class="fas fa-chevron-down"></i> <span data-i18n="attendance.show_old_logs">عرض السجل السابق</span>
+                            </button>
+                            <button id="adminHideOldLogsBtn" class="btn-hide-old" style="display:none;">
+                                <i class="fas fa-chevron-up"></i> <span data-i18n="attendance.hide_old_logs">إخفاء السجل السابق</span>
+                            </button>
+                            <button id="adminShowAllLogsBtn" class="btn-show-old" style="display:none;">
+                                <i class="fas fa-list"></i> <span data-i18n="attendance.show_all">عرض جميع التفاصيل</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="adminLogContainer"></div>
+                </div>
+
+                <!-- طلبات الإجازات -->
+<div class="leave-section">
+    <h3><i class="fas fa-list"></i> <span data-i18n="leave.requests">طلبات عذر الغياب</span></h3>
+    <div id="leaveRequestsList"></div>
+</div>
+
+                <!-- إرسال الإشعارات -->
+                <div class="notification-forms">
+                    <div class="notif-box">
+                        <h4><i class="fas fa-bullhorn"></i> <span data-i18n="notification.general">إشعار عام</span></h4>
+                        <textarea id="adminNotificationMsg" placeholder="اكتب رسالة الإشعار العام..." data-i18n="notification.message"></textarea>
+                        <button id="adminSendNotificationBtn" class="btn-warning"><i class="fas fa-paper-plane"></i> <span data-i18n="notification.send">إرسال للجميع</span></button>
+                    </div>
+                    <div class="notif-box">
+                        <h4><i class="fas fa-envelope"></i> <span data-i18n="notification.private">إشعار خاص لولي أمر</span></h4>
+                        <input type="email" id="adminParentEmailInput" placeholder="بريد ولي الأمر المستهدف" data-i18n="notification.parent_email">
+                        <textarea id="adminParentNotificationMsg" placeholder="اكتب رسالة الإشعار الخاص..." data-i18n="notification.message"></textarea>
+                        <button id="adminSendParentNotificationBtn" class="btn-success"><i class="fas fa-paper-plane"></i> <span data-i18n="notification.send">إرسال</span></button>
+                    </div>
+                </div>
+            </div>
+
 <!-- ========================================== -->
 <!-- التنبيهات الذكية -->
 <!-- ========================================== -->
@@ -233,66 +293,6 @@
     </div>
 </div>
 
-                <!-- ========================================== -->
-<!-- شريط البحث عن التلميذ -->
-<!-- ========================================== -->
-<div class="search-section" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center;">
-    <div style="flex:1; min-width:200px; position:relative;">
-        <input type="text" id="searchStudentInput" placeholder="🔍 ابحث عن تلميذ بالاسم..." style="width:100%; padding:12px 20px; border:2px solid #e2eaf2; border-radius:60px; font-size:16px; font-family:'Tajawal', sans-serif; background:white; transition:0.3s; outline:none;">
-        <i class="fas fa-search" style="position:absolute; left:18px; top:50%; transform:translateY(-50%); color:#8a9aaa;"></i>
-    </div>
-    <button id="searchByQRBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483); padding:10px 20px; margin:0;">
-        <i class="fas fa-qrcode"></i> مسح QR
-    </button>
-    <button id="clearSearchBtn" class="btn-secondary" style="display:none; padding:10px 20px; background:#e2eaf2; border:none; border-radius:40px; cursor:pointer; font-weight:600; font-family:'Tajawal', sans-serif;">
-        <i class="fas fa-times"></i> إلغاء البحث
-    </button>
-</div>
-
-                <!-- قائمة الطلاب -->
-                <div id="adminStudentsList" class="students-grid"></div>
-
-                <!-- سجل النشاطات -->
-                <div class="log-section">
-                    <div class="log-header">
-                        <h3><i class="fas fa-history"></i> <span data-i18n="attendance.log">📋 سجل النشاطات</span></h3>
-                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <button id="adminShowOldLogsBtn" class="btn-show-old" style="display:none;">
-                                <i class="fas fa-chevron-down"></i> <span data-i18n="attendance.show_old_logs">عرض السجل السابق</span>
-                            </button>
-                            <button id="adminHideOldLogsBtn" class="btn-hide-old" style="display:none;">
-                                <i class="fas fa-chevron-up"></i> <span data-i18n="attendance.hide_old_logs">إخفاء السجل السابق</span>
-                            </button>
-                            <button id="adminShowAllLogsBtn" class="btn-show-old" style="display:none;">
-                                <i class="fas fa-list"></i> <span data-i18n="attendance.show_all">عرض جميع التفاصيل</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div id="adminLogContainer"></div>
-                </div>
-
-                <!-- طلبات الإجازات -->
-<div class="leave-section">
-    <h3><i class="fas fa-list"></i> <span data-i18n="leave.requests">طلبات عذر الغياب</span></h3>
-    <div id="leaveRequestsList"></div>
-</div>
-
-                <!-- إرسال الإشعارات -->
-                <div class="notification-forms">
-                    <div class="notif-box">
-                        <h4><i class="fas fa-bullhorn"></i> <span data-i18n="notification.general">إشعار عام</span></h4>
-                        <textarea id="adminNotificationMsg" placeholder="اكتب رسالة الإشعار العام..." data-i18n="notification.message"></textarea>
-                        <button id="adminSendNotificationBtn" class="btn-warning"><i class="fas fa-paper-plane"></i> <span data-i18n="notification.send">إرسال للجميع</span></button>
-                    </div>
-                    <div class="notif-box">
-                        <h4><i class="fas fa-envelope"></i> <span data-i18n="notification.private">إشعار خاص لولي أمر</span></h4>
-                        <input type="email" id="adminParentEmailInput" placeholder="بريد ولي الأمر المستهدف" data-i18n="notification.parent_email">
-                        <textarea id="adminParentNotificationMsg" placeholder="اكتب رسالة الإشعار الخاص..." data-i18n="notification.message"></textarea>
-                        <button id="adminSendParentNotificationBtn" class="btn-success"><i class="fas fa-paper-plane"></i> <span data-i18n="notification.send">إرسال</span></button>
-                    </div>
-                </div>
-            </div>
-
             <!-- ========================================== -->
             <!-- لوحة ولي الأمر -->
             <!-- ========================================== -->
@@ -309,14 +309,6 @@
                 </header>
 
                 <div id="parentStudentsList" class="students-grid"></div>
-
-<!-- ========================================== -->
-<!-- التنبيهات الذكية (ولي الأمر) -->
-<!-- ========================================== -->
-<div class="smart-alerts-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
-    <h3><i class="fas fa-brain"></i> <span data-i18n="smart_alerts.title">التنبيهات الذكية</span></h3>
-    <div id="parentSmartAlertsList" style="max-height:300px; overflow-y:auto; margin-top:10px;"></div>
-</div>
 
                 <!-- سجل دخول/خروج أبنائي -->
                 <div class="log-section">
@@ -363,6 +355,14 @@
         </div>
     </div>
 
+<!-- ========================================== -->
+<!-- التنبيهات الذكية (ولي الأمر) -->
+<!-- ========================================== -->
+<div class="smart-alerts-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+    <h3><i class="fas fa-brain"></i> <span data-i18n="smart_alerts.title">التنبيهات الذكية</span></h3>
+    <div id="parentSmartAlertsList" style="max-height:300px; overflow-y:auto; margin-top:10px;"></div>
+</div>
+    
     <!-- ========================================== -->
     <!-- النوافذ المنبثقة (Modals) -->
     <!-- ========================================== -->
