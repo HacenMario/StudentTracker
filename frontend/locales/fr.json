@@ -178,6 +178,26 @@
     "parent": "Parent",
     "enable_notifications": "Activer les notifications"
   },
+  "leave": {
+    "title": "Submit Leave Excuse",
+    "select_student": "Select Student",
+    "date": "Absence Date",
+    "reason": "Reason for Absence",
+    "file": "Upload File (Medical Certificate)",
+    "submit": "Submit Request",
+    "requests": "Leave Excuse Requests",
+    "no_requests": "📭 No requests",
+    "status_pending": "Pending",
+    "status_approved": "Approved ✅",
+    "status_rejected": "Rejected ❌",
+    "approve": "Approve",
+    "reject": "Reject",
+    "confirm_approve": "Are you sure you want to approve this request?",
+    "confirm_reject": "Are you sure you want to reject this request?",
+    "view_file": "View File",
+    "admin_note": "Admin Note",
+    "fill_all": "Please fill all required fields"
+},
   "leaving_notification": {
     "title": "⏰ Alerte de sortie",
     "body": "⏰ Alerte : il reste {minutes} minutes avant la sortie de {studentName} de l'école"
