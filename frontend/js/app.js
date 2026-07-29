@@ -1861,9 +1861,16 @@ function renderLeaveRequests(requests, containerId) {
     const statusClass = r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending';
     const statusText = translate('leave.status_' + r.status);
     
-    // ✅ عرض التاريخ فقط (بدون وقت)
-    const formattedDate = new Date(r.date).toISOString().split('T')[0];
+    // ✅ عرض التاريخ بدون ساعة
+    const dateObj = new Date(r.date);
+    const formattedDate = dateObj.toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'Africa/Algiers'
+    });
     
+    // ✅ عرض الملف المرفق
     let fileHtml = '';
     if (r.fileUrl) {
       if (r.fileUrl.startsWith('data:image/')) {
@@ -1918,13 +1925,19 @@ window.handleLeaveRequest = async function(requestId, status) {
   );
   if (!confirmed) return;
 
-  const result = await updateLeaveRequest(requestId, status);
-  if (result.success) {
-    alert(result.message);
-    const requests = await loadLeaveRequests();
-    renderLeaveRequests(requests, 'leaveRequestsList');
-  } else {
-    alert(result.message || translate('common.error'));
+  try {
+    const result = await updateLeaveRequest(requestId, status);
+    if (result.success) {
+      alert(result.message);
+      // إعادة تحميل الطلبات
+      const requests = await loadLeaveRequests();
+      renderLeaveRequests(requests, 'leaveRequestsList');
+    } else {
+      alert(result.message || translate('common.error'));
+    }
+  } catch (err) {
+    console.error('❌ خطأ في معالجة الطلب:', err);
+    alert(translate('common.error') + ': ' + err.message);
   }
 };
 
