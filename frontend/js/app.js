@@ -370,29 +370,45 @@ function connectSocket() {
     socket.on('connect', () => console.log('✅ Socket متصل'));
 
 socket.on('status-changed', (data) => {
+    console.log('📢 استقبال حدث status-changed:', data);
+    console.log('👤 المستخدم الحالي:', currentUser);
+    console.log('📧 بريد ولي الأمر:', data.parentEmail);
+    console.log('📧 بريدي:', currentUser.email);
+});
+    
     if (currentUser.role === 'admin') {
         loadAdminStudents();
         loadAdminLogs();
     } else {
+        // ✅ التحقق من أن الإشعار يخص ولي الأمر هذا
         if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
+            console.log('✅ هذا الإشعار يخص ولي الأمر الحالي');
+            
             // ✅ تحديث قائمة الطلاب
             loadParentStudents();
             
-            // ✅ جلب سجل الحضور من جديد (بدلاً من الاعتماد على السجلات المخزنة)
-            loadParentLogs();
-            
-            // ✅ إضافة السجل الجديد يدوياً (للتحديث الفوري)
+            // ✅ إضافة السجل الجديد مباشرة إلى parentLogs
             const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
             const displayMessage = translate('attendance.student_became', { 
                 name: data.student.name, 
                 status: statusText 
             });
             
-            // ✅ إضافة السجل الجديد إلى parentLogs
-            addLog('', new Date(), 'parentLogContainer', 'attendance.student_became', { 
-                name: data.student.name, 
-                status: statusText 
-            });
+            // ✅ إضافة السجل الجديد (مع المفتاح للمستقبل)
+            const logEntry = {
+                message: displayMessage,
+                time: formatFullTime(new Date()),
+                date: new Date(),
+                key: 'attendance.student_became',
+                params: { name: data.student.name, status: statusText },
+                studentName: data.student.name
+            };
+            
+            // ✅ إضافة إلى بداية المصفوفة (الأحدث أولاً)
+            parentLogs.unshift(logEntry);
+            
+            // ✅ إعادة عرض السجلات
+            renderParentLogs(parentShowOldLogs);
             
             // ✅ إظهار إشعار للمستخدم
             showBrowserNotification(translate('notification.title'), displayMessage);
@@ -1636,6 +1652,7 @@ function renderParentLogs(showOld) {
         return;
     }
 
+    // ✅ ترتيب تنازلي (الأحدث أولاً)
     const sortedLogs = [...parentLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const todayLogs = sortedLogs.filter(log => isToday(log.date));
@@ -1649,8 +1666,8 @@ function renderParentLogs(showOld) {
         document.getElementById('parentShowOldLogsBtn').style.display = 'none';
         document.getElementById('parentHideOldLogsBtn').style.display = 'inline-flex';
     } else {
-        logsToShow = todayLogs.slice(0, 5);
-        if (oldLogs.length > 0 || todayLogs.length > 5) {
+        logsToShow = todayLogs.slice(0, 10); // ✅ عرض آخر 10 سجلات اليوم
+        if (oldLogs.length > 0 || todayLogs.length > 10) {
             document.getElementById('parentShowOldLogsBtn').style.display = 'inline-flex';
             document.getElementById('parentHideOldLogsBtn').style.display = 'none';
         } else {
@@ -1663,25 +1680,22 @@ function renderParentLogs(showOld) {
         const item = document.createElement('div');
         item.className = 'log-item';
         
+        // ✅ عرض الرسالة المترجمة
         let displayMessage = log.message;
-        if (log.key) {
+        if (log.key && !log.message) {
             displayMessage = translate(log.key, log.params || {});
-            if (displayMessage === log.key && log.message) {
-                displayMessage = log.message;
-            }
-        } else if (log.message) {
-            displayMessage = log.message;
+        } else if (log.key && log.message) {
+            // إذا كان هناك رسالة ومفتاح، نفضل المفتاح
+            displayMessage = translate(log.key, log.params || {});
         }
         
-        // ✅ ترجمة كلمة "وقت" مع بديل احتياطي
-        const timeLabel = translate('common.time') || 'وقت:';
-        const timeDisplay = log.time || '';
-        
-        if (log.studentName) {
+        // إذا كان هناك اسم طالب، نضيفه
+        if (log.studentName && !displayMessage.includes(log.studentName)) {
             displayMessage = `${log.studentName}: ${displayMessage}`;
         }
         
-        item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${timeLabel} ${timeDisplay}</span>`;
+        const timeLabel = translate('common.time') || 'وقت:';
+        item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${timeLabel} ${log.time}</span>`;
         container.appendChild(item);
     });
 
