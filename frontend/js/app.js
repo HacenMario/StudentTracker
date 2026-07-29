@@ -29,12 +29,9 @@ let availableCameras = [];
 
 // تحديث حالة الأزرار النشطة لكل الشاشات
 function updateLanguageButtons(lang) {
-    // تحديث أزرار شاشة تسجيل الدخول
     document.querySelectorAll('#loginScreen .lang-btn, #registerScreen .lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
     });
-    
-    // تحديث أزرار الهيدر في اللوحات
     document.querySelectorAll('.header-lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
     });
@@ -111,17 +108,12 @@ function switchLanguage(lang) {
     currentLanguage = lang;
     localStorage.setItem('language', lang);
     
-    // تحديث الاتجاه
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
     
-    // تحديث الأزرار النشطة
     updateLanguageButtons(lang);
-    
-    // تطبيق الترجمات على العناصر الثابتة
     applyTranslationsToAll();
     
-    // إعادة تحميل المحتوى الديناميكي (الطلاب، السجلات، الإشعارات)
     if (currentUser) {
         if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
             loadAdminStudents();
@@ -155,7 +147,6 @@ function applyTranslationsToAll() {
 
 // تحديث النصوص الديناميكية
 function updateDynamicTexts() {
-    // زر تسجيل الدخول
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) {
         const text = t('auth.login');
@@ -164,7 +155,6 @@ function updateDynamicTexts() {
         }
     }
     
-    // زر التسجيل
     const registerBtn = document.getElementById('registerBtn');
     if (registerBtn) {
         const text = t('auth.register');
@@ -173,7 +163,6 @@ function updateDynamicTexts() {
         }
     }
     
-    // زر إضافة طالب
     const addBtn = document.getElementById('adminAddBtn');
     if (addBtn) {
         const text = t('student.save');
@@ -182,12 +171,20 @@ function updateDynamicTexts() {
         }
     }
     
-    // زر حفظ الإعدادات
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
     if (saveSettingsBtn) {
         const text = t('settings.save');
         if (text && text !== 'settings.save') {
             saveSettingsBtn.innerHTML = `<i class="fas fa-save"></i> ${text}`;
+        }
+    }
+    
+    // زر الرابط السحري
+    const magicBtn = document.getElementById('magicLinkBtn');
+    if (magicBtn) {
+        const text = t('auth.magic_link');
+        if (text && text !== 'auth.magic_link') {
+            magicBtn.innerHTML = `<i class="fas fa-envelope"></i> ${text}`;
         }
     }
 }
@@ -335,68 +332,6 @@ function showParentDashboard() {
 }
 
 // ==========================================
-// تسجيل الدخول برابط سحري (Magic Link)
-// ==========================================
-document.getElementById('magicLinkBtn')?.addEventListener('click', async function() {
-    const email = document.getElementById('loginEmail').value.trim();
-    if (!email) {
-        alert('الرجاء إدخال البريد الإلكتروني');
-        return;
-    }
-
-    // تعطيل الزر لمنع التكرار
-    this.disabled = true;
-    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/magic/magic-link`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'فشل الإرسال');
-
-        // إظهار رسالة نجاح
-        document.getElementById('magicLinkMessage').style.display = 'block';
-        document.getElementById('magicLinkError').style.display = 'none';
-    } catch (err) {
-        console.error('❌ خطأ في الرابط السحري:', err);
-        document.getElementById('magicLinkError').style.display = 'block';
-        document.getElementById('magicLinkError').textContent = '❌ ' + err.message;
-        document.getElementById('magicLinkMessage').style.display = 'none';
-    } finally {
-        // إعادة تفعيل الزر بعد 3 ثوان
-        setTimeout(() => {
-            this.disabled = false;
-            this.innerHTML = '<i class="fas fa-envelope"></i> <span data-i18n="auth.magic_link">رابط سحري</span>';
-        }, 3000);
-    }
-});
-
-// ==========================================
-// معالجة الرابط السحري عند تحميل الصفحة (من التوجيه)
-// ==========================================
-function handleMagicLogin() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const userParam = urlParams.get('user');
-
-    if (token && userParam) {
-        try {
-            const user = JSON.parse(decodeURIComponent(userParam));
-            saveAuth({ token, user });
-            // تنظيف الرابط من شريط العناوين
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (err) {
-            console.error('❌ خطأ في معالجة الرابط السحري:', err);
-            alert('حدث خطأ أثناء تسجيل الدخول عبر الرابط السحري');
-        }
-    }
-}
-
-// ==========================================
 // 6. Socket.io
 // ==========================================
 function connectSocket() {
@@ -468,6 +403,7 @@ function connectSocket() {
         }
     });
 }
+
 // ==========================================
 // 7. دوال API مع التوكن
 // ==========================================
@@ -625,7 +561,6 @@ document.getElementById('settingsLogoUpload').addEventListener('change', functio
         reader.readAsDataURL(file);
     }
 });
-
 // ==========================================
 // 9. دوال QR Code
 // ==========================================
@@ -851,17 +786,6 @@ document.getElementById('closeScannerBtn').addEventListener('click', closeScanne
 document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
 
 // ==========================================
-// زر تفعيل الإشعارات اليدوي
-// ==========================================
-document.getElementById('enableNotificationsBtn')?.addEventListener('click', function() {
-    if (!currentUser) {
-        alert('الرجاء تسجيل الدخول أولاً');
-        return;
-    }
-    requestNotificationPermission();
-});
-
-// ==========================================
 // 10. دوال الإشعارات (Web Push)
 // ==========================================
 async function requestNotificationPermission() {
@@ -869,17 +793,14 @@ async function requestNotificationPermission() {
     
     if (!('serviceWorker' in navigator)) {
         console.warn('⚠️ Service Worker غير مدعوم');
-        alert('المتصفح لا يدعم الإشعارات');
         return false;
     }
     if (!('Notification' in window)) {
         console.warn('⚠️ هذا المتصفح لا يدعم الإشعارات');
-        alert('المتصفح لا يدعم الإشعارات');
         return false;
     }
     if (!currentUser) {
         console.warn('⚠️ لا يوجد مستخدم مسجل الدخول');
-        alert('الرجاء تسجيل الدخول أولاً');
         return false;
     }
 
@@ -891,7 +812,7 @@ async function requestNotificationPermission() {
 
     if (Notification.permission === 'denied') {
         console.warn('⚠️ تم رفض إذن الإشعارات مسبقاً');
-        alert('تم رفض الإشعارات مسبقاً. يرجى السماح بها من إعدادات المتصفح (الإعدادات → الخصوصية والأمان → إعدادات الموقع → الإشعارات).');
+        alert('تم رفض الإشعارات مسبقاً. يرجى السماح بها من إعدادات المتصفح.');
         return false;
     }
 
@@ -900,16 +821,13 @@ async function requestNotificationPermission() {
         if (permission === 'granted') {
             console.log('✅ تم منح الإذن');
             await subscribeToPush();
-            alert('✅ تم تفعيل الإشعارات بنجاح');
             return true;
         } else {
             console.warn('⚠️ تم رفض الإذن');
-            alert('تم رفض الإشعارات. يمكنك تفعيلها لاحقاً من إعدادات المتصفح.');
             return false;
         }
     } catch (err) {
         console.error('❌ خطأ في طلب الإذن:', err);
-        alert('حدث خطأ أثناء طلب الإشعارات');
         return false;
     }
 }
@@ -945,10 +863,10 @@ async function subscribeToPush() {
 
         console.log('✅ اشتراك جديد تم إنشاؤه');
         await sendSubscriptionToServer(subscription);
+        
         return subscription;
     } catch (err) {
         console.error('❌ فشل الاشتراك في Push:', err);
-        alert('فشل تسجيل الإشعارات: ' + err.message);
         return null;
     }
 }
@@ -1454,7 +1372,6 @@ function addLog(message, date, containerId) {
     
     let translatedMessage = message;
     
-    // التحقق من الرسائل المعروفة وترجمتها
     if (message.includes('تم تغيير حالة جميع الطلاب إلى داخل')) {
         translatedMessage = translate('attendance.all_students_inside');
     } else if (message.includes('تم تغيير حالة جميع الطلاب إلى خارج')) {
@@ -1654,9 +1571,30 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
+// ✅ تسجيل الدخول برابط سحري (Magic Link)
+// ==========================================
+function handleMagicLogin() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const userParam = urlParams.get('user');
+
+    if (token && userParam) {
+        try {
+            const user = JSON.parse(decodeURIComponent(userParam));
+            saveAuth({ token, user });
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (err) {
+            console.error('❌ خطأ في معالجة الرابط السحري:', err);
+            alert('حدث خطأ أثناء تسجيل الدخول عبر الرابط السحري');
+        }
+    }
+}
+
+// ==========================================
 // 19. أحداث المصادقة وربط الأحداث
 // ==========================================
 function setupAuthEvents() {
+    // زر تسجيل الدخول
     document.getElementById('loginBtn').addEventListener('click', async () => {
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
@@ -1675,6 +1613,7 @@ function setupAuthEvents() {
         }
     });
 
+    // زر التسجيل
     document.getElementById('registerBtn').addEventListener('click', async () => {
         const name = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
@@ -1697,18 +1636,25 @@ function setupAuthEvents() {
         }
     });
 
+    // روابط التبديل بين الشاشات
     document.getElementById('showRegister').addEventListener('click', showRegister);
     document.getElementById('showLogin').addEventListener('click', showLogin);
     document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
     document.getElementById('logoutBtnParent').addEventListener('click', logout);
 
+    // إعدادات المدرسة
     document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsForm);
     document.getElementById('saveSettingsBtn').addEventListener('click', saveSchoolSettings);
+
+    // إضافة طالب
     document.getElementById('toggleAddStudentBtn').addEventListener('click', toggleAddStudentForm);
     document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
+
+    // الإشعارات
     document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
     document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
     
+    // التغيير الجماعي
     document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
         toggleAllStudents(true);
     });
@@ -1716,6 +1662,7 @@ function setupAuthEvents() {
         toggleAllStudents(false);
     });
 
+    // سجلات المدير
     document.getElementById('adminShowOldLogsBtn').addEventListener('click', function() {
         toggleAdminOldLogs(true);
     });
@@ -1723,6 +1670,7 @@ function setupAuthEvents() {
         toggleAdminOldLogs(false);
     });
 
+    // سجلات ولي الأمر
     document.getElementById('parentShowOldLogsBtn').addEventListener('click', function() {
         toggleParentOldLogs(true);
     });
@@ -1730,12 +1678,79 @@ function setupAuthEvents() {
         toggleParentOldLogs(false);
     });
 
+    // الإشعارات القديمة
     document.getElementById('showOldNotificationsBtn').addEventListener('click', function() {
         toggleOldNotifications(true);
     });
     document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
         toggleOldNotifications(false);
     });
+
+    // ✅ زر الرابط السحري (مع التحقق من وجود العنصر)
+    const magicLinkBtn = document.getElementById('magicLinkBtn');
+    if (magicLinkBtn) {
+        magicLinkBtn.addEventListener('click', async function() {
+            const emailInput = document.getElementById('loginEmail');
+            if (!emailInput) {
+                alert('الرجاء إدخال البريد الإلكتروني');
+                return;
+            }
+            const email = emailInput.value.trim();
+            if (!email) {
+                alert('الرجاء إدخال البريد الإلكتروني');
+                return;
+            }
+
+            // تعطيل الزر ومنع التكرار
+            this.disabled = true;
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/magic/magic-link`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.message || 'فشل إرسال الرابط السحري');
+                }
+
+                // إظهار رسالة نجاح
+                const successMsg = document.getElementById('magicLinkMessage');
+                const errorMsg = document.getElementById('magicLinkError');
+                if (successMsg) successMsg.style.display = 'block';
+                if (errorMsg) errorMsg.style.display = 'none';
+
+                // إخفاء رسالة النجاح بعد 5 ثوان
+                setTimeout(() => {
+                    if (successMsg) successMsg.style.display = 'none';
+                }, 5000);
+
+            } catch (err) {
+                console.error('❌ خطأ في الرابط السحري:', err);
+                const errorMsg = document.getElementById('magicLinkError');
+                const successMsg = document.getElementById('magicLinkMessage');
+                if (errorMsg) {
+                    errorMsg.style.display = 'block';
+                    errorMsg.textContent = '❌ ' + err.message;
+                }
+                if (successMsg) successMsg.style.display = 'none';
+            } finally {
+                // إعادة تفعيل الزر بعد 3 ثوان
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = originalText;
+                }, 3000);
+            }
+        });
+        console.log('✅ تم ربط زر الرابط السحري');
+    } else {
+        console.warn('⚠️ زر الرابط السحري (magicLinkBtn) غير موجود في الصفحة');
+    }
 }
 
 // ==========================================
@@ -1752,6 +1767,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     loadSchoolSettings();
     setupAuthEvents();
 
+    // معالجة الرابط السحري (إذا تم التوجيه من البريد)
     handleMagicLogin();
 
     if (token) {
