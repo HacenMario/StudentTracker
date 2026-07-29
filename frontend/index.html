@@ -99,6 +99,23 @@
                 <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" data-i18n="auth.email">
                 <input type="password" id="loginPassword" placeholder="كلمة المرور" data-i18n="auth.password">
                 <button id="loginBtn"><span data-i18n="auth.login">دخول</span> <i class="fas fa-arrow-left"></i></button>
+                    <!-- ✅ زر الرابط السحري -->
+    <div style="display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap;">
+        <button id="magicLinkBtn" class="btn-secondary" style="flex: 1; min-width: 150px; background: linear-gradient(135deg, #27ae60, #1e8449); color: white; border: none; padding: 10px; border-radius: 60px; cursor: pointer; font-weight: 700;">
+            <i class="fas fa-envelope"></i> <span data-i18n="auth.magic_link">رابط سحري</span>
+        </button>
+    </div>
+
+    <div id="magicLinkMessage" style="display: none; margin-top: 10px; padding: 10px; border-radius: 12px; background: #def7e5; color: #0a6b34; text-align: center; font-weight: 600;">
+        ✅ تم إرسال الرابط السحري إلى بريدك الإلكتروني
+    </div>
+
+    <div id="magicLinkError" style="display: none; margin-top: 10px; padding: 10px; border-radius: 12px; background: #fde8e6; color: #b3362a; text-align: center; font-weight: 600;">
+        ❌ فشل إرسال الرابط السحري
+    </div>
+
+    <p><span data-i18n="auth.no_account">ليس لديك حساب؟</span> <a href="#" id="showRegister" data-i18n="auth.register_now">سجل الآن</a></p>
+</div>
                 
                 <!-- ✅ زر تغيير اللغة في شاشة تسجيل الدخول -->
                 <div class="lang-switcher">
