@@ -133,4 +133,30 @@ router.delete('/:id', auth, isAdmin, async (req, res) => {
   }
 });
 
+// ==========================================
+// 5. عرض الملف المرفق (الصورة أو PDF)
+// ==========================================
+router.get('/file/:id', auth, async (req, res) => {
+  try {
+    const leaveRequest = await LeaveRequest.findById(req.params.id);
+    if (!leaveRequest) {
+      return res.status(404).json({ message: 'الطلب غير موجود' });
+    }
+    
+    // التحقق من الصلاحية: ولي الأمر يرى ملفه فقط، المدير يرى الكل
+    if (req.user.role === 'parent' && leaveRequest.parentEmail !== req.user.email) {
+      return res.status(403).json({ message: 'غير مصرح لك' });
+    }
+
+    if (!leaveRequest.fileUrl) {
+      return res.status(404).json({ message: 'لا يوجد ملف مرفق' });
+    }
+
+    // إعادة التوجيه إلى الرابط أو عرض الملف مباشرة
+    res.redirect(leaveRequest.fileUrl);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
