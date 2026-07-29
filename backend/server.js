@@ -10,6 +10,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const webpush = require('web-push');
+const leaveRoutes = require('./routes/leaveRoutes');
 
 // استيراد النماذج
 const Student = require('./models/Student');
@@ -55,6 +56,7 @@ app.use('/api/students', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/leave-requests', leaveRoutes);
 
 // ==========================================
 // إعداد Web Push (VAPID)
