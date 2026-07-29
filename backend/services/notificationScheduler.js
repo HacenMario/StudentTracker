@@ -3,7 +3,6 @@ const Student = require('../models/Student');
 const SchoolSettings = require('../models/SchoolSettings');
 const Notification = require('../models/Notification');
 const { sendPushNotificationToParent } = require('../utils/notifications');
-const i18n = require('../utils/i18n');
 
 async function sendLeavingNotifications() {
   try {
@@ -45,34 +44,26 @@ async function sendLeavingNotifications() {
     for (const student of students) {
       if (!student.parentEmail) continue;
 
-      // ✅ ترجمة الرسالة حسب لغة ولي الأمر
-      const lang = student.parent?.preferences?.language || 'ar';
-      const titleKey = 'leaving_notification.title';
-      const bodyKey = 'leaving_notification.body';
-      
-      const title = i18n.translate(lang, titleKey);
-      const body = i18n.translate(lang, bodyKey, {
-        minutes: notifyMinutesBefore,
-        studentName: student.name,
-      });
+      // ✅ إرسال الإشعار باستخدام مفاتيح الترجمة
+      await sendPushNotificationToParent(
+        'leaving_title',
+        'leaving_body',
+        { 
+          minutes: notifyMinutesBefore, 
+          studentName: student.name,
+          url: '/parent-dashboard'
+        },
+        student.parentEmail
+      );
 
-      // حفظ الإشعار في قاعدة البيانات (باللغة المترجمة)
+      // ✅ حفظ الإشعار في قاعدة البيانات (بالنص المترجم سيُخزن لاحقاً)
+      const message = `⏰ تنبيه: باقي ${notifyMinutesBefore} دقيقة على خروج ${student.name} من المدرسة`;
       await new Notification({
         target: student.parentEmail,
-        message: body,
+        message: message,
         sender: 'System',
       }).save();
-
-await sendPushNotificationToParent(
-  'leaving_title',
-  'leaving_body',
-  { 
-    minutes: notifyMinutesBefore, 
-    studentName: student.name,
-    url: '/parent-dashboard' 
-  },
-  student.parentEmail
-);
+      
       sentCount++;
     }
 
