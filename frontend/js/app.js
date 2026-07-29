@@ -1863,14 +1863,13 @@ function renderLeaveRequests(requests, containerId) {
     const statusClass = r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending';
     const statusText = translate('leave.status_' + r.status);
     
-    // ✅ عرض التاريخ بالأرقام الإنجليزية (YYYY-MM-DD)
+    // ✅ التاريخ بالأرقام الإنجليزية فقط (YYYY-MM-DD)
     const dateObj = new Date(r.date);
     const year = dateObj.getFullYear();
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const day = String(dateObj.getDate()).padStart(2, '0');
     const formattedDate = `${year}-${month}-${day}`;
     
-    // ✅ عرض الصورة أو الملف بشكل صحيح
     let fileHtml = '';
     if (r.fileUrl) {
       if (r.fileUrl.startsWith('data:image/')) {
