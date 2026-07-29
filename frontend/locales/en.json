@@ -181,6 +181,23 @@
     "scan_qr_found": "✅ Student found: {name}",
     "scan_qr_not_found": "❌ No student found with this code"
 },
+    "smart_alerts": {
+    "title": "Smart Alerts",
+    "run_now": "Run Now",
+    "save_rules": "Save Rules",
+    "enabled": "Enabled",
+    "consecutive": "Consecutive",
+    "monthly": "Monthly",
+    "per_week": "Per Week",
+    "absence": "Repeated Absence",
+    "tardiness": "Morning Tardiness",
+    "achievement": "Achievement Motivation",
+    "no_alerts": "📭 No alerts",
+    "sent_alerts": "Sent Alerts",
+    "confirm_run": "Are you sure you want to run all smart alerts manually?",
+    "run_success": "✅ All smart alerts have been run successfully",
+    "rules_saved": "✅ Alert rules have been saved successfully"
+},
   "leave": {
     "title": "Submit Leave Excuse",
     "select_student": "Select Student",
