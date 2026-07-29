@@ -8,7 +8,7 @@ const AttendanceSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['in', 'out'],
+    enum: ['in', 'out', 'excused'],
     required: true,
   },
   timestamp: {
