@@ -185,7 +185,7 @@
     "scan_qr": "Scanner QR",
     "scan_qr_found": "✅ Étudiant trouvé: {name}",
     "scan_qr_not_found": "❌ Aucun étudiant trouvé avec ce code"
-},
+  },
   "smart_alerts": {
     "title": "Alertes intelligentes",
     "run_now": "Exécuter maintenant",
@@ -202,6 +202,7 @@
     "confirm_run": "Êtes-vous sûr de vouloir exécuter toutes les alertes intelligentes manuellement ?",
     "run_success": "✅ Toutes les alertes intelligentes ont été exécutées avec succès",
     "rules_saved": "✅ Les règles d'alertes ont été enregistrées avec succès"
+  },
   "leave": {
     "title": "Soumettre une excuse d'absence",
     "select_student": "Sélectionner l'étudiant",
@@ -222,8 +223,8 @@
     "admin_note": "Note de l'administrateur",
     "fill_all": "Veuillez remplir tous les champs requis",
     "download_file": "Télécharger le fichier"
-},
-   "leaving_notification": {
+  },
+  "leaving_notification": {
     "title": "⏰ Alerte de sortie",
     "body": "⏰ Alerte : il reste {minutes} minutes avant la sortie de {studentName} de l'école"
   },
