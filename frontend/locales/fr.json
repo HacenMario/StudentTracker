@@ -228,6 +228,19 @@
     "title": "⏰ Alerte de sortie",
     "body": "⏰ Alerte : il reste {minutes} minutes avant la sortie de {studentName} de l'école"
   },
+  "holidays": {
+    "title": "Gestion des jours fériés",
+    "add": "Ajouter un jour férié",
+    "date": "Date",
+    "name": "Nom du jour férié",
+    "description": "Description (optionnel)",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "confirm_delete": "Êtes-vous sûr de vouloir supprimer ce jour férié ?",
+    "close_form": "Fermer le formulaire",
+    "fill_all": "Veuillez saisir la date et le nom du jour férié",
+    "no_holidays": "📭 Aucun jour férié enregistré"
+},
   "system": {
     "sender": "Système"
   }
