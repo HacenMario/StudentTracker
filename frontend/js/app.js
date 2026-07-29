@@ -1390,7 +1390,7 @@ function renderAdminLogs(showOld) {
     document.getElementById('adminShowAllLogsBtn').style.display = 'none';
 
     if (adminLogs.length === 0) {
-        container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد نشاطات بعد</div>';
+        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center;">${translate('attendance.no_logs')}</div>`;
         return;
     }
 
@@ -1427,7 +1427,33 @@ function renderAdminLogs(showOld) {
     logsToShow.forEach(log => {
         const item = document.createElement('div');
         item.className = 'log-item';
-        item.innerHTML = `<span>${log.message}</span><span class="log-time">${log.time}</span>`;
+        
+        // ✅ ترجمة الرسالة
+        let displayMessage = log.message;
+        if (log.key) {
+            displayMessage = translate(log.key, log.params) || log.message;
+        } else {
+            // محاولة ترجمة الرسائل المعروفة
+            const keys = [
+                'attendance.student_became_inside',
+                'attendance.student_became_outside',
+                'attendance.all_students_inside',
+                'attendance.all_students_outside',
+                'attendance.student_added',
+                'attendance.student_updated',
+                'attendance.student_deleted',
+                'attendance.student_toggled',
+            ];
+            for (const key of keys) {
+                const translated = translate(key);
+                if (translated !== key && log.message.includes(translated)) {
+                    displayMessage = translated;
+                    break;
+                }
+            }
+        }
+        
+        item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${log.time}</span>`;
         container.appendChild(item);
     });
 
@@ -1491,7 +1517,7 @@ function renderParentLogs(showOld) {
     document.getElementById('parentHideOldLogsBtn').style.display = 'none';
 
     if (parentLogs.length === 0) {
-        container.innerHTML = '<div class="log-item" style="color:#8a9aaa; justify-content:center;">لا توجد سجلات بعد</div>';
+        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center;">${translate('attendance.no_logs')}</div>`;
         return;
     }
 
@@ -1521,7 +1547,23 @@ function renderParentLogs(showOld) {
     logsToShow.forEach(log => {
         const item = document.createElement('div');
         item.className = 'log-item';
-        const displayMessage = log.studentName ? `${log.studentName}: ${log.message}` : log.message;
+        
+        // ✅ ترجمة الرسالة إذا كانت قابلة للترجمة
+        let displayMessage = log.message;
+        if (log.key) {
+            displayMessage = translate(log.key, log.params) || log.message;
+        } else if (log.type) {
+            const translated = translate(`attendance.${log.type}`);
+            if (translated !== `attendance.${log.type}`) {
+                displayMessage = translated;
+            }
+        }
+        
+        // إذا كان هناك اسم طالب، نضيفه
+        if (log.studentName) {
+            displayMessage = `${log.studentName}: ${displayMessage}`;
+        }
+        
         item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${log.time}</span>`;
         container.appendChild(item);
     });
@@ -1530,7 +1572,7 @@ function renderParentLogs(showOld) {
         const divider = document.createElement('div');
         divider.className = 'log-item';
         divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-        divider.textContent = '📜 السجل السابق';
+        divider.textContent = translate('attendance.old_logs');
         container.appendChild(divider);
     }
 }
