@@ -365,6 +365,9 @@ function showAdminDashboard() {
         renderLeaveRequests(requests, 'leaveRequestsList');
     });
 }
+    // ✅ إضافة أحداث العطل عند عرض لوحة المدير
+    setupHolidayEvents();
+}
 
 function showParentDashboard() {
     document.getElementById('loginScreen').style.display = 'none';
@@ -2680,6 +2683,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupLeaveEvents();
     setupSearchEvents(); 
     setupSmartAlertEvents();
+    setupHolidayEvents();
     
     if (token) {
         try {
