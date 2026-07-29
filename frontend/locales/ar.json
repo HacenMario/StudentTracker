@@ -103,6 +103,7 @@
     "exit": "خروج",
     "all_students_inside": "تم تغيير حالة جميع الطلاب إلى داخل 🏫",
     "all_students_outside": "تم تغيير حالة جميع الطلاب إلى خارج 🚪",
+    "student_became": "التلميذ {name} أصبح {status}",
     "student_became_inside": "التلميذ {name} أصبح داخل 🏫",
     "student_became_outside": "التلميذ {name} أصبح خارج 🚪",
     "student_deleted": "تم حذف تلميذ",
