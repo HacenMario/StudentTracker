@@ -24,6 +24,55 @@ let currentCameraId = null;
 let availableCameras = [];
 
 // ==========================================
+// زر تغيير اللغة - التحديث لجميع الشاشات
+// ==========================================
+
+// تحديث حالة الأزرار النشطة لكل الشاشات
+function updateLanguageButtons(lang) {
+    // تحديث أزرار شاشة تسجيل الدخول
+    document.querySelectorAll('#loginScreen .lang-btn, #registerScreen .lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+    
+    // تحديث أزرار الهيدر في اللوحات
+    document.querySelectorAll('.header-lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+}
+
+// تحديث دالة switchLanguage
+function switchLanguage(lang) {
+    if (lang === currentLanguage) return;
+    currentLanguage = lang;
+    localStorage.setItem('language', lang);
+    
+    // تحديث الاتجاه
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+    
+    // ✅ تحديث حالة جميع الأزرار
+    updateLanguageButtons(lang);
+    
+    // تطبيق الترجمات
+    applyTranslationsToAll();
+    
+    // إعادة تحميل المحتوى الديناميكي
+    if (currentUser) {
+        if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+            loadAdminStudents();
+            loadAdminLogs();
+            loadAdminNotifications();
+        } else {
+            loadParentStudents();
+            loadParentLogs();
+            loadParentNotifications();
+        }
+    }
+    
+    console.log(`🌍 تم تغيير اللغة إلى: ${lang}`);
+}
+
+// ==========================================
 // نظام الترجمة (i18n)
 // ==========================================
 let currentLanguage = localStorage.getItem('language') || 'ar';
