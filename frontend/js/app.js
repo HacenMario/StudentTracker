@@ -368,12 +368,11 @@ function showParentDashboard() {
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
     connectSocket();
-    loadParentStudents();
+    loadParentStudents(); // ✅ هذه الدالة غير متزامنة (async)
+    // ❌ لا تستدعي fillLeaveStudents() هنا مباشرةً
+    // بدلاً من ذلك، سيتم استدعاؤها تلقائياً بعد تحميل البيانات
     loadParentLogs();
     loadParentNotifications();
-    
-    // ✅ تعبئة قائمة الطلاب في نموذج الإجازات
-    fillLeaveStudents();
 }
 
 // ==========================================
@@ -1664,8 +1663,12 @@ async function loadParentStudents() {
         if (!res.ok) throw new Error('فشل جلب بيانات أبنائك');
         const students = await res.json();
         renderStudents(students, 'parentStudentsList', false);
+        
         // ✅ تخزين الطلاب في localStorage
         localStorage.setItem('parentStudents', JSON.stringify(students));
+        
+        // ✅ تعبئة قائمة الطلاب في نموذج الإجازات (بعد تحميل البيانات)
+        fillLeaveStudents();
         
         if (students.length > 0) {
             await loadAttendance(students[0]._id);
@@ -1944,13 +1947,18 @@ window.handleLeaveRequest = async function(requestId, status) {
 function fillLeaveStudents() {
     const select = document.getElementById('leaveStudentSelect');
     if (!select) return;
+    
+    // ✅ تنظيف القائمة مع الاحتفاظ بالخيار الافتراضي
     select.innerHTML = '';
     const defaultOption = document.createElement('option');
     defaultOption.value = '';
     defaultOption.textContent = translate('leave.select_student');
     select.appendChild(defaultOption);
     
+    // ✅ جلب الطلاب من localStorage
     const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
+    console.log('📋 جاري تعبئة الطلاب في نموذج الإجازات:', students.length);
+    
     students.forEach(s => {
         const option = document.createElement('option');
         option.value = s._id;
