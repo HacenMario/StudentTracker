@@ -23,6 +23,7 @@ const translations = {
     'attendance.student_toggled': 'تم تغيير حالة الطالب',
     'attendance.all_students_inside': 'تم تغيير حالة جميع الطلاب إلى داخل 🏫',
     'attendance.all_students_outside': 'تم تغيير حالة جميع الطلاب إلى خارج 🚪',
+    'common.time': 'وقت:',
   },
   fr: {
     'leaving_title': '⏰ Alerte de sortie',
@@ -43,6 +44,7 @@ const translations = {
     'attendance.student_toggled': 'Statut de l\'étudiant modifié',
     'attendance.all_students_inside': 'Tous les étudiants sont à l\'intérieur 🏫',
     'attendance.all_students_outside': 'Tous les étudiants sont à l\'extérieur 🚪',
+    'common.time': 'Heure :',
   },
 };
 
