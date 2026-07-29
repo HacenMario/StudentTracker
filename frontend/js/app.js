@@ -1513,7 +1513,6 @@ function renderAdminLogs(showOld) {
         const item = document.createElement('div');
         item.className = 'log-item';
         
-        // ✅ ترجمة الرسالة باستخدام المفتاح المخزن
         let displayMessage = log.message;
         if (log.key) {
             displayMessage = translate(log.key, log.params || {});
@@ -1522,7 +1521,11 @@ function renderAdminLogs(showOld) {
             }
         }
         
-        item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${log.time}</span>`;
+        // ✅ ترجمة كلمة "وقت"
+        const timeLabel = translate('common.time');
+        const timeDisplay = log.time || '';
+        
+        item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${timeLabel} ${timeDisplay}</span>`;
         container.appendChild(item);
     });
 
@@ -1631,11 +1634,9 @@ function renderParentLogs(showOld) {
         const item = document.createElement('div');
         item.className = 'log-item';
         
-        // ✅ ترجمة الرسالة باستخدام المفتاح المخزن
         let displayMessage = log.message;
         if (log.key) {
             displayMessage = translate(log.key, log.params || {});
-            // إذا كانت الترجمة تساوي المفتاح، استخدم الرسالة الأصلية
             if (displayMessage === log.key && log.message) {
                 displayMessage = log.message;
             }
@@ -1643,12 +1644,15 @@ function renderParentLogs(showOld) {
             displayMessage = log.message;
         }
         
-        // إذا كان هناك اسم طالب، نضيفه
+        // ✅ ترجمة كلمة "وقت"
+        const timeLabel = translate('common.time');
+        const timeDisplay = log.time || '';
+        
         if (log.studentName) {
             displayMessage = `${log.studentName}: ${displayMessage}`;
         }
         
-        item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${log.time}</span>`;
+        item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${timeLabel} ${timeDisplay}</span>`;
         container.appendChild(item);
     });
 
