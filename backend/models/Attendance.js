@@ -17,7 +17,7 @@ const AttendanceSchema = new mongoose.Schema({
   },
   method: {
     type: String,
-    enum: ['manual', 'rfid', 'auto', 'qr'],
+    enum: ['manual', 'rfid', 'auto', 'qr', 'leave'],
     default: 'manual',
   },
   // إضافة حقل لتخزين اسم الطالب لتسهيل العرض
