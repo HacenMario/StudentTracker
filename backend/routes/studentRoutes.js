@@ -68,13 +68,14 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     }
 
     student.isInside = !student.isInside;
-    student.lastUpdate = new Date();
+    student.lastUpdate = new Date(new Date().getTime() - (60 * 60 * 1000));
     await student.save();
 
 const attendance = new Attendance({
   student: student._id,
   status: student.isInside ? 'in' : 'out',
   method: 'manual',
+  timestamp: new Date(new Date().getTime() - (60 * 60 * 1000)),
   studentName: student.name,
   statusText: student.isInside ? 'داخل 🏫' : 'خارج 🚪',
 });
