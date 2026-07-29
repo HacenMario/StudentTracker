@@ -170,6 +170,8 @@
     "all_details": "Tous les détails",
     "confirm_add": "Confirmation d'ajout",
     "parent": "Parent",
-    "enable_notifications": "Activer les notifications"
+    "enable_notifications": "Activer les notifications",
+    "end_time": "Heure de fin des cours :",
+    "notify_before": "Envoyer une notification avant (minutes) :"
   }
 }
