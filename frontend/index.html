@@ -113,6 +113,16 @@
                 <div id="settingsForm" style="display:none;" class="add-student-form">
                     <h4 style="margin-bottom:12px;" data-i18n="settings.title">تعديل معلومات المدرسة</h4>
                     <div class="form-grid">
+                        <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+  <div>
+    <label style="display:block; margin-bottom:6px; font-weight:600;" data-i18n="settings.end_time">وقت نهاية الدوام:</label>
+    <input type="time" id="settingsEndTime" value="16:00" style="width:100%; padding:12px; border:2px solid #e2eaf2; border-radius:12px;">
+  </div>
+  <div>
+    <label style="display:block; margin-bottom:6px; font-weight:600;" data-i18n="settings.notify_before">إرسال إشعار قبل (دقائق):</label>
+    <input type="number" id="settingsNotifyBefore" value="30" min="5" max="120" style="width:100%; padding:12px; border:2px solid #e2eaf2; border-radius:12px;">
+  </div>
+</div>
                         <input type="text" id="settingsSchoolName" placeholder="اسم المدرسة" data-i18n="settings.name">
                         <input type="text" id="settingsAddress" placeholder="العنوان" data-i18n="settings.address">
                         <input type="text" id="settingsPhone" placeholder="الهاتف" data-i18n="settings.phone">
