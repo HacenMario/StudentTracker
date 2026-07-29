@@ -2135,99 +2135,143 @@ async function runSmartAlerts() {
 
 // عرض التنبيهات الذكية (للمدير)
 function renderSmartAlerts(alerts, containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-  if (!alerts || alerts.length === 0) {
-    container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center;">${translate('smart_alerts.no_alerts')}</div>`;
-    return;
-  }
+    if (!alerts || alerts.length === 0) {
+        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
+        return;
+    }
 
-  let html = '';
-  alerts.forEach(alert => {
-    const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
-    const typeLabel = translate('smart_alerts.' + alert.type);
-    const isRead = alert.isRead ? '✅' : '🆕';
-    
-    html += `
-      <div class="log-item" style="${!alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : ''}">
-        <span>${typeIcon} ${alert.message}</span>
-        <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
+    let html = '';
+    alerts.forEach(alert => {
+        const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
+        const isRead = alert.isRead ? '✅' : '🆕';
+        const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
+        
+        html += `
+            <div class="log-item" style="${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;">
+                <span>${typeIcon} ${alert.message}</span>
+                <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
 }
 
+// ==========================================
 // ربط أحداث التنبيهات الذكية
+// ==========================================
 function setupSmartAlertEvents() {
-  // زر تشغيل التنبيهات يدوياً
-  document.getElementById('runSmartAlertsBtn')?.addEventListener('click', async function() {
-    const confirmed = await showConfirmModal(
-      translate('smart_alerts.run_now'),
-      translate('smart_alerts.confirm_run')
-    );
-    if (!confirmed) return;
-    
-    this.disabled = true;
-    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + translate('common.loading');
-    
-    const result = await runSmartAlerts();
-    if (result.success) {
-      alert(translate('smart_alerts.run_success'));
-      // إعادة تحميل التنبيهات
-      const alerts = await loadSmartAlerts();
-      renderSmartAlerts(alerts, 'smartAlertsList');
+    // زر تشغيل التنبيهات يدوياً
+    const runBtn = document.getElementById('runSmartAlertsBtn');
+    if (runBtn) {
+        runBtn.addEventListener('click', async function() {
+            const confirmed = await showConfirmModal(
+                translate('smart_alerts.run_now'),
+                translate('smart_alerts.confirm_run')
+            );
+            if (!confirmed) return;
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + translate('common.loading');
+            
+            const result = await runSmartAlerts();
+            if (result.success) {
+                alert(translate('smart_alerts.run_success'));
+                const alerts = await loadSmartAlerts();
+                renderSmartAlerts(alerts, 'smartAlertsList');
+            } else {
+                alert(result.message || translate('common.error'));
+            }
+            
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-play"></i> ' + translate('smart_alerts.run_now');
+        });
+        console.log('✅ ربط زر تشغيل التنبيهات الذكية');
     } else {
-      alert(result.message || translate('common.error'));
+        console.warn('⚠️ زر runSmartAlertsBtn غير موجود');
     }
-    
-    this.disabled = false;
-    this.innerHTML = '<i class="fas fa-play"></i> ' + translate('smart_alerts.run_now');
-  });
 
-  // زر حفظ القواعد
-  document.getElementById('saveAlertRulesBtn')?.addEventListener('click', async function() {
-    const rules = [
-      {
-        type: 'absence',
-        enabled: document.getElementById('absenceEnabled')?.checked || false,
-        conditions: {
-          absenceConsecutiveDays: parseInt(document.getElementById('absenceConsecutive')?.value) || 3,
-          absenceMonthlyDays: parseInt(document.getElementById('absenceMonthly')?.value) || 5,
-        },
-        cooldownDays: 7,
-      },
-      {
-        type: 'tardiness',
-        enabled: document.getElementById('tardinessEnabled')?.checked || false,
-        conditions: {
-          tardinessPerWeek: parseInt(document.getElementById('tardinessPerWeek')?.value) || 3,
-        },
-        cooldownDays: 7,
-      },
-      {
-        type: 'achievement',
-        enabled: document.getElementById('achievementEnabled')?.checked || false,
-        conditions: {
-          achievementConsecutiveDays: parseInt(document.getElementById('achievementConsecutive')?.value) || 10,
-          achievementMonthlyDays: parseInt(document.getElementById('achievementMonthly')?.value) || 20,
-        },
-        cooldownDays: 14,
-      },
-    ];
-    
-    this.disabled = true;
-    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + translate('common.loading');
-    
-    const results = await saveAlertRules(rules);
-    const allSuccess = results.every(r => r.success);
-    
-    alert(allSuccess ? translate('smart_alerts.rules_saved') : translate('common.error'));
-    
-    this.disabled = false;
-    this.innerHTML = '<i class="fas fa-save"></i> ' + translate('smart_alerts.save_rules');
-  });
+    // زر حفظ القواعد
+    const saveBtn = document.getElementById('saveAlertRulesBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async function() {
+            const rules = [
+                {
+                    type: 'absence',
+                    enabled: document.getElementById('absenceEnabled')?.checked || false,
+                    conditions: {
+                        absenceConsecutiveDays: parseInt(document.getElementById('absenceConsecutive')?.value) || 3,
+                        absenceMonthlyDays: parseInt(document.getElementById('absenceMonthly')?.value) || 5,
+                    },
+                    cooldownDays: 7,
+                },
+                {
+                    type: 'tardiness',
+                    enabled: document.getElementById('tardinessEnabled')?.checked || false,
+                    conditions: {
+                        tardinessPerWeek: parseInt(document.getElementById('tardinessPerWeek')?.value) || 3,
+                    },
+                    cooldownDays: 7,
+                },
+                {
+                    type: 'achievement',
+                    enabled: document.getElementById('achievementEnabled')?.checked || false,
+                    conditions: {
+                        achievementConsecutiveDays: parseInt(document.getElementById('achievementConsecutive')?.value) || 10,
+                        achievementMonthlyDays: parseInt(document.getElementById('achievementMonthly')?.value) || 20,
+                    },
+                    cooldownDays: 14,
+                },
+            ];
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + translate('common.loading');
+            
+            const results = await saveAlertRules(rules);
+            const allSuccess = results.every(r => r.success);
+            
+            alert(allSuccess ? translate('smart_alerts.rules_saved') : translate('common.error'));
+            
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-save"></i> ' + translate('smart_alerts.save_rules');
+        });
+        console.log('✅ ربط زر حفظ قواعد التنبيهات');
+    } else {
+        console.warn('⚠️ زر saveAlertRulesBtn غير موجود');
+    }
+
+    // تحميل القواعد الحالية عند ظهور الصفحة
+    loadAlertRules().then(rules => {
+        if (rules && rules.length > 0) {
+            const absence = rules.find(r => r.type === 'absence');
+            const tardiness = rules.find(r => r.type === 'tardiness');
+            const achievement = rules.find(r => r.type === 'achievement');
+            
+            if (absence) {
+                document.getElementById('absenceConsecutive').value = absence.conditions?.absenceConsecutiveDays || 3;
+                document.getElementById('absenceMonthly').value = absence.conditions?.absenceMonthlyDays || 5;
+                document.getElementById('absenceEnabled').checked = absence.enabled !== false;
+            }
+            if (tardiness) {
+                document.getElementById('tardinessPerWeek').value = tardiness.conditions?.tardinessPerWeek || 3;
+                document.getElementById('tardinessEnabled').checked = tardiness.enabled !== false;
+            }
+            if (achievement) {
+                document.getElementById('achievementConsecutive').value = achievement.conditions?.achievementConsecutiveDays || 10;
+                document.getElementById('achievementMonthly').value = achievement.conditions?.achievementMonthlyDays || 20;
+                document.getElementById('achievementEnabled').checked = achievement.enabled !== false;
+            }
+        }
+    });
+
+    // تحميل التنبيهات المرسلة
+    if (document.getElementById('smartAlertsList')) {
+        loadSmartAlerts().then(alerts => {
+            renderSmartAlerts(alerts, 'smartAlertsList');
+        });
+    }
 }
 
 // ==========================================
@@ -2484,6 +2528,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupAuthEvents();
     setupLeaveEvents();
     setupSearchEvents(); 
+    setupSmartAlertEvents();
     
     if (token) {
         try {
