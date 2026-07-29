@@ -512,20 +512,21 @@ app.get('/api/trigger-leaving', async (req, res) => {
     for (const student of students) {
       if (!student.parentEmail) continue;
 
-      const message = `⏰ تنبيه: باقي ${notifyMinutesBefore} دقيقة على خروج ${student.name} من المدرسة`;
-
+const messageAr = `⏰ تنبيه: باقي ${notifyMinutesBefore} دقيقة على خروج ${student.name} من المدرسة`;
+const messageFr = `⏰ Alerte : il reste ${notifyMinutesBefore} minutes avant la sortie de ${student.name} de l'école`;
+      
       await new Notification({
         target: student.parentEmail,
         message: message,
         sender: 'System',
       }).save();
 
-      await sendPushNotificationToParent(
-        '⏰ تنبيه الخروج',
-        message,
-        { url: '/parent-dashboard' },
-        student.parentEmail
-      );
+await sendPushNotificationToParent(
+  '⏰ تنبيه الخروج',
+  messageAr,
+  { url: '/parent-dashboard' },
+  student.parentEmail
+);
       sentCount++;
     }
 
