@@ -882,3 +882,27 @@ header h1 {
 .leave-actions .btn-reject:hover {
     background: #c0392b;
 }
+/* ========================================== */
+/* تنسيقات البحث عن التلميذ */
+/* ========================================== */
+.search-section input:focus {
+    border-color: #2b6cb0;
+    box-shadow: 0 0 0 4px rgba(43, 108, 176, 0.1);
+}
+
+#clearSearchBtn {
+    transition: 0.3s;
+}
+
+#clearSearchBtn:hover {
+    background: #cbddee;
+}
+
+#searchByQRBtn {
+    transition: 0.3s;
+}
+
+#searchByQRBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(142, 68, 173, 0.3);
+}
