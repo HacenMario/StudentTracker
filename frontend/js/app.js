@@ -1522,7 +1522,7 @@ function renderAdminLogs(showOld) {
         }
         
         // ✅ ترجمة كلمة "وقت"
-        const timeLabel = translate('common.time');
+        const timeLabel = translate('common.time') || 'وقت:';
         const timeDisplay = log.time || '';
         
         item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${timeLabel} ${timeDisplay}</span>`;
