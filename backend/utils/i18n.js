@@ -1,17 +1,13 @@
 // backend/utils/i18n.js
 const translations = {
   ar: {
-    // إشعارات الخروج المبكر
     'leaving_title': '⏰ تنبيه الخروج',
     'leaving_body': '⏰ تنبيه: باقي {minutes} دقيقة على خروج {studentName} من المدرسة',
-    // إشعارات تغيير الحالة
     'status_title': 'تحديث حالة ابنك',
     'status_body': 'التلميذ {name} أصبح {status}',
-    // إشعارات عامة
     'general_title': '📢 إشعار من المدرسة',
     'private_title': '📩 إشعار خاص من المدرسة',
     'bulk_title': 'تحديث جماعي',
-    // سجل الحضور
     'attendance.entry': 'دخول',
     'attendance.exit': 'خروج',
     'attendance.no_logs': 'لا توجد سجلات بعد',
@@ -45,6 +41,27 @@ const translations = {
     'attendance.all_students_inside': 'Tous les étudiants sont à l\'intérieur 🏫',
     'attendance.all_students_outside': 'Tous les étudiants sont à l\'extérieur 🚪',
     'common.time': 'Heure :',
+  },
+  en: {
+    'leaving_title': '⏰ Leaving Alert',
+    'leaving_body': '⏰ Alert: {minutes} minutes until {studentName} leaves school',
+    'status_title': 'Your Child\'s Status Update',
+    'status_body': 'Student {name} is {status}',
+    'general_title': '📢 School Notification',
+    'private_title': '📩 Private Notification from School',
+    'bulk_title': 'Bulk Update',
+    'attendance.entry': 'Check In',
+    'attendance.exit': 'Check Out',
+    'attendance.no_logs': 'No records',
+    'attendance.old_logs': '📜 Old records',
+    'attendance.student_became': 'Student {name} is {status}',
+    'attendance.student_added': 'Student {name} added',
+    'attendance.student_updated': 'Student {name} updated',
+    'attendance.student_deleted': 'Student deleted',
+    'attendance.student_toggled': 'Student status changed',
+    'attendance.all_students_inside': 'All students are inside 🏫',
+    'attendance.all_students_outside': 'All students are outside 🚪',
+    'common.time': 'Time:',
   },
 };
 
