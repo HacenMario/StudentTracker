@@ -224,35 +224,45 @@ io.on('connection', (socket) => {
         return;
       }
 
-      student.isInside = !student.isInside;
-      student.lastUpdate = new Date();
-      await student.save();
+// تغيير الحالة
+student.isInside = !student.isInside;
+student.lastUpdate = new Date();
+await student.save();
 
-      const attendance = new Attendance({
-        student: student._id,
-        status: student.isInside ? 'in' : 'out',
-        method: 'manual',
-      });
-      await attendance.save();
+// تسجيل الحضور
+const attendance = new Attendance({
+  student: student._id,
+  status: student.isInside ? 'in' : 'out',
+  method: 'manual',
+});
+await attendance.save();
 
-      const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
-      const message = `التلميذ ${student.name} أصبح ${statusText}`;
+const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
+const message = `التلميذ ${student.name} أصبح ${statusText}`;
 
-      io.emit('status-changed', {
-        student: student,
-        message: message,
-        parentId: student.parent ? student.parent.toString() : null,
-        parentEmail: student.parentEmail,
-      });
+// ✅ إرسال الإشعار باستخدام مفاتيح الترجمة
+if (student.parentEmail) {
+  await sendPushNotificationToParent(
+    'status_title',
+    'status_body',
+    { 
+      name: student.name, 
+      status: statusText,
+      url: '/parent-dashboard'
+    },
+    student.parentEmail
+  );
+}
 
-      if (student.parentEmail) {
-        const notification = new Notification({
-          target: student.parentEmail,
-          message: message,
-          sender: 'Admin',
-        });
-        await notification.save();
-      }
+// ✅ حفظ الإشعار في قاعدة البيانات
+if (student.parentEmail) {
+  const notification = new Notification({
+    target: student.parentEmail,
+    message: message,
+    sender: 'Admin',
+  });
+  await notification.save();
+}
 
       if (student.parentEmail) {
         const targetSocketId = userSockets.get(student.parentEmail);
