@@ -363,18 +363,12 @@ socket.on('status-changed', (data) => {
         loadAdminStudents();
         loadAdminLogs();
     } else {
+        // ✅ التحقق من أن الإشعار يخص ولي الأمر هذا
         if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
             loadParentStudents();
             loadParentLogs();
             const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
-            // ✅ استخدام المفتاح مع المعاملات
-            addLog(
-                '', 
-                new Date(), 
-                'parentLogContainer',
-                'attendance.student_became',
-                { name: data.student.name, status: statusText }
-            );
+            addLog('', new Date(), 'parentLogContainer', 'attendance.student_became', { name: data.student.name, status: statusText });
             showBrowserNotification(translate('notification.title'), translate('attendance.student_became', { name: data.student.name, status: statusText }));
         }
     }
@@ -1552,8 +1546,15 @@ async function loadParentStudents() {
         if (!res.ok) throw new Error('فشل جلب بيانات أبنائك');
         const students = await res.json();
         renderStudents(students, 'parentStudentsList', false);
+        
+        // ✅ تحديث السجلات فقط إذا كان هناك طلاب
         if (students.length > 0) {
-            loadAttendance(students[0]._id);
+            // نأخذ أول طالب فقط للتبسيط (يمكن تحسينه لعرض جميع الطلاب)
+            await loadAttendance(students[0]._id);
+        } else {
+            // إذا لم يكن هناك طلاب، نعرض رسالة "لا توجد سجلات"
+            parentLogs = [];
+            renderParentLogs(parentShowOldLogs);
         }
     } catch (err) {
         console.error(err);
@@ -1567,31 +1568,33 @@ async function loadAttendance(studentId) {
         if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
         
-        // ✅ معالجة السجلات وترجمتها
-        parentLogs = records.map(r => {
-            // تحديد مفتاح الترجمة بناءً على الحالة
-            const statusKey = r.status === 'in' ? 'attendance.entry' : 'attendance.exit';
-            // ترجمة النص
-            const translatedMessage = translate(statusKey);
-            
-            // الحصول على اسم الطالب (إذا كان موجوداً)
-            const studentName = r.studentName || '';
-            
-            return {
-                message: translatedMessage,
-                studentName: studentName,
-                time: formatFullTime(r.timestamp),
-                date: new Date(r.timestamp)
-            };
-        });
+        // ✅ تحويل السجلات وإضافتها إلى المصفوفة (مع تجنب إعادة تعيينها بالكامل)
+        const newLogs = records.map(r => ({
+            message: r.status === 'in' ? translate('attendance.entry') : translate('attendance.exit'),
+            time: formatFullTime(r.timestamp),
+            date: new Date(r.timestamp),
+            key: r.status === 'in' ? 'attendance.entry' : 'attendance.exit',
+            params: {},
+            studentName: r.studentName || ''
+        }));
+
+        // ✅ ندمج السجلات الجديدة مع القديمة مع تجنب التكرار
+        // نستخدم Set لتتبع التواريخ والرسائل لمنع التكرار (اختياري)
+        // هنا نستبدل المصفوفة بالكامل لأن السجلات تأتي من قاعدة البيانات مرتبة
+        parentLogs = newLogs;
         
+        // ✅ إعادة عرض السجلات
         renderParentLogs(parentShowOldLogs);
     } catch (err) {
         console.error(err);
+        // في حالة الخطأ، نعرض رسالة "لا توجد سجلات"
+        parentLogs = [];
+        renderParentLogs(parentShowOldLogs);
     }
 }
 
 async function loadParentLogs() {
+    // ✅ فقط عرض السجلات الموجودة دون إعادة جلبها
     renderParentLogs(parentShowOldLogs);
 }
 
