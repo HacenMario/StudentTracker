@@ -14,7 +14,6 @@ router.post('/', auth, async (req, res) => {
   try {
     const { studentId, date, reason, fileUrl, fileName } = req.body;
     
-    // التحقق من أن الطالب يخص ولي الأمر
     const student = await Student.findById(studentId);
     if (!student) {
       return res.status(404).json({ message: 'الطالب غير موجود' });
@@ -23,10 +22,17 @@ router.post('/', auth, async (req, res) => {
       return res.status(403).json({ message: 'غير مصرح لك' });
     }
 
+    // ✅ تصحيح التاريخ: إضافة ساعة واحدة للتخزين (لتعويض فرق UTC)
+    let correctedDate = new Date(date);
+    if (!isNaN(correctedDate.getTime())) {
+      // إضافة ساعة واحدة لتخزينها بتوقيت UTC+1 (الجزائر)
+      correctedDate = new Date(correctedDate.getTime() + (60 * 60 * 1000));
+    }
+
     const leaveRequest = new LeaveRequest({
       student: studentId,
       parentEmail: req.user.email,
-      date: date || new Date(),
+      date: correctedDate || new Date(),
       reason,
       fileUrl: fileUrl || '',
       fileName: fileName || '',
@@ -34,7 +40,6 @@ router.post('/', auth, async (req, res) => {
 
     await leaveRequest.save();
 
-    // إرسال إشعار للمدير (عبر Socket)
     const io = req.app.get('io');
     io.emit('new-leave-request', {
       message: `📩 طلب عذر غياب جديد من ${student.name}`,
