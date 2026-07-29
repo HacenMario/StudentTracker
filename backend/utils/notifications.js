@@ -3,7 +3,7 @@ const Subscription = require('../models/Subscription');
 const User = require('../models/User');
 const { translate } = require('./i18n');
 
-// دالة مساعدة لجلب لغة المستخدم
+// دالة لجلب لغة المستخدم من قاعدة البيانات
 async function getUserLanguage(email) {
   try {
     const user = await User.findOne({ email });
@@ -30,7 +30,7 @@ async function sendPushNotificationToParent(titleKey, bodyKey, data = {}, parent
     const lang = await getUserLanguage(parentEmail);
     console.log(`🌍 لغة المستخدم ${parentEmail}: ${lang}`);
 
-    // ✅ ترجمة النصوص
+    // ✅ ترجمة النصوص باستخدام المفاتيح
     const title = translate(lang, titleKey);
     const body = translate(lang, bodyKey, data);
 
@@ -47,7 +47,7 @@ async function sendPushNotificationToParent(titleKey, bodyKey, data = {}, parent
       body,
       icon: '/favicon.ico',
       badge: '/favicon.ico',
-      data,
+      data: { ...data, url: data.url || '/parent-dashboard' },
       url: data.url || '/parent-dashboard',
     });
 
@@ -79,7 +79,7 @@ async function sendPushNotificationToParent(titleKey, bodyKey, data = {}, parent
   }
 }
 
-// دالة الإشعارات العامة (ترسل لجميع المشتركين دون ترجمة، أو يمكن ترجمتها حسب لغة كل مستخدم)
+// دالة الإشعارات العامة (ترسل لجميع المشتركين)
 async function sendPushNotificationToAll(title, body, data = {}) {
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
@@ -87,7 +87,6 @@ async function sendPushNotificationToAll(title, body, data = {}) {
       return;
     }
 
-    // للإشعارات العامة، نرسل نفس النص لجميع المستخدمين (يمكن ترجمته لاحقاً)
     const subscriptions = await Subscription.find({});
     console.log(`📊 عدد المشتركين الكلي: ${subscriptions.length}`);
 
