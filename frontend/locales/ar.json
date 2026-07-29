@@ -171,6 +171,8 @@
     "close_scanner": "إغلاق",
     "all_details": "جميع التفاصيل",
     "confirm_add": "تأكيد الإضافة",
-    "enable_notifications": "تفعيل الإشعارات"
+    "enable_notifications": "تفعيل الإشعارات",
+    "end_time": "وقت نهاية الدوام:",
+    "notify_before": "إرسال إشعار قبل (دقائق):"
   }
 }
