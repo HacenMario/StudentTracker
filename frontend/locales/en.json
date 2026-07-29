@@ -191,7 +191,8 @@
     "confirm_reject": "Are you sure you want to reject this request?",
     "view_file": "View File",
     "admin_note": "Admin Note",
-    "fill_all": "Please fill all required fields"
+    "fill_all": "Please fill all required fields",
+    "download_file": "Download File"
 },
   "leaving_notification": {
     "title": "⏰ Leaving Alert",
