@@ -219,26 +219,25 @@ function getStatusText(isInside) {
 function getStatusClass(isInside) {
     return isInside ? 'inside' : 'outside';
 }
+
 function formatFullTime(dateString) {
     const date = new Date(dateString);
     
-    // ✅ الوقت حسب المنطقة الزمنية للجزائر
-    const options = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: 'Africa/Algiers'
-    };
+    if (isNaN(date.getTime())) {
+        return dateString;
+    }
     
-    const formatted = date.toLocaleString('fr-FR', options);
-    const parts = formatted.split(' ');
-    const dateParts = parts[0].split('/');
-    const time = parts[1];
-    return `${dateParts[2]}-${dateParts[1]}-${dateParts[0]} ${time}`;
+    // ضبط الوقت يدوياً بإضافة ساعة واحدة (لأن الجزائر UTC+1)
+    const localDate = new Date(date.getTime() + (60 * 60 * 1000)); // إضافة ساعة
+    
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    const hours = String(localDate.getHours()).padStart(2, '0');
+    const minutes = String(localDate.getMinutes()).padStart(2, '0');
+    const seconds = String(localDate.getSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 function isToday(dateString) {
