@@ -227,8 +227,9 @@ function formatFullTime(dateString) {
         return dateString;
     }
     
-    // ضبط الوقت يدوياً بإضافة ساعة واحدة (لأن الجزائر UTC+1)
-    const localDate = new Date(date.getTime() + (60 * 60 * 1000)); // إضافة ساعة
+    // ✅ نقصان ساعة واحدة (للجزائر UTC+1)
+    // إذا كان الوقت مخزناً بتوقيت UTC+1 ونريد UTC+0
+    const localDate = new Date(date.getTime() - (60 * 60 * 1000));
     
     const year = localDate.getFullYear();
     const month = String(localDate.getMonth() + 1).padStart(2, '0');
