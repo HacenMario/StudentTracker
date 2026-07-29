@@ -25,41 +25,20 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['super_admin', 'admin', 'parent', 'teacher'],
+    enum: ['admin', 'parent'],
     default: 'parent',
   },
-  tenantId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Tenant',
-    default: null,
-  },
+  // الطلاب المرتبطين به (إذا كان ولي أمر)
   students: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Student',
   }],
-  preferences: {
-    language: {
-      type: String,
-      enum: ['ar', 'en', 'fr'],
-      default: 'ar',
-    },
-  },
-  // ✅ الحقول الجديدة للرابط السحري
-  magicToken: {
-    type: String,
-    default: null,
-  },
-  magicTokenExpiry: {
-    type: Date,
-    default: null,
-  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-// تشفير كلمة المرور
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
