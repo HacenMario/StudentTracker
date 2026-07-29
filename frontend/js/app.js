@@ -1863,14 +1863,12 @@ function renderLeaveRequests(requests, containerId) {
     const statusClass = r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending';
     const statusText = translate('leave.status_' + r.status);
     
-    // ✅ عرض التاريخ بدون ساعة
+    // ✅ عرض التاريخ بالأرقام الإنجليزية (YYYY-MM-DD)
     const dateObj = new Date(r.date);
-    const formattedDate = dateObj.toLocaleDateString('ar-EG', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      timeZone: 'Africa/Algiers'
-    });
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
     
     // ✅ عرض الصورة أو الملف بشكل صحيح
     let fileHtml = '';
