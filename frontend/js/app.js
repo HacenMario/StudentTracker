@@ -1780,6 +1780,126 @@ function toggleParentOldLogs(show) {
 }
 
 // ==========================================
+// دوال الإجازات الإلكترونية
+// ==========================================
+
+// جلب طلبات الإجازات
+async function loadLeaveRequests() {
+  try {
+    const res = await fetchWithAuth('/api/leave-requests');
+    if (!res.ok) throw new Error('فشل جلب طلبات الإجازات');
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+// تقديم طلب عذر غياب
+async function submitLeaveRequest(studentId, date, reason, file) {
+  try {
+    let fileUrl = '';
+    let fileName = '';
+    
+    if (file) {
+      const reader = new FileReader();
+      fileUrl = await new Promise((resolve) => {
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
+      fileName = file.name;
+    }
+
+    const res = await fetchWithAuth('/api/leave-requests', {
+      method: 'POST',
+      body: JSON.stringify({ studentId, date, reason, fileUrl, fileName })
+    });
+    
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return { success: false, message: err.message };
+  }
+}
+
+// الموافقة/الرفض على طلب (للمدير)
+async function updateLeaveRequest(requestId, status, adminNote = '') {
+  try {
+    const res = await fetchWithAuth('/api/leave-requests/' + requestId, {
+      method: 'PUT',
+      body: JSON.stringify({ status, adminNote })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return { success: false, message: err.message };
+  }
+}
+
+// عرض طلبات الإجازات في لوحة المدير
+function renderLeaveRequests(requests, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  if (!requests || requests.length === 0) {
+    container.innerHTML = `<div class="loading-state">${translate('leave.no_requests')}</div>`;
+    return;
+  }
+
+  let html = '<div class="leave-requests-grid">';
+  requests.forEach(r => {
+    const statusClass = r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending';
+    const statusText = translate('leave.status_' + r.status);
+    
+    html += `
+      <div class="leave-request-card" data-id="${r._id}">
+        <div class="leave-header">
+          <span class="student-name">${r.student.name}</span>
+          <span class="leave-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="leave-body">
+          <p><strong>${translate('leave.reason')}:</strong> ${r.reason}</p>
+          <p><strong>${translate('leave.date')}:</strong> ${formatFullTime(r.date)}</p>
+          ${r.fileUrl ? `<a href="${r.fileUrl}" target="_blank" class="btn-file">${translate('leave.view_file')}</a>` : ''}
+          ${r.adminNote ? `<p><strong>${translate('leave.admin_note')}:</strong> ${r.adminNote}</p>` : ''}
+        </div>
+        ${currentUser.role === 'admin' && r.status === 'pending' ? `
+          <div class="leave-actions">
+            <button class="btn-approve" onclick="handleLeaveRequest('${r._id}', 'approved')">${translate('leave.approve')}</button>
+            <button class="btn-reject" onclick="handleLeaveRequest('${r._id}', 'rejected')">${translate('leave.reject')}</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// معالجة طلب الإجازة (موافقة/رفض) - للمدير
+window.handleLeaveRequest = async function(requestId, status) {
+  const confirmed = await showConfirmModal(
+    status === 'approved' ? translate('leave.approve') : translate('leave.reject'),
+    status === 'approved' ? translate('leave.confirm_approve') : translate('leave.confirm_reject')
+  );
+  if (!confirmed) return;
+
+  const result = await updateLeaveRequest(requestId, status);
+  if (result.success) {
+    alert(result.message);
+    // إعادة تحميل الطلبات
+    const requests = await loadLeaveRequests();
+    renderLeaveRequests(requests, 'leaveRequestsList');
+    // تحديث الإشعارات
+    if (socket) {
+      socket.emit('leave-request-updated', { requestId, status });
+    }
+  } else {
+    alert(result.message || translate('common.error'));
+  }
+};
+
+// ==========================================
 // 19. أحداث المصادقة وربط الأحداث
 // ==========================================
 function setupAuthEvents() {
