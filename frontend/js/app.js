@@ -1109,7 +1109,16 @@ function translateNotificationMessage(message) {
 function addNotificationToUI(message, createdAt, isRead = false, id = null) {
     const list = document.getElementById('notificationList');
     const li = document.createElement('li');
-    const time = formatFullTime(createdAt);
+    
+    // ✅ تصحيح الوقت إذا كان متقدماً بساعة
+    let correctedDate = new Date(createdAt);
+    const now = new Date();
+    const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
+    if (diffHours > 0.5) {
+        correctedDate = new Date(correctedDate.getTime() - (60 * 60 * 1000));
+    }
+    
+    const time = formatFullTime(correctedDate);
     li.textContent = message + ' (وقت: ' + time + ')';
     li.style.cssText = 'padding:10px 16px; margin:4px 0; border-radius:12px; transition:0.3s;';
     
