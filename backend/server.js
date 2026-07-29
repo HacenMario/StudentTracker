@@ -27,6 +27,8 @@ const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const leaveRoutes = require('./routes/leaveRoutes');
+const smartAlertRoutes = require('./routes/smartAlertRoutes');
 
 // ✅ استيراد خدمة الجدولة للإشعارات المبكرة
 const { startNotificationScheduler } = require('./services/notificationScheduler');
