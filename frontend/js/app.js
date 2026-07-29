@@ -1644,8 +1644,8 @@ function renderParentLogs(showOld) {
             displayMessage = log.message;
         }
         
-        // ✅ ترجمة كلمة "وقت"
-        const timeLabel = translate('common.time');
+        // ✅ ترجمة كلمة "وقت" مع بديل احتياطي
+        const timeLabel = translate('common.time') || 'وقت:';
         const timeDisplay = log.time || '';
         
         if (log.studentName) {
