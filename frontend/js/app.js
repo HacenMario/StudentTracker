@@ -352,6 +352,14 @@ function showAdminDashboard() {
     loadAdminStudents();
     loadAdminLogs();
     loadAdminNotifications();
+    
+    // ✅ ربط أحداث Socket للإجازات
+    setupLeaveSocketEvents();
+    
+    // ✅ تحميل طلبات الإجازات
+    loadLeaveRequests().then(requests => {
+        renderLeaveRequests(requests, 'leaveRequestsList');
+    });
 }
 
 function showParentDashboard() {
@@ -363,6 +371,9 @@ function showParentDashboard() {
     loadParentStudents();
     loadParentLogs();
     loadParentNotifications();
+    
+    // ✅ تعبئة قائمة الطلاب في نموذج الإجازات
+    fillLeaveStudents();
 }
 
 // ==========================================
@@ -1653,13 +1664,12 @@ async function loadParentStudents() {
         if (!res.ok) throw new Error('فشل جلب بيانات أبنائك');
         const students = await res.json();
         renderStudents(students, 'parentStudentsList', false);
+        // ✅ تخزين الطلاب في localStorage
+        localStorage.setItem('parentStudents', JSON.stringify(students));
         
-        // ✅ تحديث السجلات فقط إذا كان هناك طلاب
         if (students.length > 0) {
-            // نأخذ أول طالب فقط للتبسيط (يمكن تحسينه لعرض جميع الطلاب)
             await loadAttendance(students[0]._id);
         } else {
-            // إذا لم يكن هناك طلاب، نعرض رسالة "لا توجد سجلات"
             parentLogs = [];
             renderParentLogs(parentShowOldLogs);
         }
@@ -1836,7 +1846,7 @@ async function updateLeaveRequest(requestId, status, adminNote = '') {
   }
 }
 
-// عرض طلبات الإجازات في لوحة المدير
+// عرض طلبات الإجازات
 function renderLeaveRequests(requests, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -1863,7 +1873,7 @@ function renderLeaveRequests(requests, containerId) {
           ${r.fileUrl ? `<a href="${r.fileUrl}" target="_blank" class="btn-file">${translate('leave.view_file')}</a>` : ''}
           ${r.adminNote ? `<p><strong>${translate('leave.admin_note')}:</strong> ${r.adminNote}</p>` : ''}
         </div>
-        ${currentUser.role === 'admin' && r.status === 'pending' ? `
+        ${currentUser && currentUser.role === 'admin' && r.status === 'pending' ? `
           <div class="leave-actions">
             <button class="btn-approve" onclick="handleLeaveRequest('${r._id}', 'approved')">${translate('leave.approve')}</button>
             <button class="btn-reject" onclick="handleLeaveRequest('${r._id}', 'rejected')">${translate('leave.reject')}</button>
@@ -1876,7 +1886,7 @@ function renderLeaveRequests(requests, containerId) {
   container.innerHTML = html;
 }
 
-// معالجة طلب الإجازة (موافقة/رفض) - للمدير
+// معالجة طلب الإجازة (موافقة/رفض)
 window.handleLeaveRequest = async function(requestId, status) {
   const confirmed = await showConfirmModal(
     status === 'approved' ? translate('leave.approve') : translate('leave.reject'),
@@ -1887,20 +1897,108 @@ window.handleLeaveRequest = async function(requestId, status) {
   const result = await updateLeaveRequest(requestId, status);
   if (result.success) {
     alert(result.message);
-    // إعادة تحميل الطلبات
     const requests = await loadLeaveRequests();
     renderLeaveRequests(requests, 'leaveRequestsList');
-    // تحديث الإشعارات
-    if (socket) {
-      socket.emit('leave-request-updated', { requestId, status });
-    }
   } else {
     alert(result.message || translate('common.error'));
   }
 };
 
+// تعبئة قائمة الطلاب في نموذج الإجازات
+function fillLeaveStudents() {
+    const select = document.getElementById('leaveStudentSelect');
+    if (!select) return;
+    select.innerHTML = '';
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = translate('leave.select_student');
+    select.appendChild(defaultOption);
+    
+    const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
+    students.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s._id;
+        option.textContent = s.name;
+        select.appendChild(option);
+    });
+}
+
+// ربط أحداث الإجازات
+function setupLeaveEvents() {
+    // تقديم طلب عذر غياب
+    document.getElementById('submitLeaveBtn')?.addEventListener('click', async function() {
+        const studentId = document.getElementById('leaveStudentSelect').value;
+        const date = document.getElementById('leaveDate').value;
+        const reason = document.getElementById('leaveReason').value.trim();
+        const file = document.getElementById('leaveFile').files[0];
+
+        if (!studentId || !date || !reason) {
+            alert(translate('leave.fill_all'));
+            return;
+        }
+
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + translate('common.loading');
+
+        const result = await submitLeaveRequest(studentId, date, reason, file);
+        
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-paper-plane"></i> ' + translate('leave.submit');
+
+        const msgDiv = document.getElementById('leaveMessage');
+        if (result.success) {
+            msgDiv.style.display = 'block';
+            msgDiv.style.background = '#def7e5';
+            msgDiv.style.color = '#0a6b34';
+            msgDiv.textContent = result.message;
+            document.getElementById('leaveReason').value = '';
+            document.getElementById('leaveFile').value = '';
+            if (currentUser && currentUser.role === 'admin') {
+                const requests = await loadLeaveRequests();
+                renderLeaveRequests(requests, 'leaveRequestsList');
+            }
+        } else {
+            msgDiv.style.display = 'block';
+            msgDiv.style.background = '#fde8e6';
+            msgDiv.style.color = '#b3362a';
+            msgDiv.textContent = result.message || translate('common.error');
+        }
+        
+        setTimeout(() => { msgDiv.style.display = 'none'; }, 5000);
+    });
+}
+
+// أحداث Socket للإجازات
+function setupLeaveSocketEvents() {
+    if (!socket) {
+        console.warn('⚠️ Socket غير متصل');
+        return;
+    }
+
+    socket.off('new-leave-request');
+    socket.off('leave-request-updated');
+
+    socket.on('new-leave-request', async (data) => {
+        if (currentUser && currentUser.role === 'admin') {
+            const requests = await loadLeaveRequests();
+            renderLeaveRequests(requests, 'leaveRequestsList');
+            showBrowserNotification('📩 طلب عذر غياب جديد', data.message);
+        }
+    });
+    
+    socket.on('leave-request-updated', async (data) => {
+        if (currentUser && currentUser.role === 'parent' && data.parentEmail === currentUser.email) {
+            const requests = await loadLeaveRequests();
+            renderLeaveRequests(requests, 'leaveRequestsList');
+            showBrowserNotification('📩 تحديث طلب العذر', data.message);
+        }
+    });
+
+    console.log('✅ تم ربط أحداث Socket للإجازات');
+}
+
 // ==========================================
-// 19. أحداث المصادقة وربط الأحداث
+// 19. أحداث المصادقة وربط الأحداث (DOM فقط)
 // ==========================================
 function setupAuthEvents() {
     document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -1997,6 +2095,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     loadSchoolSettings();
     setupAuthEvents();
+
+    // ✅ إعداد أحداث الإجازات
+    setupLeaveEvents();
 
     if (token) {
         try {
