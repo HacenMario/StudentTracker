@@ -235,7 +235,7 @@ function formatFullTime(dateString) {
         return dateString;
     }
     
-    // ✅ لا نقوم بأي تعديل على الوقت (يُعرض كما هو مخزن في قاعدة البيانات)
+    // ✅ عرض الوقت كما هو مخزن في قاعدة البيانات (بدون تعديل)
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
