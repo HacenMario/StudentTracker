@@ -3,6 +3,7 @@ const Student = require('../models/Student');
 const Attendance = require('../models/Attendance');
 const SmartAlert = require('../models/SmartAlert');
 const AlertRule = require('../models/AlertRule');
+const Holiday = require('../models/Holiday');
 const { sendPushNotificationToParent } = require('../utils/notifications');
 
 // ==========================================
