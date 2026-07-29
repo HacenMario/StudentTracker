@@ -3,13 +3,12 @@ const Student = require('../models/Student');
 const SchoolSettings = require('../models/SchoolSettings');
 const Notification = require('../models/Notification');
 const { sendPushNotificationToParent } = require('../utils/notifications');
+const i18n = require('../utils/i18n');
 
-// دالة إرسال إشعارات الخروج
 async function sendLeavingNotifications() {
   try {
     console.log('⏰ تشغيل مهمة إشعارات الخروج...');
 
-    // 1. جلب إعدادات المدرسة
     const settings = await SchoolSettings.findOne();
     if (!settings) {
       console.warn('⚠️ لا توجد إعدادات مدرسة');
@@ -19,65 +18,67 @@ async function sendLeavingNotifications() {
     const now = new Date();
     const currentHours = now.getHours();
     const currentMinutes = now.getMinutes();
-
-    // 2. حساب الوقت المتبقي للخروج
+    
     const [endHour, endMinute] = settings.schoolEndTime.split(':').map(Number);
     const endTimeMinutes = endHour * 60 + endMinute;
     const currentTimeMinutes = currentHours * 60 + currentMinutes;
     const minutesUntilEnd = endTimeMinutes - currentTimeMinutes;
 
     const notifyMinutesBefore = settings.notificationBeforeMinutes || 30;
+    
+    console.log(`📊 الوقت الحالي: ${currentHours}:${currentMinutes}, وقت الخروج: ${endHour}:${endMinute}, الدقائق المتبقية: ${minutesUntilEnd}, مطلوب: ${notifyMinutesBefore}`);
 
-    console.log(`📊 الوقت الحالي: ${currentHours}:${String(currentMinutes).padStart(2,'0')}, وقت الخروج: ${settings.schoolEndTime}, الدقائق المتبقية: ${minutesUntilEnd}, مطلوب: ${notifyMinutesBefore}`);
-
-    // 3. التحقق من أن الوقت الحالي يطابق وقت الإشعار (قبل X دقيقة)
     if (minutesUntilEnd !== notifyMinutesBefore) {
       console.log(`⏳ ليس وقت الإشعار بعد (المتبقي ${minutesUntilEnd} دقيقة)`);
       return;
     }
 
-    // 4. جلب جميع الطلاب الموجودين داخل المدرسة
     const students = await Student.find({ isInside: true });
     if (students.length === 0) {
-      console.log('📭 لا يوجد طلاب داخل المدرسة لإرسال إشعارات لهم');
+      console.log('📭 لا يوجد طلاب داخل المدرسة');
       return;
     }
 
     console.log(`📢 جاري إرسال إشعارات الخروج لـ ${students.length} طالب`);
 
-    // 5. إرسال إشعار لكل ولي أمر
     let sentCount = 0;
     for (const student of students) {
       if (!student.parentEmail) continue;
 
-      const message = `⏰ تنبيه: باقي ${notifyMinutesBefore} دقيقة على خروج ${student.name} من المدرسة`;
+      // ✅ ترجمة الرسالة حسب لغة ولي الأمر
+      const lang = student.parent?.preferences?.language || 'ar';
+      const titleKey = 'leaving_notification.title';
+      const bodyKey = 'leaving_notification.body';
+      
+      const title = i18n.translate(lang, titleKey);
+      const body = i18n.translate(lang, bodyKey, {
+        minutes: notifyMinutesBefore,
+        studentName: student.name,
+      });
 
-      // حفظ الإشعار في قاعدة البيانات
+      // حفظ الإشعار في قاعدة البيانات (باللغة المترجمة)
       await new Notification({
         target: student.parentEmail,
-        message: message,
+        message: body,
         sender: 'System',
       }).save();
 
-      // إرسال إشعار Web Push لولي الأمر
       await sendPushNotificationToParent(
-        'تنبيه الخروج',
-        message,
+        title,
+        body,
         { url: '/parent-dashboard' },
         student.parentEmail
       );
       sentCount++;
     }
 
-    console.log(`✅ تم إرسال ${sentCount} إشعار خروج بنجاح`);
+    console.log(`✅ تم إرسال ${sentCount} إشعار خروج مبكر بنجاح`);
   } catch (err) {
     console.error('❌ خطأ في إرسال إشعارات الخروج:', err);
   }
 }
 
-// تشغيل الجدولة كل دقيقة (للتحقق من الوقت)
 function startNotificationScheduler() {
-  // التحقق كل دقيقة
   cron.schedule('* * * * *', () => {
     sendLeavingNotifications();
   });
