@@ -366,51 +366,84 @@ function connectSocket() {
 
     socket.on('connect', () => console.log('✅ Socket متصل'));
 
-    socket.on('status-changed', (data) => {
-        console.log('📢 استقبال حدث status-changed:', data);
-        console.log('👤 المستخدم الحالي:', currentUser);
-        console.log('📧 بريد ولي الأمر:', data.parentEmail);
-        console.log('📧 بريدي:', currentUser ? currentUser.email : 'غير متاح');
+socket.on('status-changed', (data) => {
+    console.log('📢 استقبال حدث status-changed:', data);
+    console.log('👤 المستخدم الحالي:', currentUser);
+    console.log('📧 بريد ولي الأمر:', data.parentEmail);
+    console.log('📧 بريدي:', currentUser ? currentUser.email : 'غير متاح');
 
-        if (currentUser.role === 'admin') {
-            loadAdminStudents();
-            loadAdminLogs();
-        } else {
-            // ✅ التحقق من أن الإشعار يخص ولي الأمر هذا
-            if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
-                console.log('✅ هذا الإشعار يخص ولي الأمر الحالي');
-                
-                // ✅ تحديث قائمة الطلاب
-                loadParentStudents();
-                
-                // ✅ إضافة السجل الجديد مباشرة إلى parentLogs
-                const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
-                const displayMessage = translate('attendance.student_became', { 
-                    name: data.student.name, 
-                    status: statusText 
-                });
-                
-                // ✅ إضافة السجل الجديد (مع المفتاح للمستقبل)
-                const logEntry = {
-                    message: displayMessage,
-                    time: formatFullTime(new Date()),
-                    date: new Date(),
-                    key: 'attendance.student_became',
-                    params: { name: data.student.name, status: statusText },
-                    studentName: data.student.name
-                };
-                
-                // ✅ إضافة إلى بداية المصفوفة (الأحدث أولاً)
-                parentLogs.unshift(logEntry);
-                
-                // ✅ إعادة عرض السجلات
-                renderParentLogs(parentShowOldLogs);
-                
-                // ✅ إظهار إشعار للمستخدم
-                showBrowserNotification(translate('notification.title'), displayMessage);
+    if (currentUser.role === 'admin') {
+        // ✅ تحديث قائمة الطلاب
+        loadAdminStudents();
+        
+        // ✅ إضافة السجل الجديد إلى adminLogs
+        const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
+        const displayMessage = translate('attendance.student_became', { 
+            name: data.student.name, 
+            status: statusText 
+        });
+        
+        // ✅ تصحيح الوقت (طرح ساعة إذا كان متقدماً)
+        let correctedDate = new Date();
+        if (!isNaN(correctedDate.getTime())) {
+            const now = new Date();
+            const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
+            if (diffHours > 0.5) {
+                correctedDate = new Date(correctedDate.getTime() - (60 * 60 * 1000));
             }
         }
-    });
+        
+        // ✅ إضافة السجل إلى adminLogs
+        const logEntry = {
+            message: displayMessage,
+            time: formatFullTime(correctedDate),
+            date: correctedDate,
+            key: 'attendance.student_became',
+            params: { name: data.student.name, status: statusText }
+        };
+        adminLogs.unshift(logEntry);
+        
+        // ✅ إعادة عرض سجل المدير
+        renderAdminLogs(adminShowOldLogs);
+        
+        // ✅ تحديث سجل الإشعارات (للإشعارات المخزنة)
+        loadAdminLogs();
+    } else {
+        // ✅ التحقق من أن الإشعار يخص ولي الأمر هذا
+        if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
+            console.log('✅ هذا الإشعار يخص ولي الأمر الحالي');
+            
+            // ✅ تحديث قائمة الطلاب
+            loadParentStudents();
+            
+            // ✅ إضافة السجل الجديد مباشرة إلى parentLogs
+            const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
+            const displayMessage = translate('attendance.student_became', { 
+                name: data.student.name, 
+                status: statusText 
+            });
+            
+            // ✅ إضافة السجل الجديد (مع المفتاح للمستقبل)
+            const logEntry = {
+                message: displayMessage,
+                time: formatFullTime(new Date()),
+                date: new Date(),
+                key: 'attendance.student_became',
+                params: { name: data.student.name, status: statusText },
+                studentName: data.student.name
+            };
+            
+            // ✅ إضافة إلى بداية المصفوفة (الأحدث أولاً)
+            parentLogs.unshift(logEntry);
+            
+            // ✅ إعادة عرض السجلات
+            renderParentLogs(parentShowOldLogs);
+            
+            // ✅ إظهار إشعار للمستخدم
+            showBrowserNotification(translate('notification.title'), displayMessage);
+        }
+    }
+});
 
     socket.on('notification', (data) => {
         if (currentUser.role === 'parent') {
