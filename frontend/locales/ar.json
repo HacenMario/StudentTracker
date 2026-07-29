@@ -174,5 +174,12 @@
     "enable_notifications": "تفعيل الإشعارات",
     "end_time": "وقت نهاية الدوام:",
     "notify_before": "إرسال إشعار قبل (دقائق):"
+  },
+  "leaving_notification": {
+    "title": "⏰ Alerte de sortie",
+    "body": "⏰ Alerte : il reste {minutes} minutes avant la sortie de {studentName} de l'école"
+  },
+  "system": {
+    "sender": "Système"
   }
 }
