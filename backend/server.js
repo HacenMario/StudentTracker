@@ -268,12 +268,16 @@ io.on('connection', (socket) => {
 
       if (student.parentEmail) {
         console.log(`📤 محاولة إرسال إشعار Web Push لولي الأمر: ${student.parentEmail}`);
-        await sendPushNotificationToParent(
-          'تحديث حالة ابنك',
-          message,
-          { url: '/parent-dashboard' },
-          student.parentEmail
-        );
+await sendPushNotificationToParent(
+  'status_title',
+  'status_body',
+  { 
+    name: student.name, 
+    status: statusText,
+    url: '/parent-dashboard' 
+  },
+  student.parentEmail
+);
       } else {
         console.warn(`⚠️ الطالب ${student.name} ليس له بريد ولي أمر`);
       }
