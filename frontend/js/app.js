@@ -374,13 +374,28 @@ socket.on('status-changed', (data) => {
         loadAdminStudents();
         loadAdminLogs();
     } else {
-        // ✅ التحقق من أن الإشعار يخص ولي الأمر هذا
         if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
+            // ✅ تحديث قائمة الطلاب
             loadParentStudents();
+            
+            // ✅ جلب سجل الحضور من جديد (بدلاً من الاعتماد على السجلات المخزنة)
             loadParentLogs();
+            
+            // ✅ إضافة السجل الجديد يدوياً (للتحديث الفوري)
             const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
-            addLog('', new Date(), 'parentLogContainer', 'attendance.student_became', { name: data.student.name, status: statusText });
-            showBrowserNotification(translate('notification.title'), translate('attendance.student_became', { name: data.student.name, status: statusText }));
+            const displayMessage = translate('attendance.student_became', { 
+                name: data.student.name, 
+                status: statusText 
+            });
+            
+            // ✅ إضافة السجل الجديد إلى parentLogs
+            addLog('', new Date(), 'parentLogContainer', 'attendance.student_became', { 
+                name: data.student.name, 
+                status: statusText 
+            });
+            
+            // ✅ إظهار إشعار للمستخدم
+            showBrowserNotification(translate('notification.title'), displayMessage);
         }
     }
 });
@@ -1447,9 +1462,8 @@ async function adminSendParentNotification() {
 function addLog(message, date, containerId, key = null, params = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    const time = formatFullTime(date || new Date());
     
-    // ✅ تخزين المفتاح مع المعاملات للترجمة لاحقاً
+    const time = formatFullTime(date || new Date());
     const logEntry = { 
         message, 
         time, 
@@ -1459,10 +1473,10 @@ function addLog(message, date, containerId, key = null, params = {}) {
     };
 
     if (containerId === 'adminLogContainer') {
-        adminLogs.push(logEntry);
+        adminLogs.unshift(logEntry); // الأحدث في الأعلى
         renderAdminLogs(adminShowOldLogs);
     } else if (containerId === 'parentLogContainer') {
-        parentLogs.push(logEntry);
+        parentLogs.unshift(logEntry); // الأحدث في الأعلى
         renderParentLogs(parentShowOldLogs);
     }
 }
@@ -1579,33 +1593,34 @@ async function loadAttendance(studentId) {
         if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
         
-        // ✅ تحويل السجلات وإضافتها إلى المصفوفة (مع تجنب إعادة تعيينها بالكامل)
-        const newLogs = records.map(r => ({
-            message: r.status === 'in' ? translate('attendance.entry') : translate('attendance.exit'),
-            time: formatFullTime(r.timestamp),
-            date: new Date(r.timestamp),
-            key: r.status === 'in' ? 'attendance.entry' : 'attendance.exit',
-            params: {},
-            studentName: r.studentName || ''
-        }));
-
-        // ✅ ندمج السجلات الجديدة مع القديمة مع تجنب التكرار
-        // نستخدم Set لتتبع التواريخ والرسائل لمنع التكرار (اختياري)
-        // هنا نستبدل المصفوفة بالكامل لأن السجلات تأتي من قاعدة البيانات مرتبة
-        parentLogs = newLogs;
+        // ✅ تحويل السجلات إلى صيغة parentLogs
+        parentLogs = records.map(r => {
+            // تحديد المفتاح المناسب للترجمة
+            const isEntry = r.status === 'in';
+            const key = isEntry ? 'attendance.entry' : 'attendance.exit';
+            const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
+            
+            return {
+                message: message,
+                time: formatFullTime(r.timestamp),
+                date: new Date(r.timestamp),
+                key: key,
+                params: {},
+                studentName: r.studentName || ''
+            };
+        });
         
-        // ✅ إعادة عرض السجلات
+        // ✅ عرض السجلات
         renderParentLogs(parentShowOldLogs);
     } catch (err) {
-        console.error(err);
-        // في حالة الخطأ، نعرض رسالة "لا توجد سجلات"
+        console.error('❌ خطأ في جلب سجل الحضور:', err);
         parentLogs = [];
         renderParentLogs(parentShowOldLogs);
     }
 }
 
 async function loadParentLogs() {
-    // ✅ فقط عرض السجلات الموجودة دون إعادة جلبها
+    // ✅ عرض السجلات المخزنة حالياً
     renderParentLogs(parentShowOldLogs);
 }
 
