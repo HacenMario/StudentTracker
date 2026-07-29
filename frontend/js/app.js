@@ -1484,20 +1484,31 @@ function addLog(message, date, containerId, key = null, params = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
-    const time = formatFullTime(date || new Date());
+    // ✅ تصحيح الوقت إذا كان متقدماً بساعة
+    let correctedDate = date || new Date();
+    if (correctedDate instanceof Date && !isNaN(correctedDate.getTime())) {
+        const now = new Date();
+        const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
+        // إذا كان الفرق أكبر من 30 دقيقة (أي متقدماً بساعة)، نطرح ساعة
+        if (diffHours > 0.5) {
+            correctedDate = new Date(correctedDate.getTime() - (60 * 60 * 1000));
+        }
+    }
+    
+    const time = formatFullTime(correctedDate);
     const logEntry = { 
         message, 
         time, 
-        date: date || new Date(),
+        date: correctedDate,
         key: key,
         params: params
     };
 
     if (containerId === 'adminLogContainer') {
-        adminLogs.unshift(logEntry); // الأحدث في الأعلى
+        adminLogs.unshift(logEntry);
         renderAdminLogs(adminShowOldLogs);
     } else if (containerId === 'parentLogContainer') {
-        parentLogs.unshift(logEntry); // الأحدث في الأعلى
+        parentLogs.unshift(logEntry);
         renderParentLogs(parentShowOldLogs);
     }
 }
