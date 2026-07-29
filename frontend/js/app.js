@@ -23,6 +23,10 @@ let html5QrCode = null;
 let currentCameraId = null;
 let availableCameras = [];
 
+// متغيرات البحث
+let allStudents = [];
+let searchQuery = '';
+
 // ==========================================
 // زر تغيير اللغة - التحديث لجميع الشاشات
 // ==========================================
@@ -1234,10 +1238,36 @@ async function loadAdminStudents() {
     try {
         const res = await fetchWithAuth('/api/students');
         if (!res.ok) throw new Error('فشل جلب الطلاب');
-        const students = await res.json();
-        renderStudents(students, 'adminStudentsList', true);
+        allStudents = await res.json(); // ✅ تخزين جميع الطلاب
+        renderFilteredStudents();
     } catch (err) {
         console.error(err);
+    }
+}
+
+// عرض الطلاب المصفاة حسب البحث
+function renderFilteredStudents() {
+    let filtered = allStudents;
+    
+    // تصفية حسب الاسم
+    if (searchQuery.trim()) {
+        const query = searchQuery.trim().toLowerCase();
+        filtered = allStudents.filter(s => 
+            s.name.toLowerCase().includes(query) || 
+            (s.studentId && s.studentId.toLowerCase().includes(query))
+        );
+    }
+    
+    // عرض النتائج
+    renderStudents(filtered, 'adminStudentsList', true);
+    
+    // إظهار/إخفاء زر إلغاء البحث
+    document.getElementById('clearSearchBtn').style.display = searchQuery.trim() ? 'inline-flex' : 'none';
+    
+    // إظهار رسالة إذا لم توجد نتائج
+    const container = document.getElementById('adminStudentsList');
+    if (filtered.length === 0 && allStudents.length > 0) {
+        container.innerHTML = `<div class="loading-state">🔍 لا توجد نتائج مطابقة لـ "${searchQuery}"</div>`;
     }
 }
 
@@ -2127,6 +2157,160 @@ function setupAuthEvents() {
 }
 
 // ==========================================
+// أحداث البحث عن التلميذ
+// ==========================================
+function setupSearchEvents() {
+    const searchInput = document.getElementById('searchStudentInput');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    const qrBtn = document.getElementById('searchByQRBtn');
+    
+    if (searchInput) {
+        // البحث عند الكتابة
+        searchInput.addEventListener('input', function() {
+            searchQuery = this.value;
+            renderFilteredStudents();
+        });
+        
+        // البحث عند الضغط على Enter
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                searchQuery = this.value;
+                renderFilteredStudents();
+            }
+        });
+    }
+    
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            searchQuery = '';
+            renderFilteredStudents();
+            searchInput.focus();
+        });
+    }
+    
+    if (qrBtn) {
+        qrBtn.addEventListener('click', function() {
+            // ✅ فتح الماسح الضوئي للبحث عن تلميذ
+            openScannerForSearch();
+        });
+    }
+}
+
+// فتح الماسح الضوئي للبحث عن تلميذ
+function openScannerForSearch() {
+    const modal = document.getElementById('scannerModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    const resultsContainer = document.getElementById('qr-reader-results');
+    if (resultsContainer) resultsContainer.innerHTML = `📷 ${translate('qr.accessing_camera')}`;
+
+    if (typeof Html5Qrcode === 'undefined') {
+        if (resultsContainer) resultsContainer.innerHTML = '❌ مكتبة المسح غير محملة، تحقق من اتصال الإنترنت.';
+        return;
+    }
+
+    if (html5QrCode) {
+        html5QrCode.stop()
+            .then(() => {
+                html5QrCode.clear();
+                html5QrCode = null;
+                startScannerForSearch();
+            })
+            .catch(() => {
+                html5QrCode = null;
+                startScannerForSearch();
+            });
+    } else {
+        startScannerForSearch();
+    }
+}
+
+function startScannerForSearch() {
+    const resultsContainer = document.getElementById('qr-reader-results');
+    if (resultsContainer) resultsContainer.innerHTML = '📷 جاري الوصول للكاميرا...';
+
+    html5QrCode = new Html5Qrcode('qr-reader');
+
+    Html5Qrcode.getCameras()
+        .then(devices => {
+            if (devices && devices.length > 0) {
+                let selectedCamera = devices[0];
+                const backCamera = devices.find(d => {
+                    const label = d.label.toLowerCase();
+                    return label.includes('back') || label.includes('rear') || label.includes('environment');
+                });
+                if (backCamera) selectedCamera = backCamera;
+                currentCameraId = selectedCamera.id;
+                startNewScannerForSearch(currentCameraId);
+            } else {
+                if (resultsContainer) resultsContainer.innerHTML = '❌ لا توجد كاميرات متاحة على هذا الجهاز.';
+            }
+        })
+        .catch(err => {
+            console.error('خطأ في الوصول للكاميرات:', err);
+            if (resultsContainer) {
+                if (err.message && err.message.includes('Permission')) {
+                    resultsContainer.innerHTML = '❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا في إعدادات المتصفح.';
+                } else {
+                    resultsContainer.innerHTML = `❌ فشل الوصول للكاميرا: ${err.message || 'خطأ غير معروف'}`;
+                }
+            }
+        });
+}
+
+function startNewScannerForSearch(cameraId) {
+    const resultsContainer = document.getElementById('qr-reader-results');
+    if (resultsContainer) resultsContainer.innerHTML = '⏳ جاري تشغيل الكاميرا...';
+
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode('qr-reader');
+    }
+
+    html5QrCode.start(
+        cameraId,
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        function onScanSuccess(decodedText, decodedResult) {
+            // ✅ عند مسح QR Code بنجاح، نبحث عن التلميذ
+            const cleanData = decodedText.trim();
+            const student = allStudents.find(s => s.studentId === cleanData || s._id === cleanData);
+            
+            if (student) {
+                resultsContainer.innerHTML = `✅ تم العثور على التلميذ: ${student.name}`;
+                // عرض الطالب فقط في القائمة
+                renderStudents([student], 'adminStudentsList', true);
+                // إغلاق الماسح بعد 2 ثانية
+                setTimeout(() => {
+                    closeScanner();
+                    // وضع اسم الطالب في حقل البحث
+                    document.getElementById('searchStudentInput').value = student.name;
+                    searchQuery = student.name;
+                }, 1500);
+            } else {
+                resultsContainer.innerHTML = `❌ لم يتم العثور على تلميذ بهذا الكود`;
+                // إعادة تشغيل الماسح بعد 2 ثانية
+                setTimeout(() => {
+                    if (html5QrCode) html5QrCode.resume();
+                }, 2000);
+            }
+        },
+        function onScanError(error) {
+            // تجاهل الأخطاء العادية
+        }
+    )
+    .then(() => {
+        if (resultsContainer) resultsContainer.innerHTML = '📸 ضع كود QR الخاص بالتلميذ أمام الكاميرا';
+        currentCameraId = cameraId;
+    })
+    .catch(err => {
+        console.error('فشل تشغيل الكاميرا:', err);
+        if (resultsContainer) {
+            resultsContainer.innerHTML = `❌ فشل تشغيل الكاميرا: ${err.message || 'خطأ غير معروف'}`;
+        }
+    });
+}
+
+// ==========================================
 // 20. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', async function() {
@@ -2139,10 +2323,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     loadSchoolSettings();
     setupAuthEvents();
-
-    // ✅ إعداد أحداث الإجازات
     setupLeaveEvents();
-
+    setupSearchEvents(); 
+    
     if (token) {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
