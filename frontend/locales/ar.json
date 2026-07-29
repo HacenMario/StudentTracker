@@ -178,6 +178,26 @@
     "enable_notifications": "تفعيل الإشعارات",
     "parent": "ولي الأمر"
   },
+  "leave": {
+    "title": "تقديم عذر غياب",
+    "select_student": "اختر التلميذ",
+    "date": "تاريخ الغياب",
+    "reason": "سبب الغياب",
+    "file": "رفع ملف (شهادة طبية)",
+    "submit": "إرسال الطلب",
+    "requests": "طلبات عذر الغياب",
+    "no_requests": "📭 لا توجد طلبات",
+    "status_pending": "قيد المراجعة",
+    "status_approved": "تمت الموافقة ✅",
+    "status_rejected": "مرفوض ❌",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "confirm_approve": "هل أنت متأكد من الموافقة على هذا الطلب؟",
+    "confirm_reject": "هل أنت متأكد من رفض هذا الطلب؟",
+    "view_file": "عرض الملف",
+    "admin_note": "ملاحظة المدير",
+    "fill_all": "الرجاء ملء جميع الحقول المطلوبة"
+},
   "leaving_notification": {
     "title": "⏰ تنبيه الخروج",
     "body": "⏰ تنبيه: باقي {minutes} دقيقة على خروج {studentName} من المدرسة"
