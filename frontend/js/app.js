@@ -1594,99 +1594,126 @@ function handleMagicLogin() {
 // 19. أحداث المصادقة وربط الأحداث
 // ==========================================
 function setupAuthEvents() {
-    // زر تسجيل الدخول
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-        if (!email || !password) return alert('املأ جميع الحقول');
-        try {
-            const res = await fetch(API_BASE_URL + '/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
-            saveAuth(data);
-        } catch (err) {
-            alert(err.message || 'فشل تسجيل الدخول');
-        }
+    console.log('🔧 جاري ربط الأحداث...');
+
+    // ------ زر تسجيل الدخول ------
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail')?.value;
+            const password = document.getElementById('loginPassword')?.value;
+            if (!email || !password) return alert('املأ جميع الحقول');
+            try {
+                const res = await fetch(API_BASE_URL + '/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                saveAuth(data);
+            } catch (err) {
+                alert(err.message || 'فشل تسجيل الدخول');
+            }
+        });
+        console.log('✅ ربط زر تسجيل الدخول');
+    }
+
+    // ------ زر التسجيل ------
+    const registerBtn = document.getElementById('registerBtn');
+    if (registerBtn) {
+        registerBtn.addEventListener('click', async () => {
+            const name = document.getElementById('regName')?.value.trim();
+            const email = document.getElementById('regEmail')?.value.trim();
+            const password = document.getElementById('regPassword')?.value.trim();
+            const phone = document.getElementById('regPhone')?.value.trim();
+            const role = document.getElementById('regRole')?.value;
+            if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
+            if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
+            try {
+                const res = await fetch(API_BASE_URL + '/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, phone, role })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                saveAuth(data);
+            } catch (err) {
+                alert(err.message || 'فشل التسجيل');
+            }
+        });
+        console.log('✅ ربط زر التسجيل');
+    }
+
+    // ------ روابط التبديل بين الشاشات ------
+    const showRegisterLink = document.getElementById('showRegister');
+    if (showRegisterLink) showRegisterLink.addEventListener('click', showRegister);
+    const showLoginLink = document.getElementById('showLogin');
+    if (showLoginLink) showLoginLink.addEventListener('click', showLogin);
+
+    // ------ أزرار تسجيل الخروج ------
+    const logoutBtns = ['logoutBtnAdmin', 'logoutBtnParent'];
+    logoutBtns.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', logout);
     });
 
-    // زر التسجيل
-    document.getElementById('registerBtn').addEventListener('click', async () => {
-        const name = document.getElementById('regName').value.trim();
-        const email = document.getElementById('regEmail').value.trim();
-        const password = document.getElementById('regPassword').value.trim();
-        const phone = document.getElementById('regPhone').value.trim();
-        const role = document.getElementById('regRole').value;
-        if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
-        if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
-        try {
-            const res = await fetch(API_BASE_URL + '/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, phone, role })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
-            saveAuth(data);
-        } catch (err) {
-            alert(err.message || 'فشل التسجيل');
-        }
-    });
+    // ------ إعدادات المدرسة ------
+    const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
+    if (toggleSettingsBtn) toggleSettingsBtn.addEventListener('click', toggleSettingsForm);
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSchoolSettings);
 
-    // روابط التبديل بين الشاشات
-    document.getElementById('showRegister').addEventListener('click', showRegister);
-    document.getElementById('showLogin').addEventListener('click', showLogin);
-    document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
-    document.getElementById('logoutBtnParent').addEventListener('click', logout);
+    // ------ إضافة طالب ------
+    const toggleAddStudentBtn = document.getElementById('toggleAddStudentBtn');
+    if (toggleAddStudentBtn) toggleAddStudentBtn.addEventListener('click', toggleAddStudentForm);
+    const adminAddBtn = document.getElementById('adminAddBtn');
+    if (adminAddBtn) adminAddBtn.addEventListener('click', adminAddStudent);
 
-    // إعدادات المدرسة
-    document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsForm);
-    document.getElementById('saveSettingsBtn').addEventListener('click', saveSchoolSettings);
+    // ------ الإشعارات (عام وخاص) ------
+    const adminSendNotificationBtn = document.getElementById('adminSendNotificationBtn');
+    if (adminSendNotificationBtn) {
+        adminSendNotificationBtn.addEventListener('click', adminSendGeneralNotification);
+        console.log('✅ ربط زر إشعار عام');
+    }
+    const adminSendParentNotificationBtn = document.getElementById('adminSendParentNotificationBtn');
+    if (adminSendParentNotificationBtn) {
+        adminSendParentNotificationBtn.addEventListener('click', adminSendParentNotification);
+        console.log('✅ ربط زر إشعار خاص');
+    }
 
-    // إضافة طالب
-    document.getElementById('toggleAddStudentBtn').addEventListener('click', toggleAddStudentForm);
-    document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
+    // ------ التغيير الجماعي ------
+    const toggleAllInsideBtn = document.getElementById('toggleAllInsideBtn');
+    if (toggleAllInsideBtn) {
+        toggleAllInsideBtn.addEventListener('click', function() { toggleAllStudents(true); });
+        console.log('✅ ربط تغيير الكل إلى داخل');
+    }
+    const toggleAllOutsideBtn = document.getElementById('toggleAllOutsideBtn');
+    if (toggleAllOutsideBtn) {
+        toggleAllOutsideBtn.addEventListener('click', function() { toggleAllStudents(false); });
+        console.log('✅ ربط تغيير الكل إلى خارج');
+    }
 
-    // الإشعارات
-    document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
-    document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
-    
-    // التغيير الجماعي
-    document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
-        toggleAllStudents(true);
-    });
-    document.getElementById('toggleAllOutsideBtn').addEventListener('click', function() {
-        toggleAllStudents(false);
-    });
+    // ------ سجلات المدير ------
+    const adminShowOldLogsBtn = document.getElementById('adminShowOldLogsBtn');
+    if (adminShowOldLogsBtn) adminShowOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(true); });
+    const adminHideOldLogsBtn = document.getElementById('adminHideOldLogsBtn');
+    if (adminHideOldLogsBtn) adminHideOldLogsBtn.addEventListener('click', function() { toggleAdminOldLogs(false); });
 
-    // سجلات المدير
-    document.getElementById('adminShowOldLogsBtn').addEventListener('click', function() {
-        toggleAdminOldLogs(true);
-    });
-    document.getElementById('adminHideOldLogsBtn').addEventListener('click', function() {
-        toggleAdminOldLogs(false);
-    });
+    // ------ سجلات ولي الأمر ------
+    const parentShowOldLogsBtn = document.getElementById('parentShowOldLogsBtn');
+    if (parentShowOldLogsBtn) parentShowOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(true); });
+    const parentHideOldLogsBtn = document.getElementById('parentHideOldLogsBtn');
+    if (parentHideOldLogsBtn) parentHideOldLogsBtn.addEventListener('click', function() { toggleParentOldLogs(false); });
 
-    // سجلات ولي الأمر
-    document.getElementById('parentShowOldLogsBtn').addEventListener('click', function() {
-        toggleParentOldLogs(true);
-    });
-    document.getElementById('parentHideOldLogsBtn').addEventListener('click', function() {
-        toggleParentOldLogs(false);
-    });
+    // ------ الإشعارات القديمة ------
+    const showOldNotificationsBtn = document.getElementById('showOldNotificationsBtn');
+    if (showOldNotificationsBtn) showOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(true); });
+    const hideOldNotificationsBtn = document.getElementById('hideOldNotificationsBtn');
+    if (hideOldNotificationsBtn) hideOldNotificationsBtn.addEventListener('click', function() { toggleOldNotifications(false); });
 
-    // الإشعارات القديمة
-    document.getElementById('showOldNotificationsBtn').addEventListener('click', function() {
-        toggleOldNotifications(true);
-    });
-    document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
-        toggleOldNotifications(false);
-    });
-
-    // ✅ زر الرابط السحري (مع التحقق من وجود العنصر)
+    // ------ زر الرابط السحري (Magic Link) ------
     const magicLinkBtn = document.getElementById('magicLinkBtn');
     if (magicLinkBtn) {
         magicLinkBtn.addEventListener('click', async function() {
@@ -1701,7 +1728,6 @@ function setupAuthEvents() {
                 return;
             }
 
-            // تعطيل الزر ومنع التكرار
             this.disabled = true;
             const originalText = this.innerHTML;
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
@@ -1712,20 +1738,13 @@ function setupAuthEvents() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email }),
                 });
-
                 const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'فشل إرسال الرابط السحري');
 
-                if (!res.ok) {
-                    throw new Error(data.message || 'فشل إرسال الرابط السحري');
-                }
-
-                // إظهار رسالة نجاح
                 const successMsg = document.getElementById('magicLinkMessage');
                 const errorMsg = document.getElementById('magicLinkError');
                 if (successMsg) successMsg.style.display = 'block';
                 if (errorMsg) errorMsg.style.display = 'none';
-
-                // إخفاء رسالة النجاح بعد 5 ثوان
                 setTimeout(() => {
                     if (successMsg) successMsg.style.display = 'none';
                 }, 5000);
@@ -1740,17 +1759,16 @@ function setupAuthEvents() {
                 }
                 if (successMsg) successMsg.style.display = 'none';
             } finally {
-                // إعادة تفعيل الزر بعد 3 ثوان
                 setTimeout(() => {
                     this.disabled = false;
                     this.innerHTML = originalText;
                 }, 3000);
             }
         });
-        console.log('✅ تم ربط زر الرابط السحري');
-    } else {
-        console.warn('⚠️ زر الرابط السحري (magicLinkBtn) غير موجود في الصفحة');
+        console.log('✅ ربط زر الرابط السحري');
     }
+
+    console.log('🔧 تم ربط جميع الأحداث الموجودة بنجاح!');
 }
 
 // ==========================================
