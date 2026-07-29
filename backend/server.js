@@ -37,6 +37,10 @@ app.set('io', io);
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
+setInterval(() => {
+  io.emit('ping', { timestamp: Date.now() });
+}, 60000);
+
 // تسجيل المسارات
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
@@ -435,6 +439,14 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
     console.log(`🔴 عميل غير متصل: ${userEmail}`);
+  });
+});
+
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    message: '🚀 Student Tracker API is running',
+    timestamp: new Date().toISOString(),
   });
 });
 
