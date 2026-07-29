@@ -1,6 +1,10 @@
 // backend/utils/i18n.js
 const translations = {
   ar: {
+    'leave.approved': 'تمت الموافقة ✅',
+    'leave.rejected': 'تم الرفض ❌',
+    'leave.new_request': '📩 طلب عذر غياب جديد من {student}',
+    'leave.updated': '📩 طلب عذر {student}: {status}',
     'leaving_title': '⏰ تنبيه الخروج',
     'leaving_body': '⏰ تنبيه: باقي {minutes} دقيقة على خروج {studentName} من المدرسة',
     'status_title': 'تحديث حالة ابنك',
@@ -22,6 +26,10 @@ const translations = {
     'common.time': 'وقت:',
   },
   fr: {
+    'leave.approved': 'Approuvée ✅',
+    'leave.rejected': 'Rejetée ❌',
+    'leave.new_request': '📩 Nouvelle demande d\'excuse de {student}',
+    'leave.updated': '📩 Demande d\'excuse {student}: {status}',
     'leaving_title': '⏰ Alerte de sortie',
     'leaving_body': '⏰ Alerte : il reste {minutes} minutes avant la sortie de {studentName} de l\'école',
     'status_title': 'Mise à jour du statut de votre enfant',
@@ -43,6 +51,10 @@ const translations = {
     'common.time': 'Heure :',
   },
   en: {
+    'leave.approved': 'Approved ✅',
+    'leave.rejected': 'Rejected ❌',
+    'leave.new_request': '📩 New leave request from {student}',
+    'leave.updated': '📩 Leave request {student}: {status}',
     'leaving_title': '⏰ Leaving Alert',
     'leaving_body': '⏰ Alert: {minutes} minutes until {studentName} leaves school',
     'status_title': 'Your Child\'s Status Update',
