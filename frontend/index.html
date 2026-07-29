@@ -167,6 +167,72 @@
                     </button>
                 </div>
 
+<!-- ========================================== -->
+<!-- التنبيهات الذكية -->
+<!-- ========================================== -->
+<div class="smart-alerts-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <h3><i class="fas fa-brain"></i> <span data-i18n="smart_alerts.title">التنبيهات الذكية</span></h3>
+        <button id="runSmartAlertsBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483); padding:8px 16px; font-size:14px;">
+            <i class="fas fa-play"></i> <span data-i18n="smart_alerts.run_now">تشغيل الآن</span>
+        </button>
+    </div>
+
+    <!-- قواعد التنبيهات -->
+    <div style="margin:10px 0; display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px;">
+        <div class="rule-card" style="background:#f8fcff; padding:12px 16px; border-radius:16px; border:1px solid #e2eaf2;">
+            <h4 style="color:#1a365d; font-size:15px;">🚨 الغياب المتكرر</h4>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
+                <label><span data-i18n="smart_alerts.consecutive">متتالي:</span>
+                    <input type="number" id="absenceConsecutive" value="3" min="1" max="10" style="width:50px; padding:4px; border-radius:8px; border:1px solid #e2eaf2;">
+                </label>
+                <label><span data-i18n="smart_alerts.monthly">شهري:</span>
+                    <input type="number" id="absenceMonthly" value="5" min="1" max="20" style="width:50px; padding:4px; border-radius:8px; border:1px solid #e2eaf2;">
+                </label>
+                <label style="display:flex; align-items:center; gap:4px;">
+                    <input type="checkbox" id="absenceEnabled" checked> <span data-i18n="smart_alerts.enabled">مفعل</span>
+                </label>
+            </div>
+        </div>
+        <div class="rule-card" style="background:#f8fcff; padding:12px 16px; border-radius:16px; border:1px solid #e2eaf2;">
+            <h4 style="color:#1a365d; font-size:15px;">⏰ التأخر الصباحي</h4>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
+                <label><span data-i18n="smart_alerts.per_week">في الأسبوع:</span>
+                    <input type="number" id="tardinessPerWeek" value="3" min="1" max="10" style="width:50px; padding:4px; border-radius:8px; border:1px solid #e2eaf2;">
+                </label>
+                <label style="display:flex; align-items:center; gap:4px;">
+                    <input type="checkbox" id="tardinessEnabled" checked> <span data-i18n="smart_alerts.enabled">مفعل</span>
+                </label>
+            </div>
+        </div>
+        <div class="rule-card" style="background:#f8fcff; padding:12px 16px; border-radius:16px; border:1px solid #e2eaf2;">
+            <h4 style="color:#1a365d; font-size:15px;">🎉 الإنجاز التحفيزي</h4>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
+                <label><span data-i18n="smart_alerts.consecutive">متتالي:</span>
+                    <input type="number" id="achievementConsecutive" value="10" min="1" max="30" style="width:50px; padding:4px; border-radius:8px; border:1px solid #e2eaf2;">
+                </label>
+                <label><span data-i18n="smart_alerts.monthly">شهري:</span>
+                    <input type="number" id="achievementMonthly" value="20" min="1" max="30" style="width:50px; padding:4px; border-radius:8px; border:1px solid #e2eaf2;">
+                </label>
+                <label style="display:flex; align-items:center; gap:4px;">
+                    <input type="checkbox" id="achievementEnabled" checked> <span data-i18n="smart_alerts.enabled">مفعل</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- زر حفظ القواعد -->
+    <button id="saveAlertRulesBtn" class="btn-primary" style="margin:10px 0;">
+        <i class="fas fa-save"></i> <span data-i18n="smart_alerts.save_rules">حفظ القواعد</span>
+    </button>
+
+    <!-- قائمة التنبيهات المرسلة -->
+    <div style="margin-top:15px;">
+        <h4 style="color:#1a365d; font-size:15px;"><i class="fas fa-list"></i> <span data-i18n="smart_alerts.sent_alerts">التنبيهات المرسلة</span></h4>
+        <div id="smartAlertsList" style="max-height:300px; overflow-y:auto;"></div>
+    </div>
+</div>
+
                 <!-- ========================================== -->
 <!-- شريط البحث عن التلميذ -->
 <!-- ========================================== -->
@@ -243,6 +309,14 @@
                 </header>
 
                 <div id="parentStudentsList" class="students-grid"></div>
+
+<!-- ========================================== -->
+<!-- التنبيهات الذكية (ولي الأمر) -->
+<!-- ========================================== -->
+<div class="smart-alerts-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+    <h3><i class="fas fa-brain"></i> <span data-i18n="smart_alerts.title">التنبيهات الذكية</span></h3>
+    <div id="parentSmartAlertsList" style="max-height:300px; overflow-y:auto; margin-top:10px;"></div>
+</div>
 
                 <!-- سجل دخول/خروج أبنائي -->
                 <div class="log-section">
