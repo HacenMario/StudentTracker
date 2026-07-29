@@ -954,7 +954,7 @@ function renderNotifications(showOld) {
     list.innerHTML = '';
 
     if (allNotifications.length === 0) {
-        list.innerHTML = '<li style="color:#8a9aaa; text-align:center; padding:20px;">📭 لا توجد إشعارات حالياً</li>';
+        list.innerHTML = '<li style="color:#8a9aaa; text-align:center; padding:20px;">' + translate('notification.no_notifications') + '</li>';
         document.getElementById('showOldNotificationsBtn').style.display = 'none';
         document.getElementById('hideOldNotificationsBtn').style.display = 'none';
         return;
@@ -985,19 +985,87 @@ function renderNotifications(showOld) {
     }
 
     newNotifications.forEach(n => {
-        addNotificationToUI(n.message, n.createdAt, n.isRead, n._id);
+        // ✅ ترجمة رسالة الإشعار عند العرض
+        let translatedMessage = translateNotificationMessage(n.message);
+        addNotificationToUI(translatedMessage, n.createdAt, n.isRead, n._id);
     });
 
     if (showOld && oldNotifications.length > 0) {
         const divider = document.createElement('li');
         divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-        divider.textContent = '📜 الإشعارات القديمة';
+        divider.textContent = translate('notification.old');
         list.appendChild(divider);
         
         oldNotifications.forEach(n => {
-            addNotificationToUI(n.message, n.createdAt, n.isRead, n._id);
+            let translatedMessage = translateNotificationMessage(n.message);
+            addNotificationToUI(translatedMessage, n.createdAt, n.isRead, n._id);
         });
     }
+}
+
+// دالة مساعدة لترجمة رسائل الإشعارات المخزنة
+function translateNotificationMessage(message) {
+    // إذا كانت الرسالة تحتوي على "أصبح داخل" أو "أصبح خارج"
+    if (message.includes('أصبح داخل') || message.includes('أصبح خارج')) {
+        const match = message.match(/التلميذ (.*?) أصبح (داخل 🏫|خارج 🚪)/);
+        if (match) {
+            const name = match[1];
+            const status = match[2];
+            const statusKey = status.includes('داخل') ? 'student.inside' : 'student.outside';
+            const translatedStatus = translate(statusKey);
+            // إعادة بناء الرسالة المترجمة
+            const translated = translate('attendance.student_became', { name, status: translatedStatus });
+            // إضافة الوقت إذا وجد
+            const timeMatch = message.match(/\(وقت: (.*?)\)/);
+            if (timeMatch) {
+                return translated + ' (وقت: ' + timeMatch[1] + ')';
+            }
+            return translated;
+        }
+    }
+    // إذا كانت الرسالة عن تغيير جميع الطلاب
+    if (message.includes('تم تغيير حالة جميع الطلاب إلى داخل')) {
+        return translate('attendance.all_students_inside');
+    }
+    if (message.includes('تم تغيير حالة جميع الطلاب إلى خارج')) {
+        return translate('attendance.all_students_outside');
+    }
+    // إذا كانت الرسالة عن إضافة/تعديل/حذف طالب
+    if (message.includes('تم إضافة الطالب')) {
+        const match = message.match(/تم إضافة الطالب (.*)/);
+        if (match) {
+            return translate('attendance.student_added', { name: match[1] });
+        }
+    }
+    if (message.includes('تم تعديل معلومات الطالب')) {
+        const match = message.match(/تم تعديل معلومات الطالب (.*)/);
+        if (match) {
+            return translate('attendance.student_updated', { name: match[1] });
+        }
+    }
+    if (message.includes('تم حذف تلميذ')) {
+        return translate('attendance.student_deleted');
+    }
+    if (message.includes('تم تغيير حالة الطالب')) {
+        return translate('attendance.student_toggled');
+    }
+    if (message.includes('تم إرسال إشعار عام')) {
+        return translate('notification.sent_general');
+    }
+    if (message.includes('تم إرسال إشعار خاص')) {
+        return translate('notification.sent_private');
+    }
+    // إذا كانت الرسالة عن الخروج المبكر
+    if (message.includes('تنبيه: باقي')) {
+        const match = message.match(/تنبيه: باقي (\d+) دقيقة على خروج (.*?) من المدرسة/);
+        if (match) {
+            const minutes = match[1];
+            const studentName = match[2];
+            return translate('leaving_body', { minutes, studentName });
+        }
+    }
+    // إذا لم نجد تطابق، نعيد الرسالة كما هي
+    return message;
 }
 
 function addNotificationToUI(message, createdAt, isRead = false, id = null) {
