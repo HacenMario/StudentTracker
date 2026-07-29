@@ -184,7 +184,7 @@
     "clear": "Annuler la recherche",
     "scan_qr": "Scanner QR",
     "scan_qr_found": "✅ Étudiant trouvé: {name}",
-    "scan_qr_not_found": "❌ Aucun étudiant trouvé avec ce code",
+    "scan_qr_not_found": "❌ Aucun étudiant trouvé avec ce code"
 },
   "leave": {
     "title": "Soumettre une excuse d'absence",
