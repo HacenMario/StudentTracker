@@ -22,10 +22,9 @@ router.post('/', auth, async (req, res) => {
       return res.status(403).json({ message: 'غير مصرح لك' });
     }
 
-    // ✅ تصحيح التاريخ: إضافة ساعة واحدة للتخزين (لتعويض فرق UTC)
+    // ✅ تصحيح التاريخ
     let correctedDate = new Date(date);
     if (!isNaN(correctedDate.getTime())) {
-      // إضافة ساعة واحدة لتخزينها بتوقيت UTC+1 (الجزائر)
       correctedDate = new Date(correctedDate.getTime() + (60 * 60 * 1000));
     }
 
@@ -58,7 +57,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // ==========================================
-// 2. جلب طلبات الإجازات (للمدير أو ولي الأمر)
+// 2. جلب طلبات الإجازات
 // ==========================================
 router.get('/', auth, async (req, res) => {
   try {
@@ -76,7 +75,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // ==========================================
-// 3. الموافقة/الرفض (للمدير فقط)
+// 3. الموافقة/الرفض (للمدير فقط) - ✅ مُصلح
 // ==========================================
 router.put('/:id', auth, isAdmin, async (req, res) => {
   try {
@@ -86,26 +85,46 @@ router.put('/:id', auth, isAdmin, async (req, res) => {
       return res.status(404).json({ message: 'الطلب غير موجود' });
     }
 
+    // ✅ إذا كانت الموافقة، نحاول تسجيل Attendance
+    if (status === 'approved') {
+      try {
+        const attendance = new Attendance({
+          student: leaveRequest.student._id,
+          status: 'excused', // ✅ استخدام 'excused' بدلاً من 'out'
+          method: 'leave', // ✅ الآن مقبول لأننا أضفناه في enum
+          timestamp: leaveRequest.date || new Date(),
+        });
+        await attendance.save();
+      } catch (attendanceError) {
+        console.error('❌ خطأ في تسجيل الحضور:', attendanceError);
+        return res.status(400).json({ 
+          success: false, 
+          message: 'فشل تسجيل الحضور: ' + attendanceError.message 
+        });
+      }
+    }
+
+    // ✅ تحديث حالة الطلب
     leaveRequest.status = status;
     leaveRequest.adminNote = adminNote || '';
     await leaveRequest.save();
 
-    // إذا تمت الموافقة، نضيف سجل حضور "غياب بعذر"
-    if (status === 'approved') {
-      const attendance = new Attendance({
-        student: leaveRequest.student._id,
-        status: 'excused', // قيمة جديدة في enum
-        method: 'leave',
-        timestamp: leaveRequest.date,
-      });
-      await attendance.save();
-    }
-
-    // إرسال إشعار لولي الأمر
+    // ✅ إرسال إشعار لولي الأمر
     const io = req.app.get('io');
     const statusText = status === 'approved' ? 'تمت الموافقة ✅' : 'تم الرفض ❌';
+    const notificationMessage = `📩 طلب عذر ${leaveRequest.student.name}: ${statusText}`;
+    
+    // حفظ الإشعار في قاعدة البيانات
+    const notification = new Notification({
+      target: leaveRequest.parentEmail,
+      message: notificationMessage,
+      sender: 'Admin',
+    });
+    await notification.save();
+
+    // إرسال عبر Socket
     io.emit('leave-request-updated', {
-      message: `📩 طلب عذر ${leaveRequest.student.name}: ${statusText}`,
+      message: notificationMessage,
       requestId: leaveRequest._id,
       parentEmail: leaveRequest.parentEmail,
     });
