@@ -173,6 +173,14 @@
     "time": "Time:",
     "parent": "Parent"
   },
+  "search": {
+    "placeholder": "Search for a student by name...",
+    "no_results": "🔍 No results found for \"{query}\"",
+    "clear": "Clear search",
+    "scan_qr": "Scan QR",
+    "scan_qr_found": "✅ Student found: {name}",
+    "scan_qr_not_found": "❌ No student found with this code",
+},
   "leave": {
     "title": "Submit Leave Excuse",
     "select_student": "Select Student",
