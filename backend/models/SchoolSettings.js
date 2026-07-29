@@ -25,7 +25,7 @@ const SchoolSettingsSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
-  // ========== الحقول الجديدة للإشعارات التلقائية ==========
+  // ========== حقول الإشعارات المبكرة ==========
   schoolEndTime: {
     type: String,
     default: '16:00', // تنسيق HH:MM (24 ساعة)
@@ -34,7 +34,7 @@ const SchoolSettingsSchema = new mongoose.Schema({
     type: Number,
     default: 30, // عدد الدقائق قبل الخروج
   },
-  // ======================================================
+  // ==========================================
   updatedAt: {
     type: Date,
     default: Date.now,
