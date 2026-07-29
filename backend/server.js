@@ -230,7 +230,7 @@ io.on('connection', (socket) => {
 
 // تغيير الحالة
 student.isInside = !student.isInside;
-student.lastUpdate = new Date();
+student.lastUpdate = new Date(new Date().getTime() - (60 * 60 * 1000)); // ✅ تصحيح الساعة
 await student.save();
 
 // تسجيل الحضور
@@ -238,6 +238,7 @@ const attendance = new Attendance({
   student: student._id,
   status: student.isInside ? 'in' : 'out',
   method: 'manual',
+  timestamp: new Date(new Date().getTime() - (60 * 60 * 1000)), // ✅ تصحيح الساعة
 });
 await attendance.save();
 
