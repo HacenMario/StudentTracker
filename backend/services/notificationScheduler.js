@@ -63,12 +63,16 @@ async function sendLeavingNotifications() {
         sender: 'System',
       }).save();
 
-      await sendPushNotificationToParent(
-        title,
-        body,
-        { url: '/parent-dashboard' },
-        student.parentEmail
-      );
+await sendPushNotificationToParent(
+  'leaving_title',
+  'leaving_body',
+  { 
+    minutes: notifyMinutesBefore, 
+    studentName: student.name,
+    url: '/parent-dashboard' 
+  },
+  student.parentEmail
+);
       sentCount++;
     }
 
