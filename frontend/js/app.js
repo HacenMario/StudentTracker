@@ -2275,6 +2275,157 @@ function setupSmartAlertEvents() {
 }
 
 // ==========================================
+// دوال إدارة العطل والإجازات
+// ==========================================
+
+// جلب جميع العطل
+async function loadHolidays() {
+  try {
+    const res = await fetchWithAuth('/api/holidays');
+    if (!res.ok) throw new Error('فشل جلب العطل');
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+// إضافة عطلة جديدة
+async function addHoliday(date, name, description) {
+  try {
+    const res = await fetchWithAuth('/api/holidays', {
+      method: 'POST',
+      body: JSON.stringify({ date, name, description }),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return { success: false, message: err.message };
+  }
+}
+
+// حذف عطلة
+async function deleteHoliday(id) {
+  try {
+    const res = await fetchWithAuth('/api/holidays/' + id, { method: 'DELETE' });
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return { success: false, message: err.message };
+  }
+}
+
+// عرض العطل في الواجهة
+function renderHolidays(holidays, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  if (!holidays || holidays.length === 0) {
+    container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">📭 لا توجد عطل مسجلة</div>`;
+    return;
+  }
+
+  let html = '';
+  holidays.forEach(h => {
+    const date = new Date(h.date);
+    const formattedDate = date.toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    html += `
+      <div class="log-item" style="padding:8px 12px; border-bottom:1px solid #eef4fa;">
+        <span>📅 ${formattedDate} - ${h.name} ${h.description ? ' (' + h.description + ')' : ''}</span>
+        <button onclick="handleDeleteHoliday('${h._id}')" style="background:transparent; border:none; color:#e74c3c; cursor:pointer; font-size:14px;">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+// حذف عطلة (مع تأكيد)
+window.handleDeleteHoliday = async function(id) {
+  const confirmed = await showConfirmModal(
+    translate('holidays.delete'),
+    translate('holidays.confirm_delete')
+  );
+  if (!confirmed) return;
+  
+  const result = await deleteHoliday(id);
+  if (result.success) {
+    alert(result.message);
+    const holidays = await loadHolidays();
+    renderHolidays(holidays, 'holidaysList');
+  } else {
+    alert(result.message || translate('common.error'));
+  }
+};
+
+// ربط أحداث العطل
+function setupHolidayEvents() {
+  // إظهار/إخفاء نموذج الإضافة
+  document.getElementById('toggleHolidayFormBtn')?.addEventListener('click', function() {
+    const form = document.getElementById('holidayForm');
+    if (form.style.display === 'none') {
+      form.style.display = 'block';
+      this.innerHTML = '<i class="fas fa-times"></i> ' + translate('holidays.close_form');
+    } else {
+      form.style.display = 'none';
+      this.innerHTML = '<i class="fas fa-plus"></i> ' + translate('holidays.add');
+    }
+  });
+
+  // إلغاء النموذج
+  document.getElementById('cancelHolidayBtn')?.addEventListener('click', function() {
+    document.getElementById('holidayForm').style.display = 'none';
+    document.getElementById('toggleHolidayFormBtn').innerHTML = '<i class="fas fa-plus"></i> ' + translate('holidays.add');
+  });
+
+  // حفظ العطلة
+  document.getElementById('saveHolidayBtn')?.addEventListener('click', async function() {
+    const date = document.getElementById('holidayDate').value;
+    const name = document.getElementById('holidayName').value.trim();
+    const description = document.getElementById('holidayDescription').value.trim();
+
+    if (!date || !name) {
+      alert(translate('holidays.fill_all'));
+      return;
+    }
+
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + translate('common.loading');
+
+    const result = await addHoliday(date, name, description);
+    
+    this.disabled = false;
+    this.innerHTML = '<i class="fas fa-save"></i> ' + translate('holidays.save');
+
+    if (result.success) {
+      alert(result.message);
+      document.getElementById('holidayForm').style.display = 'none';
+      document.getElementById('toggleHolidayFormBtn').innerHTML = '<i class="fas fa-plus"></i> ' + translate('holidays.add');
+      document.getElementById('holidayDate').value = '';
+      document.getElementById('holidayName').value = '';
+      document.getElementById('holidayDescription').value = '';
+      
+      const holidays = await loadHolidays();
+      renderHolidays(holidays, 'holidaysList');
+    } else {
+      alert(result.message || translate('common.error'));
+    }
+  });
+
+  // تحميل العطل عند ظهور الصفحة
+  if (document.getElementById('holidaysList')) {
+    loadHolidays().then(holidays => {
+      renderHolidays(holidays, 'holidaysList');
+    });
+  }
+}
+
+// ==========================================
 // 19. أحداث المصادقة وربط الأحداث (DOM فقط)
 // ==========================================
 function setupAuthEvents() {
