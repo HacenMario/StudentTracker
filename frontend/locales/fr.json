@@ -56,12 +56,14 @@
     "cancel": "Annuler",
     "confirm_delete": "Êtes-vous sûr de vouloir supprimer cet étudiant définitivement ?",
     "confirm_toggle": "Êtes-vous sûr de vouloir changer le statut de cet étudiant ?",
+    "not_found": "Étudiant non trouvé",
     "confirm_edit": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
     "edit_title": "✏️ Modifier les informations de l'étudiant",
     "for_parent": "pour le parent",
     "confirm_add": "Confirmation d'ajout de l'étudiant",
-    "not_found": "Étudiant non trouvé",
-    "confirm": "Confirmation"
+    "added": "Étudiant ajouté",
+    "toggled": "Statut de l'étudiant modifié",
+    "deleted": "Étudiant supprimé"
   },
   "notification": {
     "title": "Notifications",
@@ -119,7 +121,9 @@
     "confirm": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
     "success": "Paramètres de l'école enregistrés avec succès",
     "title": "Modifier les informations de l'école",
-    "close": "Fermer les paramètres"
+    "close": "Fermer les paramètres",
+    "end_time": "Heure de fin des cours :",
+    "notify_before": "Envoyer une notification avant (minutes) :"
   },
   "bulk": {
     "all_inside": "Tout changer à l'intérieur",
@@ -170,14 +174,12 @@
     "all_details": "Tous les détails",
     "confirm_add": "Confirmation d'ajout",
     "parent": "Parent",
-    "enable_notifications": "Activer les notifications",
-    "end_time": "Heure de fin des cours :",
-    "notify_before": "Envoyer une notification avant (minutes) :"
+    "enable_notifications": "Activer les notifications"
   },
   "leaving_notification": {
     "title": "⏰ Alerte de sortie",
     "body": "⏰ Alerte : il reste {minutes} minutes avant la sortie de {studentName} de l'école"
-  }
+  },
   "system": {
     "sender": "Système"
   }
