@@ -367,9 +367,15 @@ socket.on('status-changed', (data) => {
             loadParentStudents();
             loadParentLogs();
             const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
-            const message = translate('notification.status_changed', { name: data.student.name, status: statusText });
-            addLog(message, new Date(), 'parentLogContainer');
-            showBrowserNotification(translate('notification.title'), message);
+            // ✅ استخدام المفتاح مع المعاملات
+            addLog(
+                '', 
+                new Date(), 
+                'parentLogContainer',
+                'attendance.student_became',
+                { name: data.student.name, status: statusText }
+            );
+            showBrowserNotification(translate('notification.title'), translate('attendance.student_became', { name: data.student.name, status: statusText }));
         }
     }
 });
@@ -1112,7 +1118,9 @@ async function toggleAllStudents(status) {
 
     if (socket) {
         socket.emit('toggle-all-status', { newStatus: status });
-        addLog(`🔄 ${translate('bulk.all_inside')} ${statusText}`, new Date(), 'adminLogContainer');
+        // ✅ استخدام المفتاح
+        const key = status ? 'attendance.all_students_inside' : 'attendance.all_students_outside';
+        addLog('', new Date(), 'adminLogContainer', key);
     } else {
         alert(translate('common.error'));
     }
@@ -1183,12 +1191,13 @@ window.adminToggle = async function(id) {
 
     fetchWithAuth('/api/students/' + id + '/toggle', { method: 'PUT' })
         .then(res => {
-            if (!res.ok) throw new Error('فشل تغيير الحالة');
+            if (!res.ok) throw new Error(translate('common.error'));
             return res.json();
         })
         .then(() => {
             loadAdminStudents();
-            addLog(translate('student.toggled'), new Date(), 'adminLogContainer');
+            // ✅ استخدام المفتاح
+            addLog('', new Date(), 'adminLogContainer', 'attendance.student_toggled');
         })
         .catch(err => alert(translate('common.error') + ': ' + err.message));
 };
@@ -1203,7 +1212,7 @@ window.adminDelete = async function(id) {
     fetchWithAuth('/api/students/' + id, { method: 'DELETE' })
         .then(() => {
             loadAdminStudents();
-            addLog(translate('student.deleted'), new Date(), 'adminLogContainer');
+            addLog('', new Date(), 'adminLogContainer', 'attendance.student_deleted');
         })
         .catch(err => alert(translate('common.error') + ': ' + err.message));
 };
@@ -1329,6 +1338,7 @@ async function adminAddStudent() {
     const parentName = document.getElementById('adminParentName').value.trim();
     const parentPhone = document.getElementById('adminParentPhone').value.trim();
     const address = document.getElementById('adminAddress').value.trim();
+    
     if (!name || !parentEmail || !parentName || !parentPhone) {
         alert(translate('common.error') + ': ' + translate('student.add'));
         return;
@@ -1340,23 +1350,36 @@ async function adminAddStudent() {
     );
     if (!confirmed) return;
 
-    const res = await fetchWithAuth('/api/students', {
-        method: 'POST',
-        body: JSON.stringify({ name, parentEmail, parentName, parentPhone, address })
-    });
-    if (res.ok) {
-        document.getElementById('adminStudentName').value = '';
-        document.getElementById('adminParentEmail').value = '';
-        document.getElementById('adminParentName').value = '';
-        document.getElementById('adminParentPhone').value = '';
-        document.getElementById('adminAddress').value = '';
-        loadAdminStudents();
-        addLog(translate('student.added', { name }), new Date(), 'adminLogContainer');
-        document.getElementById('addStudentForm').style.display = 'none';
-        document.getElementById('toggleAddStudentBtn').innerHTML = `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
-    } else {
-        const data = await res.json();
-        alert(translate('common.error') + ': ' + data.message);
+    try {
+        const res = await fetchWithAuth('/api/students', {
+            method: 'POST',
+            body: JSON.stringify({ name, parentEmail, parentName, parentPhone, address })
+        });
+
+        if (res.ok) {
+            // تفريغ الحقول
+            document.getElementById('adminStudentName').value = '';
+            document.getElementById('adminParentEmail').value = '';
+            document.getElementById('adminParentName').value = '';
+            document.getElementById('adminParentPhone').value = '';
+            document.getElementById('adminAddress').value = '';
+            
+            // ✅ تحديث القائمة
+            loadAdminStudents();
+            
+            // ✅ إضافة السجل باستخدام المفتاح (بدلاً من النص المترجم)
+            addLog('', new Date(), 'adminLogContainer', 'attendance.student_added', { name });
+            
+            // إخفاء النموذج
+            document.getElementById('addStudentForm').style.display = 'none';
+            document.getElementById('toggleAddStudentBtn').innerHTML = `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
+        } else {
+            const data = await res.json();
+            alert(translate('common.error') + ': ' + (data.message || translate('common.error')));
+        }
+    } catch (err) {
+        console.error('❌ خطأ في إضافة الطالب:', err);
+        alert(translate('common.error') + ': ' + err.message);
     }
 }
 
@@ -1416,25 +1439,19 @@ async function adminSendParentNotification() {
 // ==========================================
 // 17. دوال السجل (مع عرض آخر 5 سجلات فقط)
 // ==========================================
-function addLog(message, date, containerId) {
+function addLog(message, date, containerId, key = null, params = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const time = formatFullTime(date || new Date());
-    // ✅ ترجمة الرسالة إذا كانت قابلة للترجمة
-    let translatedMessage = message;
-    if (message.includes('تم تغيير حالة جميع الطلاب إلى داخل')) {
-        translatedMessage = translate('attendance.all_students_inside');
-    } else if (message.includes('تم تغيير حالة جميع الطلاب إلى خارج')) {
-        translatedMessage = translate('attendance.all_students_outside');
-    } else if (message.includes('التلميذ') && message.includes('أصبح داخل')) {
-        const name = message.match(/التلميذ (.*?) أصبح/)?.[1] || '';
-        translatedMessage = translate('attendance.student_became_inside', { name });
-    } else if (message.includes('التلميذ') && message.includes('أصبح خارج')) {
-        const name = message.match(/التلميذ (.*?) أصبح/)?.[1] || '';
-        translatedMessage = translate('attendance.student_became_outside', { name });
-    }
-
-    const logEntry = { message: translatedMessage, time, date: date || new Date() };
+    
+    // ✅ تخزين المفتاح مع المعاملات للترجمة لاحقاً
+    const logEntry = { 
+        message, 
+        time, 
+        date: date || new Date(),
+        key: key,
+        params: params
+    };
 
     if (containerId === 'adminLogContainer') {
         adminLogs.push(logEntry);
@@ -1496,28 +1513,12 @@ function renderAdminLogs(showOld) {
         const item = document.createElement('div');
         item.className = 'log-item';
         
-        // ✅ ترجمة الرسالة
+        // ✅ ترجمة الرسالة باستخدام المفتاح المخزن
         let displayMessage = log.message;
         if (log.key) {
-            displayMessage = translate(log.key, log.params) || log.message;
-        } else {
-            // محاولة ترجمة الرسائل المعروفة
-            const keys = [
-                'attendance.student_became_inside',
-                'attendance.student_became_outside',
-                'attendance.all_students_inside',
-                'attendance.all_students_outside',
-                'attendance.student_added',
-                'attendance.student_updated',
-                'attendance.student_deleted',
-                'attendance.student_toggled',
-            ];
-            for (const key of keys) {
-                const translated = translate(key);
-                if (translated !== key && log.message.includes(translated)) {
-                    displayMessage = translated;
-                    break;
-                }
+            displayMessage = translate(log.key, log.params || {});
+            if (displayMessage === log.key && log.message) {
+                displayMessage = log.message;
             }
         }
         
@@ -1630,15 +1631,16 @@ function renderParentLogs(showOld) {
         const item = document.createElement('div');
         item.className = 'log-item';
         
-        // ✅ ترجمة الرسالة إذا كانت قابلة للترجمة
+        // ✅ ترجمة الرسالة باستخدام المفتاح المخزن
         let displayMessage = log.message;
         if (log.key) {
-            displayMessage = translate(log.key, log.params) || log.message;
-        } else if (log.type) {
-            const translated = translate(`attendance.${log.type}`);
-            if (translated !== `attendance.${log.type}`) {
-                displayMessage = translated;
+            displayMessage = translate(log.key, log.params || {});
+            // إذا كانت الترجمة تساوي المفتاح، استخدم الرسالة الأصلية
+            if (displayMessage === log.key && log.message) {
+                displayMessage = log.message;
             }
+        } else if (log.message) {
+            displayMessage = log.message;
         }
         
         // إذا كان هناك اسم طالب، نضيفه
