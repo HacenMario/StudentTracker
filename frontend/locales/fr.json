@@ -196,7 +196,8 @@
     "confirm_reject": "Êtes-vous sûr de rejeter cette demande ?",
     "view_file": "Voir le fichier",
     "admin_note": "Note de l'administrateur",
-    "fill_all": "Veuillez remplir tous les champs requis"
+    "fill_all": "Veuillez remplir tous les champs requis",
+    "download_file": "Télécharger le fichier"
 },
    "leaving_notification": {
     "title": "⏰ Alerte de sortie",
