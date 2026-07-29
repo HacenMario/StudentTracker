@@ -1488,17 +1488,31 @@ async function loadParentStudents() {
     }
 }
 
+// ✅ تم تعديل هذه الدالة لإضافة الترجمة
 async function loadAttendance(studentId) {
     try {
         const res = await fetchWithAuth('/api/students/' + studentId + '/attendance');
         if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
-        parentLogs = records.map(r => ({
-            message: r.statusText || (r.status === 'in' ? translate('attendance.entry') : translate('attendance.exit')),
-            studentName: r.studentName || '',
-            time: formatFullTime(r.timestamp),
-            date: new Date(r.timestamp)
-        }));
+        
+        // ✅ معالجة السجلات وترجمتها
+        parentLogs = records.map(r => {
+            // تحديد مفتاح الترجمة بناءً على الحالة
+            const statusKey = r.status === 'in' ? 'attendance.entry' : 'attendance.exit';
+            // ترجمة النص
+            const translatedMessage = translate(statusKey);
+            
+            // الحصول على اسم الطالب (إذا كان موجوداً)
+            const studentName = r.studentName || '';
+            
+            return {
+                message: translatedMessage,
+                studentName: studentName,
+                time: formatFullTime(r.timestamp),
+                date: new Date(r.timestamp)
+            };
+        });
+        
         renderParentLogs(parentShowOldLogs);
     } catch (err) {
         console.error(err);
