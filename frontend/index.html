@@ -189,6 +189,12 @@
                     <div id="adminLogContainer"></div>
                 </div>
 
+                <!-- طلبات الإجازات -->
+<div class="leave-section">
+    <h3><i class="fas fa-list"></i> <span data-i18n="leave.requests">طلبات عذر الغياب</span></h3>
+    <div id="leaveRequestsList"></div>
+</div>
+
                 <!-- إرسال الإشعارات -->
                 <div class="notification-forms">
                     <div class="notif-box">
@@ -235,6 +241,21 @@
                     </div>
                     <div id="parentLogContainer"></div>
                 </div>
+
+                <!-- نموذج تقديم عذر غياب -->
+<div class="leave-section">
+    <h3><i class="fas fa-file-medical"></i> <span data-i18n="leave.title">تقديم عذر غياب</span></h3>
+    <div class="leave-form">
+        <select id="leaveStudentSelect" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2eaf2; margin-bottom:10px;">
+            <option value="" data-i18n="leave.select_student">اختر التلميذ</option>
+        </select>
+        <input type="date" id="leaveDate" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2eaf2; margin-bottom:10px;">
+        <textarea id="leaveReason" placeholder="سبب الغياب..." style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2eaf2; min-height:80px; margin-bottom:10px;"></textarea>
+        <input type="file" id="leaveFile" accept="image/*,.pdf" style="padding:8px; border:2px solid #e2eaf2; border-radius:12px; width:100%; margin-bottom:10px;">
+        <button id="submitLeaveBtn" class="btn-primary"><i class="fas fa-paper-plane"></i> <span data-i18n="leave.submit">إرسال الطلب</span></button>
+    </div>
+    <div id="leaveMessage" style="display:none; margin-top:10px; padding:10px; border-radius:12px;"></div>
+</div>
 
                 <!-- الإشعارات الواردة -->
                 <div id="notificationContainer">
