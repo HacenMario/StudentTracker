@@ -1,4 +1,8 @@
 require('dotenv').config();
+
+// ✅ ضبط المنطقة الزمنية للخادم إلى الجزائر
+process.env.TZ = 'Africa/Algiers';
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
