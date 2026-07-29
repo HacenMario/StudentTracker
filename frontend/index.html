@@ -62,22 +62,19 @@
 
             <!-- شاشة تسجيل الدخول -->
             <div id="loginScreen">
-                <div class="lang-switcher">
-                <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
-                <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
-                </div>
                 <h2 data-i18n="auth.login">🔐 تسجيل الدخول</h2>
                 <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" data-i18n="auth.email">
                 <input type="password" id="loginPassword" placeholder="كلمة المرور" data-i18n="auth.password">
                 <button id="loginBtn"><span data-i18n="auth.login">دخول</span> <i class="fas fa-arrow-left"></i></button>
                 <p><span data-i18n="auth.no_account">ليس لديك حساب؟</span> <a href="#" id="showRegister" data-i18n="auth.register_now">سجل الآن</a></p>
+                <div class="lang-switcher">
+                <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
+                <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
+                </div>
             </div>
 
             <!-- شاشة التسجيل -->
-            <div id="registerScreen" style="display:none;">
-                <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
-                <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
-                </div>                
+            <div id="registerScreen" style="display:none;">             
                 <h2 data-i18n="auth.register">📝 إنشاء حساب</h2>
                 <input type="text" id="regName" placeholder="الاسم الكامل" data-i18n="auth.name">
                 <input type="email" id="regEmail" placeholder="البريد الإلكتروني" data-i18n="auth.email">
@@ -89,6 +86,10 @@
                 </select>
                 <button id="registerBtn"><span data-i18n="auth.register">تسجيل</span> <i class="fas fa-user-plus"></i></button>
                 <p><span data-i18n="auth.have_account">لديك حساب؟</span> <a href="#" id="showLogin" data-i18n="auth.login_now">سجل دخول</a></p>
+                <div class="lang-switcher">
+                <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
+                <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
+                </div>
             </div>
 
             <!-- ========================================== -->
@@ -98,11 +99,11 @@
                 <header>
                     <h1><i class="fas fa-user-cog"></i> <span data-i18n="dashboard.admin">لوحة المدير</span></h1>
                     <span class="live-badge"><i class="fas fa-circle"></i> <span data-i18n="dashboard.live">مباشر</span></span>
-                    <div class="lang-switcher">
+                    <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span data-i18n="auth.logout">خروج</span></button>
+                        <div class="lang-switcher">
                         <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
                         <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
                     </div>
-                    <button id="logoutBtnAdmin" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span data-i18n="auth.logout">خروج</span></button>
                 </header>
 
                 <!-- إعدادات المدرسة -->
@@ -198,11 +199,11 @@
                 <header>
                     <h1><i class="fas fa-user-friends"></i> <span data-i18n="dashboard.parent">لوحة ولي الأمر</span></h1>
                     <span class="live-badge"><i class="fas fa-circle"></i> <span data-i18n="dashboard.live">مباشر</span></span>
-                    <div class="lang-switcher">
+                    <button id="logoutBtnParent" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span data-i18n="auth.logout">خروج</span></button>
+                        <div class="lang-switcher">
                         <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
                         <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
                     </div>
-                    <button id="logoutBtnParent" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span data-i18n="auth.logout">خروج</span></button>
                 </header>
 
                 <div id="parentStudentsList" class="students-grid"></div>
