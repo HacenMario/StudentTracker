@@ -171,6 +171,7 @@
     "close_scanner": "إغلاق",
     "all_details": "جميع التفاصيل",
     "confirm_add": "تأكيد الإضافة",
-    "enable_notifications": "تفعيل الإشعارات"
+    "enable_notifications": "تفعيل الإشعارات",
+    "magic_link": "رابط سحري"
   }
 }
