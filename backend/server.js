@@ -42,8 +42,11 @@ app.set('io', io);
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
+const magicAuthRoutes = require('./routes/magicAuthRoutes');
+
 // تسجيل المسارات
 app.use('/api/auth', authRoutes);
+app.use('/api/magic', magicAuthRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
