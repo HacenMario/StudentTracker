@@ -152,6 +152,7 @@
     "camera_working": "Caméra active, placez le code devant"
   },
   "common": {
+    "time": "Heure :",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
