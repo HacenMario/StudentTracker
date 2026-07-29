@@ -227,16 +227,13 @@ function formatFullTime(dateString) {
         return dateString;
     }
     
-    // ✅ طرح ساعة واحدة إذا كان الوقت متقدماً (لتصحيح UTC)
-    // (يمكن إزالة هذا التصحيح بعد تعديل الخادم)
-    const correctedDate = new Date(date.getTime() - (60 * 60 * 1000));
-    
-    const year = correctedDate.getFullYear();
-    const month = String(correctedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(correctedDate.getDate()).padStart(2, '0');
-    const hours = String(correctedDate.getHours()).padStart(2, '0');
-    const minutes = String(correctedDate.getMinutes()).padStart(2, '0');
-    const seconds = String(correctedDate.getSeconds()).padStart(2, '0');
+    // ✅ لا نقوم بأي تعديل على الوقت (يُعرض كما هو مخزن في قاعدة البيانات)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
     
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
