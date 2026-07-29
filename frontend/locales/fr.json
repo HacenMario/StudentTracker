@@ -103,6 +103,7 @@
     "exit": "Sortie",
     "all_students_inside": "Tous les étudiants sont à l'intérieur 🏫",
     "all_students_outside": "Tous les étudiants sont à l'extérieur 🚪",
+    "student_became": "L'étudiant {name} est {status}",
     "student_became_inside": "L'étudiant {name} est à l'intérieur 🏫",
     "student_became_outside": "L'étudiant {name} est à l'extérieur 🚪",
     "student_deleted": "Étudiant supprimé",
