@@ -214,6 +214,37 @@
     </div>
 
     <!-- ========================================== -->
+<!-- إدارة العطل والإجازات -->
+<!-- ========================================== -->
+<div class="holidays-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+        <h3 style="color:#1a365d; font-size:18px; display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-calendar-times" style="color:#e67e22;"></i>
+            <span data-i18n="holidays.title">إدارة العطل والإجازات</span>
+        </h3>
+        <button id="toggleHolidayFormBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #e67e22, #d35400); padding:8px 20px; font-size:14px; margin:0;">
+            <i class="fas fa-plus"></i> <span data-i18n="holidays.add">إضافة عطلة</span>
+        </button>
+    </div>
+
+    <!-- نموذج إضافة عطلة -->
+    <div id="holidayForm" style="display:none; background:#f8fcff; padding:16px; border-radius:16px; border:1px solid #e2eaf2; margin-bottom:15px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <input type="date" id="holidayDate" style="padding:10px 14px; border-radius:12px; border:2px solid #e2eaf2; font-family:'Tajawal', sans-serif;">
+            <input type="text" id="holidayName" placeholder="اسم العطلة (مثل: عيد الفطر)" style="padding:10px 14px; border-radius:12px; border:2px solid #e2eaf2; font-family:'Tajawal', sans-serif;">
+            <input type="text" id="holidayDescription" placeholder="وصف (اختياري)" style="padding:10px 14px; border-radius:12px; border:2px solid #e2eaf2; font-family:'Tajawal', sans-serif; grid-column: 1 / -1;">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button id="saveHolidayBtn" class="btn-primary"><i class="fas fa-save"></i> حفظ</button>
+            <button id="cancelHolidayBtn" class="btn-secondary"><i class="fas fa-times"></i> إلغاء</button>
+        </div>
+    </div>
+
+    <!-- قائمة العطل -->
+    <div id="holidaysList" style="max-height:300px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
+</div>
+
+    <!-- ========================================== -->
     <!-- التنبيهات الذكية -->
     <!-- ========================================== -->
     <div class="smart-alerts-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
