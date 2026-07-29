@@ -1861,6 +1861,30 @@ function renderLeaveRequests(requests, containerId) {
     const statusClass = r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending';
     const statusText = translate('leave.status_' + r.status);
     
+    // ✅ عرض التاريخ فقط (بدون وقت)
+    const formattedDate = new Date(r.date).toISOString().split('T')[0];
+    
+    let fileHtml = '';
+    if (r.fileUrl) {
+      if (r.fileUrl.startsWith('data:image/')) {
+        fileHtml = `
+          <div class="file-preview">
+            <img src="${r.fileUrl}" alt="${r.fileName || 'صورة'}" style="max-width:100px; max-height:100px; border-radius:8px; cursor:pointer;" onclick="window.open('${r.fileUrl}', '_blank')">
+            <br>
+            <a href="${r.fileUrl}" download="${r.fileName || 'file'}" class="btn-file">📥 ${translate('leave.download_file')}</a>
+          </div>
+        `;
+      } else {
+        fileHtml = `
+          <div class="file-preview">
+            <a href="${r.fileUrl}" target="_blank" class="btn-file">📄 ${translate('leave.view_file')}</a>
+            <br>
+            <a href="${r.fileUrl}" download="${r.fileName || 'file'}" class="btn-file">📥 ${translate('leave.download_file')}</a>
+          </div>
+        `;
+      }
+    }
+
     html += `
       <div class="leave-request-card" data-id="${r._id}">
         <div class="leave-header">
@@ -1869,8 +1893,8 @@ function renderLeaveRequests(requests, containerId) {
         </div>
         <div class="leave-body">
           <p><strong>${translate('leave.reason')}:</strong> ${r.reason}</p>
-          <p><strong>${translate('leave.date')}:</strong> ${formatFullTime(r.date)}</p>
-          ${r.fileUrl ? `<a href="${r.fileUrl}" target="_blank" class="btn-file">${translate('leave.view_file')}</a>` : ''}
+          <p><strong>${translate('leave.date')}:</strong> ${formattedDate}</p>
+          ${fileHtml}
           ${r.adminNote ? `<p><strong>${translate('leave.admin_note')}:</strong> ${r.adminNote}</p>` : ''}
         </div>
         ${currentUser && currentUser.role === 'admin' && r.status === 'pending' ? `
