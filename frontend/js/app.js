@@ -1839,9 +1839,11 @@ async function updateLeaveRequest(requestId, status, adminNote = '') {
       method: 'PUT',
       body: JSON.stringify({ status, adminNote })
     });
-    return await res.json();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'فشل تحديث الطلب');
+    return data;
   } catch (err) {
-    console.error(err);
+    console.error('❌ خطأ في تحديث طلب الإجازة:', err);
     return { success: false, message: err.message };
   }
 }
