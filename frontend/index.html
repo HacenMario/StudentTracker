@@ -63,6 +63,10 @@
             <!-- شاشة تسجيل الدخول -->
             <div id="loginScreen">
                 <h2 data-i18n="auth.login">🔐 تسجيل الدخول</h2>
+                <div class="lang-switcher">
+                <button data-lang="ar" class="lang-btn active" onclick="switchLanguage('ar')">🇸🇦 عربي</button>
+                <button data-lang="fr" class="lang-btn" onclick="switchLanguage('fr')">🇫🇷 Français</button>
+                </div>
                 <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" data-i18n="auth.email">
                 <input type="password" id="loginPassword" placeholder="كلمة المرور" data-i18n="auth.password">
                 <button id="loginBtn"><span data-i18n="auth.login">دخول</span> <i class="fas fa-arrow-left"></i></button>
