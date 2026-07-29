@@ -1,7 +1,7 @@
 // =========================================
 // 1. رابط الخادم
 // =========================================
-const API_BASE_URL = 'https://studenttracker-zgom.onrender.com';
+const API_BASE_URL = 'https://studenttracker-ib8y.onrender.com';
 const SOCKET_URL = API_BASE_URL;
 
 // ==========================================
@@ -1471,7 +1471,6 @@ function renderParentLogs(showOld) {
         item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${log.time}</span>`;
         container.appendChild(item);
     });
-}
 
     if (showOld && oldLogs.length > 0) {
         const divider = document.createElement('div');
