@@ -186,6 +186,22 @@
     "scan_qr_found": "✅ Étudiant trouvé: {name}",
     "scan_qr_not_found": "❌ Aucun étudiant trouvé avec ce code"
 },
+  "smart_alerts": {
+    "title": "Alertes intelligentes",
+    "run_now": "Exécuter maintenant",
+    "save_rules": "Enregistrer les règles",
+    "enabled": "Activé",
+    "consecutive": "Consécutif",
+    "monthly": "Mensuel",
+    "per_week": "Par semaine",
+    "absence": "Absence répétée",
+    "tardiness": "Retard matinal",
+    "achievement": "Réussite motivante",
+    "no_alerts": "📭 Aucune alerte",
+    "sent_alerts": "Alertes envoyées",
+    "confirm_run": "Êtes-vous sûr de vouloir exécuter toutes les alertes intelligentes manuellement ?",
+    "run_success": "✅ Toutes les alertes intelligentes ont été exécutées avec succès",
+    "rules_saved": "✅ Les règles d'alertes ont été enregistrées avec succès"
   "leave": {
     "title": "Soumettre une excuse d'absence",
     "select_student": "Sélectionner l'étudiant",
