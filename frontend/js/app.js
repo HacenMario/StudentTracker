@@ -1872,7 +1872,7 @@ function renderLeaveRequests(requests, containerId) {
       timeZone: 'Africa/Algiers'
     });
     
-    // ✅ عرض الملف المرفق
+    // ✅ عرض الصورة أو الملف بشكل صحيح
     let fileHtml = '';
     if (r.fileUrl) {
       if (r.fileUrl.startsWith('data:image/')) {
