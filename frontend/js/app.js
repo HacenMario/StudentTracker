@@ -968,7 +968,16 @@ async function loadAdminNotifications() {
         if (!res.ok) throw new Error('فشل جلب الإشعارات');
         const notifications = await res.json();
         notifications.forEach(n => {
-            addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', n.createdAt, 'adminLogContainer');
+            // ✅ تصحيح الوقت عند إضافة الإشعار
+            let correctedDate = new Date(n.createdAt);
+            if (!isNaN(correctedDate.getTime())) {
+                const now = new Date();
+                const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
+                if (diffHours > 0.5) {
+                    correctedDate = new Date(correctedDate.getTime() - (60 * 60 * 1000));
+                }
+            }
+            addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', correctedDate, 'adminLogContainer');
         });
     } catch (err) {
         console.error(err);
