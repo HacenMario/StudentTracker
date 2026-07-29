@@ -335,6 +335,68 @@ function showParentDashboard() {
 }
 
 // ==========================================
+// تسجيل الدخول برابط سحري (Magic Link)
+// ==========================================
+document.getElementById('magicLinkBtn')?.addEventListener('click', async function() {
+    const email = document.getElementById('loginEmail').value.trim();
+    if (!email) {
+        alert('الرجاء إدخال البريد الإلكتروني');
+        return;
+    }
+
+    // تعطيل الزر لمنع التكرار
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/magic/magic-link`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'فشل الإرسال');
+
+        // إظهار رسالة نجاح
+        document.getElementById('magicLinkMessage').style.display = 'block';
+        document.getElementById('magicLinkError').style.display = 'none';
+    } catch (err) {
+        console.error('❌ خطأ في الرابط السحري:', err);
+        document.getElementById('magicLinkError').style.display = 'block';
+        document.getElementById('magicLinkError').textContent = '❌ ' + err.message;
+        document.getElementById('magicLinkMessage').style.display = 'none';
+    } finally {
+        // إعادة تفعيل الزر بعد 3 ثوان
+        setTimeout(() => {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-envelope"></i> <span data-i18n="auth.magic_link">رابط سحري</span>';
+        }, 3000);
+    }
+});
+
+// ==========================================
+// معالجة الرابط السحري عند تحميل الصفحة (من التوجيه)
+// ==========================================
+function handleMagicLogin() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const userParam = urlParams.get('user');
+
+    if (token && userParam) {
+        try {
+            const user = JSON.parse(decodeURIComponent(userParam));
+            saveAuth({ token, user });
+            // تنظيف الرابط من شريط العناوين
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (err) {
+            console.error('❌ خطأ في معالجة الرابط السحري:', err);
+            alert('حدث خطأ أثناء تسجيل الدخول عبر الرابط السحري');
+        }
+    }
+}
+
+// ==========================================
 // 6. Socket.io
 // ==========================================
 function connectSocket() {
@@ -1689,6 +1751,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     loadSchoolSettings();
     setupAuthEvents();
+
+    handleMagicLogin();
 
     if (token) {
         try {
