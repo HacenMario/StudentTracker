@@ -42,7 +42,55 @@ function getCooldownStartDate(cooldownDays) {
 }
 
 // ==========================================
-// 1️⃣ تنبيهات الغياب المتكرر
+// دالة مساعدة: جلب العطل في فترة زمنية
+// ==========================================
+async function getHolidaysInRange(startDate, endDate) {
+  try {
+    const holidays = await Holiday.find({
+      date: { $gte: startDate, $lte: endDate },
+    });
+    return holidays.map(h => new Date(h.date).toISOString().split('T')[0]);
+  } catch (err) {
+    console.error('❌ خطأ في جلب العطل:', err);
+    return [];
+  }
+}
+
+// ==========================================
+// دالة مساعدة: التحقق مما إذا كان اليوم عطلة
+// ==========================================
+async function isHoliday(date) {
+  const dateStr = date.toISOString().split('T')[0];
+  const holiday = await Holiday.findOne({
+    date: { $gte: new Date(dateStr), $lt: new Date(new Date(dateStr).setDate(new Date(dateStr).getDate() + 1)) },
+  });
+  return !!holiday;
+}
+
+// ==========================================
+// دالة مساعدة: جلب أيام الدوام فقط (استثناء العطل)
+// ==========================================
+async function getSchoolDaysInRange(startDate, endDate) {
+  const days = [];
+  const current = new Date(startDate);
+  const end = new Date(endDate);
+  
+  while (current <= end) {
+    const dateStr = current.toISOString().split('T')[0];
+    const holiday = await Holiday.findOne({
+      date: { $gte: new Date(dateStr), $lt: new Date(new Date(dateStr).setDate(new Date(dateStr).getDate() + 1)) },
+    });
+    
+    if (!holiday) {
+      days.push(new Date(current));
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return days;
+}
+
+// ==========================================
+// 1️⃣ تنبيهات الغياب المتكرر (معدل)
 // ==========================================
 async function checkAbsenceAlerts() {
   console.log('📊 [غياب] بدء تحليل الغياب المتكرر...');
@@ -62,7 +110,6 @@ async function checkAbsenceAlerts() {
     for (const student of students) {
       if (!student.parentEmail) continue;
 
-      // ✅ التحقق من فترة التبريد (باستخدام تاريخ صحيح)
       const cooldownDate = getCooldownStartDate(cooldownDays || 7);
       const lastAlert = await SmartAlert.findOne({
         student: student._id,
@@ -71,17 +118,19 @@ async function checkAbsenceAlerts() {
       });
       if (lastAlert) continue;
 
-      // 1. الغياب المتتالي
-      let consecutiveAbsences = 0;
-      let currentStreak = 0;
+      // ✅ جلب أيام الدوام في آخر 30 يوم (استثناء العطل)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
-      for (let i = 0; i < 30; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        date.setHours(0, 0, 0, 0);
-        
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - 30);
+      
+      const schoolDays = await getSchoolDaysInRange(startDate, today);
+      
+      // 1. الغياب المتتالي (فقط في أيام الدوام)
+      let consecutiveAbsences = 0;
+      let currentStreak = 0;
+      
+      for (const date of schoolDays.reverse()) {
         const nextDate = new Date(date);
         nextDate.setDate(nextDate.getDate() + 1);
         
@@ -100,10 +149,13 @@ async function checkAbsenceAlerts() {
         }
       }
 
-      // 2. الغياب الشهري
-      const monthDates = getMonthDates();
+      // 2. الغياب الشهري (فقط في أيام الدوام)
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      const monthSchoolDays = await getSchoolDaysInRange(monthStart, monthEnd);
+      
       let monthlyAbsences = 0;
-      for (const date of monthDates) {
+      for (const date of monthSchoolDays) {
         const nextDate = new Date(date);
         nextDate.setDate(nextDate.getDate() + 1);
         const attendance = await Attendance.findOne({
@@ -119,10 +171,10 @@ async function checkAbsenceAlerts() {
       let alertKey = null;
 
       if (consecutiveAbsences >= absenceConsecutiveDays) {
-        alertMessage = `🚨 تنبيه: الطالب ${student.name} غاب ${consecutiveAbsences} أيام متتالية. يُرجى التواصل مع ولي الأمر.`;
+        alertMessage = `🚨 تنبيه: الطالب ${student.name} غاب ${consecutiveAbsences} أيام متتالية (في أيام الدوام). يُرجى التواصل مع ولي الأمر.`;
         alertKey = `absence_consecutive_${student._id}_${new Date().toISOString().split('T')[0]}`;
       } else if (monthlyAbsences >= absenceMonthlyDays) {
-        alertMessage = `🚨 تنبيه: الطالب ${student.name} غاب ${monthlyAbsences} يوم هذا الشهر. يُرجى متابعة الحالة.`;
+        alertMessage = `🚨 تنبيه: الطالب ${student.name} غاب ${monthlyAbsences} يوم هذا الشهر (في أيام الدوام). يُرجى متابعة الحالة.`;
         alertKey = `absence_monthly_${student._id}_${new Date().toISOString().split('T')[0]}`;
       }
 
@@ -157,7 +209,7 @@ async function checkAbsenceAlerts() {
 }
 
 // ==========================================
-// 3️⃣ تنبيهات التأخر الصباحي
+// 3️⃣ تنبيهات التأخر الصباحي (معدل)
 // ==========================================
 async function checkTardinessAlerts() {
   console.log('📊 [تأخر] بدء تحليل التأخر الصباحي...');
@@ -188,10 +240,16 @@ async function checkTardinessAlerts() {
       const tardinessLimit = new Date();
       tardinessLimit.setHours(8, 30, 0, 0);
 
-      const weekDates = getLastWeekDates();
+      // ✅ جلب أيام الدوام في الأسبوع الماضي فقط
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const weekStart = new Date(today);
+      weekStart.setDate(weekStart.getDate() - 7);
+      
+      const schoolDays = await getSchoolDaysInRange(weekStart, today);
+      
       let tardyCount = 0;
-
-      for (const date of weekDates) {
+      for (const date of schoolDays) {
         const nextDate = new Date(date);
         nextDate.setDate(nextDate.getDate() + 1);
         
@@ -214,7 +272,7 @@ async function checkTardinessAlerts() {
       }
 
       if (tardyCount >= tardinessPerWeek) {
-        const alertMessage = `⏰ تنبيه: الطالب ${student.name} تأخر ${tardyCount} مرات هذا الأسبوع. يُرجى الالتزام بمواعيد الحضور.`;
+        const alertMessage = `⏰ تنبيه: الطالب ${student.name} تأخر ${tardyCount} مرات هذا الأسبوع (في أيام الدوام). يُرجى الالتزام بمواعيد الحضور.`;
         const alertKey = `tardiness_${student._id}_${new Date().toISOString().split('T')[0]}`;
 
         const alert = new SmartAlert({
@@ -247,7 +305,7 @@ async function checkTardinessAlerts() {
 }
 
 // ==========================================
-// 5️⃣ تنبيهات الإنجاز (تحفيزية)
+// 5️⃣ تنبيهات الإنجاز التحفيزي (معدل)
 // ==========================================
 async function checkAchievementAlerts() {
   console.log('📊 [إنجاز] بدء تحليل الإنجازات...');
@@ -275,17 +333,19 @@ async function checkAchievementAlerts() {
       });
       if (lastAlert) continue;
 
+      // ✅ جلب أيام الدوام في آخر 30 يوم
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - 30);
+      
+      const schoolDays = await getSchoolDaysInRange(startDate, today);
+      
       // 1. الحضور المتتالي
       let consecutiveAttendance = 0;
       let currentStreak = 0;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      for (let i = 0; i < 30; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        date.setHours(0, 0, 0, 0);
-        
+      
+      for (const date of schoolDays.reverse()) {
         const nextDate = new Date(date);
         nextDate.setDate(nextDate.getDate() + 1);
         
@@ -306,9 +366,12 @@ async function checkAchievementAlerts() {
       }
 
       // 2. الحضور الشهري
-      const monthDates = getMonthDates();
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      const monthSchoolDays = await getSchoolDaysInRange(monthStart, monthEnd);
+      
       let monthlyAttendance = 0;
-      for (const date of monthDates) {
+      for (const date of monthSchoolDays) {
         const nextDate = new Date(date);
         nextDate.setDate(nextDate.getDate() + 1);
         const attendance = await Attendance.findOne({
@@ -325,10 +388,10 @@ async function checkAchievementAlerts() {
       let alertKey = null;
 
       if (consecutiveAttendance >= achievementConsecutiveDays) {
-        alertMessage = `🎉 إنجاز رائع! الطالب ${student.name} حضر ${consecutiveAttendance} يوم متتالي. استمر بنفس الأداء المتميز!`;
+        alertMessage = `🎉 إنجاز رائع! الطالب ${student.name} حضر ${consecutiveAttendance} يوم متتالي (في أيام الدوام). استمر بنفس الأداء المتميز!`;
         alertKey = `achievement_consecutive_${student._id}_${new Date().toISOString().split('T')[0]}`;
       } else if (monthlyAttendance >= achievementMonthlyDays) {
-        alertMessage = `🎉 إنجاز مميز! الطالب ${student.name} حضر ${monthlyAttendance} يوم هذا الشهر. أداء رائع يستحق التقدير!`;
+        alertMessage = `🎉 إنجاز مميز! الطالب ${student.name} حضر ${monthlyAttendance} يوم هذا الشهر (في أيام الدوام). أداء رائع يستحق التقدير!`;
         alertKey = `achievement_monthly_${student._id}_${new Date().toISOString().split('T')[0]}`;
       }
 
