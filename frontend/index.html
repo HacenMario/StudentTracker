@@ -167,6 +167,22 @@
                     </button>
                 </div>
 
+                <!-- ========================================== -->
+<!-- شريط البحث عن التلميذ -->
+<!-- ========================================== -->
+<div class="search-section" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center;">
+    <div style="flex:1; min-width:200px; position:relative;">
+        <input type="text" id="searchStudentInput" placeholder="🔍 ابحث عن تلميذ بالاسم..." style="width:100%; padding:12px 20px; border:2px solid #e2eaf2; border-radius:60px; font-size:16px; font-family:'Tajawal', sans-serif; background:white; transition:0.3s; outline:none;">
+        <i class="fas fa-search" style="position:absolute; left:18px; top:50%; transform:translateY(-50%); color:#8a9aaa;"></i>
+    </div>
+    <button id="searchByQRBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483); padding:10px 20px; margin:0;">
+        <i class="fas fa-qrcode"></i> مسح QR
+    </button>
+    <button id="clearSearchBtn" class="btn-secondary" style="display:none; padding:10px 20px; background:#e2eaf2; border:none; border-radius:40px; cursor:pointer; font-weight:600; font-family:'Tajawal', sans-serif;">
+        <i class="fas fa-times"></i> إلغاء البحث
+    </button>
+</div>
+
                 <!-- قائمة الطلاب -->
                 <div id="adminStudentsList" class="students-grid"></div>
 
