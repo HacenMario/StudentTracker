@@ -12,6 +12,7 @@ const jwt = require('jsonwebtoken');
 const webpush = require('web-push');
 const leaveRoutes = require('./routes/leaveRoutes');
 const { startSmartAlertScheduler } = require('./services/smartAlertScheduler');
+const holidayRoutes = require('./routes/holidayRoutes');
 
 // استيراد النماذج
 const Student = require('./models/Student');
@@ -60,6 +61,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/leave-requests', leaveRoutes);
 app.use('/api/smart-alerts', smartAlertRoutes);
+app.use('/api/holidays', holidayRoutes);
 
 // ==========================================
 // إعداد Web Push (VAPID)
