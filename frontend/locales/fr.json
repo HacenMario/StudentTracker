@@ -178,6 +178,14 @@
     "parent": "Parent",
     "enable_notifications": "Activer les notifications"
   },
+  "search": {
+    "placeholder": "Rechercher un étudiant par nom...",
+    "no_results": "🔍 Aucun résultat pour \"{query}\"",
+    "clear": "Annuler la recherche",
+    "scan_qr": "Scanner QR",
+    "scan_qr_found": "✅ Étudiant trouvé: {name}",
+    "scan_qr_not_found": "❌ Aucun étudiant trouvé avec ce code",
+},
   "leave": {
     "title": "Soumettre une excuse d'absence",
     "select_student": "Sélectionner l'étudiant",
