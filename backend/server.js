@@ -11,6 +11,7 @@ const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const webpush = require('web-push');
 const leaveRoutes = require('./routes/leaveRoutes');
+const { startSmartAlertScheduler } = require('./services/smartAlertScheduler');
 
 // استيراد النماذج
 const Student = require('./models/Student');
@@ -57,6 +58,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/leave-requests', leaveRoutes);
+app.use('/api/smart-alerts', smartAlertRoutes);
 
 // ==========================================
 // إعداد Web Push (VAPID)
@@ -573,6 +575,9 @@ mongoose.connect(process.env.MONGO_URI, {
   
   // ✅ بدء خدمة الجدولة للإشعارات التلقائية
   startNotificationScheduler();
+
+  // ✅ بدء خدمة التنبيهات الذكية
+startSmartAlertScheduler()
   
   server.listen(PORT, () => {
     console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
