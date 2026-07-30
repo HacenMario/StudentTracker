@@ -5,7 +5,7 @@ const webpush = require('web-push');
 const auth = require('../middleware/auth');
 
 // تسجيل اشتراك جديد (أو تحديث)
-router.post('/subscribe', auth, async (req, res) => {
+router.post('/subscribe', async (req, res) => {
   try {
     const { subscription, userEmail, role } = req.body;
 
