@@ -3,6 +3,7 @@
 // =========================================
 const API_BASE_URL = 'https://studenttracker-ib8y.onrender.com';
 const SOCKET_URL = API_BASE_URL;
+const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
 
 // ==========================================
 // 2. إدارة التوكن والمستخدم والمتغيرات العامة
@@ -924,8 +925,6 @@ async function subscribeToPush() {
         }
 
         const registration = await navigator.serviceWorker.ready;
-        const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
-        const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
 
         let subscription = await registration.pushManager.getSubscription();
         
@@ -2989,7 +2988,7 @@ async function subscribeUser(registration) {
 
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
         });
 
         const response = await fetch('/api/subscribe', {
