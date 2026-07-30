@@ -54,6 +54,7 @@ const io = socketIo(server, {
 app.set('io', io);
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
+app.use(cors({ origin: 'https://student-tracker-system.vercel.app' }));
 
 // ✅ Ping لإبقاء الخادم نشطاً
 setInterval(() => {
