@@ -30,10 +30,40 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const smartAlertRoutes = require('./routes/smartAlertRoutes');
 
+const Holiday = require('./models/Holiday');
+
 const auth = require('./middleware/auth');
 const { isAdmin } = require('./middleware/auth');
 
 const { getSchoolDaysInRange } = require('./services/smartAlertScheduler');
+
+app.get('/api/test-holidays', auth, async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - 30);
+    
+    // استخدام الدالة المستوردة
+    const schoolDays = await getSchoolDaysInRange(startDate, today);
+    
+    const holidays = await Holiday.find({
+      date: { $gte: startDate, $lte: today }
+    });
+    
+    res.json({
+      totalDays: 30,
+      schoolDays: schoolDays.length,
+      holidays: holidays.map(h => ({
+        name: h.name,
+        date: new Date(h.date).toISOString().split('T')[0]
+      })),
+      message: `✅ تم استثناء ${holidays.length} يوم عطلة من أصل 30 يوم`
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // ✅ استيراد خدمة الجدولة للإشعارات المبكرة
 const { startNotificationScheduler } = require('./services/notificationScheduler');
@@ -565,38 +595,6 @@ await sendPushNotificationToParent(
     res.json({ message: `✅ تم إرسال ${sentCount} إشعار خروج مبكر بنجاح` });
   } catch (err) {
     console.error('❌ خطأ في إرسال الإشعارات المبكرة:', err);
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// ==========================================
-// ✅ مسار اختبار استثناء العطل
-// ==========================================
-app.get('/api/test-holidays', auth, async (req, res) => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 30);
-    
-    // جلب أيام الدوام
-    const schoolDays = await getSchoolDaysInRange(startDate, today);
-    
-    // جلب جميع العطل في النطاق
-    const holidays = await Holiday.find({
-      date: { $gte: startDate, $lte: today }
-    });
-    
-    res.json({
-      totalDays: 30,
-      schoolDays: schoolDays.length,
-      holidays: holidays.map(h => ({
-        name: h.name,
-        date: new Date(h.date).toISOString().split('T')[0]
-      })),
-      message: `✅ تم استثناء ${holidays.length} يوم عطلة من أصل 30 يوم`
-    });
-  } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
