@@ -30,6 +30,11 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const smartAlertRoutes = require('./routes/smartAlertRoutes');
 
+const auth = require('./middleware/auth');
+const { isAdmin } = require('./middleware/auth');
+
+const { getSchoolDaysInRange } = require('./services/smartAlertScheduler');
+
 // ✅ استيراد خدمة الجدولة للإشعارات المبكرة
 const { startNotificationScheduler } = require('./services/notificationScheduler');
 
