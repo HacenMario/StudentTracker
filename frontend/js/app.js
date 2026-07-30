@@ -2331,13 +2331,15 @@ function renderHolidays(holidays, containerId) {
   let html = '';
   holidays.forEach(h => {
     const date = new Date(h.date);
-    const formattedDate = date.toLocaleDateString('ar-EG', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
+    
+    // ✅ التنسيق العادي (أرقام إنجليزية) YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+    
     html += `
-      <div class="log-item" style="padding:8px 12px; border-bottom:1px solid #eef4fa;">
+      <div class="log-item" style="padding:8px 12px; border-bottom:1px solid #eef4fa; display: flex; justify-content: space-between; align-items: center;">
         <span>📅 ${formattedDate} - ${h.name} ${h.description ? ' (' + h.description + ')' : ''}</span>
         <button onclick="handleDeleteHoliday('${h._id}')" style="background:transparent; border:none; color:#e74c3c; cursor:pointer; font-size:14px;">
           <i class="fas fa-trash-alt"></i>
