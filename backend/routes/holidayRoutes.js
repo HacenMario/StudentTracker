@@ -47,11 +47,14 @@ router.post('/', auth, isAdmin, async (req, res) => {
     }
     
     // ✅ التحقق من عدم وجود عطلة تتداخل مع التاريخ
+    const start = new Date(date);
+    const end = endDate ? new Date(endDate) : new Date(date);
+    
     const existing = await Holiday.findOne({
       $or: [
-        { date: new Date(date) },
-        { endDate: { $gte: new Date(date), $lte: new Date(endDate || date) } },
-        { date: { $lte: new Date(endDate || date) }, endDate: { $gte: new Date(date) } }
+        { date: { $gte: start, $lte: end } },
+        { endDate: { $gte: start, $lte: end } },
+        { date: { $lte: start }, endDate: { $gte: start } }
       ]
     });
     
@@ -60,7 +63,7 @@ router.post('/', auth, isAdmin, async (req, res) => {
     }
     
     const holiday = new Holiday({
-      date: new Date(date),
+      date: start,
       endDate: endDate ? new Date(endDate) : null,
       name,
       description: description || '',
@@ -96,7 +99,6 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: 'العطلة غير موجودة' });
     }
     
-    // تبديل الحالة (إذا كانت مفعلة تصبح معطلة والعكس)
     holiday.isActive = holiday.isActive === false ? true : false;
     await holiday.save();
     
@@ -116,7 +118,7 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
 // ==========================================
 router.put('/:id', auth, isAdmin, async (req, res) => {
   try {
-    const { date, name, description } = req.body;
+    const { date, endDate, name, description } = req.body;
     const holiday = await Holiday.findById(req.params.id);
     
     if (!holiday) {
@@ -124,6 +126,8 @@ router.put('/:id', auth, isAdmin, async (req, res) => {
     }
     
     if (date) holiday.date = new Date(date);
+    if (endDate) holiday.endDate = new Date(endDate);
+    else if (endDate === null) holiday.endDate = null;
     if (name) holiday.name = name;
     if (description !== undefined) holiday.description = description;
     
