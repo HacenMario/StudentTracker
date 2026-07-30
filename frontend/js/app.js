@@ -2576,7 +2576,6 @@ function setupHolidayEvents() {
     return;
   }
 
-  // ✅ إذا كان النموذج غير موجود، ننشئه
   if (!form) {
     console.log('📝 النموذج غير موجود، جاري إنشائه...');
     form = document.createElement('div');
@@ -2611,7 +2610,7 @@ function setupHolidayEvents() {
     toggleBtn.parentNode.insertBefore(form, toggleBtn.nextSibling);
     console.log('✅ تم إنشاء النموذج بنجاح');
   } else {
-    // ✅ إذا كان النموذج موجوداً، تأكد من وجود حقل endDate
+    // ✅ التأكد من وجود حقل تاريخ النهاية
     let endDateInput = document.getElementById('holidayEndDate');
     if (!endDateInput) {
       console.log('⚠️ حقل تاريخ النهاية غير موجود، جاري إضافته...');
@@ -2724,7 +2723,6 @@ function setupHolidayEvents() {
   
   console.log('✅ تم إعداد أحداث العطل بنجاح');
 }
-
 // ==========================================
 // 19. أحداث المصادقة وربط الأحداث (DOM فقط)
 // ==========================================
