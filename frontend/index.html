@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> نظام محترف لمراقبة الحضور المدرسي</title>
+    <title> نظام تتبع الحضور المدرسي</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
@@ -60,7 +60,7 @@
     <div class="app-wrapper">
         <div class="container" id="appContainer">
 
-            <!- شاشة تسجيل الدخول ->
+            <!-- شاشة تسجيل الدخول -->
             <div id="loginScreen">
                 <h2 data-i18n="auth.login">🔐 تسجيل الدخول</h2>
                 <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" data-i18n="auth.email">
@@ -114,81 +114,60 @@
 </button>
 <p id="notificationStatus"></p>
 
-    <!-- الصف الأول: إعدادات المدرسة + إضافة طالب -->
-    <div class="admin-row">
-        <!-- إعدادات المدرسة -->
-        <div class="admin-col">
-    <button id="toggleSettingsBtn" 
-            class="btn-settings btn-click-effect"
-            onclick="toggleSettingsForm()">
-        <span class="btn-icon">⚙️</span>
-        <span data-i18n="settings.school">إعدادات المؤسسة</span>
+    <!-- إعدادات المدرسة -->
+    <button id="toggleSettingsBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483);">
+        <i class="fas fa-cog"></i> <span data-i18n="settings.school">إعدادات المؤسسة</span>
     </button>
-            <div id="settingsForm" style="display:none;" class="add-student-form">
-                <h4 style="margin-bottom:12px;" data-i18n="settings.title">تعديل معلومات المدرسة</h4>
-                <div class="form-grid">
-                    <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div>
-                            <label style="display:block; margin-bottom:6px; font-weight:600;" data-i18n="settings.end_time">وقت نهاية الدوام:</label>
-                            <input type="time" id="settingsEndTime" value="16:00" style="width:100%; padding:12px; border:2px solid #e2eaf2; border-radius:12px;">
-                        </div>
-                        <div>
-                            <label style="display:block; margin-bottom:6px; font-weight:600;" data-i18n="settings.notify_before">إرسال إشعار قبل (دقائق):</label>
-                            <input type="number" id="settingsNotifyBefore" value="30" min="5" max="120" style="width:100%; padding:12px; border:2px solid #e2eaf2; border-radius:12px;">
-                        </div>
-                    </div>
-                    <input type="text" id="settingsSchoolName" placeholder="اسم المدرسة" data-i18n="settings.name">
-                    <input type="text" id="settingsAddress" placeholder="العنوان" data-i18n="settings.address">
-                    <input type="text" id="settingsPhone" placeholder="الهاتف" data-i18n="settings.phone">
-                    <input type="email" id="settingsEmail" placeholder="البريد الإلكتروني" data-i18n="settings.email">
-                    <div style="grid-column: 1 / -1;">
-                        <label for="settingsLogoUpload" style="display:block; margin-bottom:6px; font-weight:600;" data-i18n="settings.logo">تحميل شعار المدرسة:</label>
-                        <input type="file" id="settingsLogoUpload" accept="image/*" style="padding:8px; border:2px solid #e2eaf2; border-radius:12px; width:100%;">
-                        <div id="logoPreview" style="margin-top:10px;"></div>
-                    </div>
-                    <button id="saveSettingsBtn" class="btn-primary" style="grid-column: 1 / -1;"><i class="fas fa-save"></i> <span data-i18n="settings.save">حفظ الإعدادات</span></button>
+    <div id="settingsForm" style="display:none;" class="add-student-form">
+        <h4 style="margin-bottom:12px;" data-i18n="settings.title">تعديل معلومات المدرسة</h4>
+        <div class="form-grid">
+            <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                    <label style="display:block; margin-bottom:6px; font-weight:600;" data-i18n="settings.end_time">وقت نهاية الدوام:</label>
+                    <input type="time" id="settingsEndTime" value="16:00" style="width:100%; padding:12px; border:2px solid #e2eaf2; border-radius:12px;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:6px; font-weight:600;" data-i18n="settings.notify_before">إرسال إشعار قبل (دقائق):</label>
+                    <input type="number" id="settingsNotifyBefore" value="30" min="5" max="120" style="width:100%; padding:12px; border:2px solid #e2eaf2; border-radius:12px;">
                 </div>
             </div>
-        </div>
-
-        <!-- إضافة طالب جديد -->
-        <div class="admin-col">
-    <button id="toggleAddStudentBtn" 
-            class="btn-add btn-click-effect"
-            onclick="toggleAddStudentForm()">
-        <span class="btn-icon">➕</span>
-        <span data-i18n="student.add_new">إضافة طالب جديد</span>
-    </button>
-            <div id="addStudentForm" style="display:none;" class="add-student-form">
-                <div class="form-grid">
-                    <input type="text" id="adminStudentName" placeholder="اسم التلميذ" data-i18n="student.name">
-                    <input type="email" id="adminParentEmail" placeholder="بريد ولي الأمر" data-i18n="student.parent_email">
-                    <input type="text" id="adminParentName" placeholder="اسم ولي الأمر" data-i18n="student.parent_name">
-                    <input type="text" id="adminParentPhone" placeholder="هاتف ولي الأمر" data-i18n="student.parent_phone">
-                    <input type="text" id="adminAddress" placeholder="العنوان (اختياري)" data-i18n="student.address">
-                    <button id="adminAddBtn" onclick="adminAddStudent()">
-    <i class="fas fa-save"></i> حفظ
-</button>
-                </div>
+            <input type="text" id="settingsSchoolName" placeholder="اسم المدرسة" data-i18n="settings.name">
+            <input type="text" id="settingsAddress" placeholder="العنوان" data-i18n="settings.address">
+            <input type="text" id="settingsPhone" placeholder="الهاتف" data-i18n="settings.phone">
+            <input type="email" id="settingsEmail" placeholder="البريد الإلكتروني" data-i18n="settings.email">
+            <div style="grid-column: 1 / -1;">
+                <label for="settingsLogoUpload" style="display:block; margin-bottom:6px; font-weight:600;" data-i18n="settings.logo">تحميل شعار المدرسة:</label>
+                <input type="file" id="settingsLogoUpload" accept="image/*" style="padding:8px; border:2px solid #e2eaf2; border-radius:12px; width:100%;">
+                <div id="logoPreview" style="margin-top:10px;"></div>
             </div>
+            <button id="saveSettingsBtn" class="btn-primary" style="grid-column: 1 / -1;"><i class="fas fa-save"></i> <span data-i18n="settings.save">حفظ الإعدادات</span></button>
         </div>
     </div>
 
-    <!-- الصف الثاني: أزرار التغيير الجماعي + مسح QR -->
-    <div class="admin-row">
-    <button class="btn-bulk-enter btn-click-effect btn-glow"
-            onclick="toggleAllStudents(true)">
-        <span class="btn-icon">📥</span>
-        <span>تغيير الكل إلى <strong>داخل</strong></span>
-        <span class="btn-icon">⬅️</span>
+    <!-- زر إضافة طالب -->
+    <button id="toggleAddStudentBtn" class="btn-toggle-form">
+        <i class="fas fa-plus-circle"></i> <span data-i18n="student.add_new">إضافة طالب جديد</span>
     </button>
-    <button class="btn-bulk-exit btn-click-effect btn-glow"
-            onclick="toggleAllStudents(false)">
-        <span class="btn-icon">📤</span>
-        <span>تغيير الكل إلى <strong>خارج</strong></span>
-        <span class="btn-icon">➡️</span>
-    </button>
-        <button id="openScannerBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #3498db, #2980b9); flex:1;">
+    <div id="addStudentForm" style="display:none;" class="add-student-form">
+        <div class="form-grid">
+            <input type="text" id="adminStudentName" placeholder="اسم التلميذ" data-i18n="student.name">
+            <input type="email" id="adminParentEmail" placeholder="بريد ولي الأمر" data-i18n="student.parent_email">
+            <input type="text" id="adminParentName" placeholder="اسم ولي الأمر" data-i18n="student.parent_name">
+            <input type="text" id="adminParentPhone" placeholder="هاتف ولي الأمر" data-i18n="student.parent_phone">
+            <input type="text" id="adminAddress" placeholder="العنوان (اختياري)" data-i18n="student.address">
+            <button id="adminAddBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-i18n="student.save">حفظ</span></button>
+        </div>
+    </div>
+
+    <!-- أزرار التغيير الجماعي -->
+    <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap;">
+        <button id="toggleAllInsideBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #27ae60, #1e8449);">
+            <i class="fas fa-arrow-right"></i> <span data-i18n="bulk.all_inside">تغيير الكل إلى داخل</span>
+        </button>
+        <button id="toggleAllOutsideBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+            <i class="fas fa-arrow-left"></i> <span data-i18n="bulk.all_outside">تغيير الكل إلى خارج</span>
+        </button>
+        <button id="openScannerBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #3498db, #2980b9);">
             <i class="fas fa-qrcode"></i> <span data-i18n="common.scan_qr">مسح QR Code</span>
         </button>
     </div>
@@ -209,167 +188,155 @@
         </button>
     </div>
 
-    <!-- قائمة الطلاب مع تمرير -->
+    <!-- قائمة الطلاب -->
     <div id="adminStudentsList" class="students-grid"></div>
 
-    <!-- ========================================== -->
-    <!-- الصف الثالث: سجل الحضور + طلبات الأعذار (جنباً إلى جنب) -->
-    <!-- ========================================== -->
-    <div class="admin-row-two">
-        <!-- سجل النشاطات -->
-        <div class="admin-col-log">
-            <div class="log-section">
-                <div class="log-header">
-                    <h3><i class="fas fa-history"></i> <span data-i18n="attendance.log">📋 سجل النشاطات</span></h3>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button id="adminShowOldLogsBtn" class="btn-show-old" style="display:none;">
-                            <i class="fas fa-chevron-down"></i> <span data-i18n="attendance.show_old_logs">عرض السجل السابق</span>
-                        </button>
-                        <button id="adminHideOldLogsBtn" class="btn-hide-old" style="display:none;">
-                            <i class="fas fa-chevron-up"></i> <span data-i18n="attendance.hide_old_logs">إخفاء السجل السابق</span>
-                        </button>
-                        <button id="adminShowAllLogsBtn" class="btn-show-old" style="display:none;">
-                            <i class="fas fa-list"></i> <span data-i18n="attendance.show_all">عرض جميع التفاصيل</span>
-                        </button>
-                    </div>
-                </div>
-                <div id="adminLogContainer" style="max-height:300px; overflow-y:auto;"></div>
+    <!-- سجل النشاطات -->
+    <div class="log-section">
+        <div class="log-header">
+            <h3><i class="fas fa-history"></i> <span data-i18n="attendance.log">📋 سجل النشاطات</span></h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button id="adminShowOldLogsBtn" class="btn-show-old" style="display:none;">
+                    <i class="fas fa-chevron-down"></i> <span data-i18n="attendance.show_old_logs">عرض السجل السابق</span>
+                </button>
+                <button id="adminHideOldLogsBtn" class="btn-hide-old" style="display:none;">
+                    <i class="fas fa-chevron-up"></i> <span data-i18n="attendance.hide_old_logs">إخفاء السجل السابق</span>
+                </button>
+                <button id="adminShowAllLogsBtn" class="btn-show-old" style="display:none;">
+                    <i class="fas fa-list"></i> <span data-i18n="attendance.show_all">عرض جميع التفاصيل</span>
+                </button>
             </div>
         </div>
-
-        <!-- طلبات عذر الغياب -->
-        <div class="admin-col-leave">
-            <div class="leave-section">
-                <h3><i class="fas fa-list"></i> <span data-i18n="leave.requests">طلبات عذر الغياب</span></h3>
-                <div id="leaveRequestsList" class="leave-requests-container" style="max-height:300px; overflow-y:auto;"></div>
-            </div>
-        </div>
+        <div id="adminLogContainer"></div>
     </div>
 
     <!-- ========================================== -->
-    <!-- الصف الرابع: إدارة العطل + التنبيهات الذكية (جنباً إلى جنب) -->
+    <!-- طلبات الإجازات -->
     <!-- ========================================== -->
-    <div class="admin-row-two">
-        <!-- إدارة العطل والإجازات -->
-        <div class="admin-col-holiday">
-            <div class="holidays-section">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-                    <h3 style="color:#1a365d; font-size:18px; display:flex; align-items:center; gap:10px;">
-                        <i class="fas fa-calendar-times" style="color:#e67e22;"></i>
-                        <span data-i18n="holidays.title">إدارة العطل والإجازات</span>
-                    </h3>
-                    <button id="toggleHolidayFormBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #e67e22, #d35400); padding:8px 20px; font-size:14px; margin:0;">
-                        <i class="fas fa-plus"></i> <span data-i18n="holidays.add">إضافة عطلة</span>
-                    </button>
-                </div>
+    <div class="leave-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+        <h3><i class="fas fa-list"></i> <span data-i18n="leave.requests">طلبات عذر الغياب</span></h3>
+        <div id="leaveRequestsList" class="leave-requests-container"></div>
+    </div>
 
-                <!-- نموذج إضافة عطلة -->
-                <div id="holidayForm" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
-                    <div class="form-group">
-                        <label>📅 التاريخ</label>
-                        <input type="date" id="holidayDate" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>📝 اسم العطلة</label>
-                        <input type="text" id="holidayName" class="form-control" placeholder="مثال: عيد الفطر">
-                    </div>
-                    <div class="form-group">
-                        <label>📋 وصف (اختياري)</label>
-                        <textarea id="holidayDescription" class="form-control" placeholder="وصف العطلة..."></textarea>
-                    </div>
-                    <div class="form-actions" style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button id="saveHolidayBtn" class="btn-success">
-                            <i class="fas fa-save"></i> حفظ العطلة
-                        </button>
-                        <button id="cancelHolidayBtn" class="btn-secondary">
-                            <i class="fas fa-times"></i> إلغاء
-                        </button>
-                    </div>
+<!-- ========================================== -->
+<!-- إدارة العطل والإجازات -->
+<!-- ========================================== -->
+<div class="holidays-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+        <h3 style="color:#1a365d; font-size:18px; display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-calendar-times" style="color:#e67e22;"></i>
+            <span data-i18n="holidays.title">إدارة العطل والإجازات</span>
+        </h3>
+        <button id="toggleHolidayFormBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #e67e22, #d35400); padding:8px 20px; font-size:14px; margin:0;">
+            <i class="fas fa-plus"></i> <span data-i18n="holidays.add">إضافة عطلة</span>
+        </button>
+    </div>
+
+    <!-- نموذج إضافة عطلة -->
+<div id="holidayForm" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+    <div class="form-group">
+        <label>📅 التاريخ</label>
+        <input type="date" id="holidayDate" class="form-control">
+    </div>
+    <div class="form-group">
+        <label>📝 اسم العطلة</label>
+        <input type="text" id="holidayName" class="form-control" placeholder="مثال: عيد الفطر">
+    </div>
+    <div class="form-group">
+        <label>📋 وصف (اختياري)</label>
+        <textarea id="holidayDescription" class="form-control" placeholder="وصف العطلة..."></textarea>
+    </div>
+    <div class="form-actions" style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="saveHolidayBtn" class="btn-success">
+            <i class="fas fa-save"></i> حفظ العطلة
+        </button>
+        <button id="cancelHolidayBtn" class="btn-secondary">
+            <i class="fas fa-times"></i> إلغاء
+        </button>
+    </div>
+</div>
+    
+    <!-- قائمة العطل -->
+    <div id="holidaysList" style="max-height:300px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
+</div>
+
+    <!-- ========================================== -->
+    <!-- التنبيهات الذكية -->
+    <!-- ========================================== -->
+    <div class="smart-alerts-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+            <h3 style="color:#1a365d; font-size:20px; display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-brain" style="color:#8e44ad;"></i>
+                <span data-i18n="smart_alerts.title">التنبيهات الذكية</span>
+            </h3>
+            <button id="runSmartAlertsBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483); padding:8px 20px; font-size:14px; margin:0;">
+                <i class="fas fa-play"></i> <span data-i18n="smart_alerts.run_now">تشغيل الآن</span>
+            </button>
+        </div>
+
+        <!-- قواعد التنبيهات -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px; margin:10px 0;">
+            <!-- 1️⃣ الغياب المتكرر -->
+            <div class="rule-card" style="background:#f8fcff; padding:14px 16px; border-radius:16px; border:1px solid #e2eaf2;">
+                <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">🚨 <span data-i18n="smart_alerts.absence">الغياب المتكرر</span></h4>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                        <span data-i18n="smart_alerts.consecutive">متتالي:</span>
+                        <input type="number" id="absenceConsecutive" value="3" min="1" max="10" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                        <span data-i18n="smart_alerts.monthly">شهري:</span>
+                        <input type="number" id="absenceMonthly" value="5" min="1" max="20" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                    </label>
+                    <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="absenceEnabled" checked style="width:16px; height:16px;">
+                        <span data-i18n="smart_alerts.enabled">مفعل</span>
+                    </label>
                 </div>
-                
-                <!-- قائمة العطل -->
-                <div id="holidaysList" style="max-height:250px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
+            </div>
+
+            <!-- 2️⃣ التأخر الصباحي -->
+            <div class="rule-card" style="background:#f8fcff; padding:14px 16px; border-radius:16px; border:1px solid #e2eaf2;">
+                <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">⏰ <span data-i18n="smart_alerts.tardiness">التأخر الصباحي</span></h4>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                        <span data-i18n="smart_alerts.per_week">في الأسبوع:</span>
+                        <input type="number" id="tardinessPerWeek" value="3" min="1" max="10" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                    </label>
+                    <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="tardinessEnabled" checked style="width:16px; height:16px;">
+                        <span data-i18n="smart_alerts.enabled">مفعل</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 3️⃣ الإنجاز التحفيزي -->
+            <div class="rule-card" style="background:#f8fcff; padding:14px 16px; border-radius:16px; border:1px solid #e2eaf2;">
+                <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">🎉 <span data-i18n="smart_alerts.achievement">الإنجاز التحفيزي</span></h4>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                        <span data-i18n="smart_alerts.consecutive">متتالي:</span>
+                        <input type="number" id="achievementConsecutive" value="10" min="1" max="30" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                        <span data-i18n="smart_alerts.monthly">شهري:</span>
+                        <input type="number" id="achievementMonthly" value="20" min="1" max="30" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                    </label>
+                    <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="achievementEnabled" checked style="width:16px; height:16px;">
+                        <span data-i18n="smart_alerts.enabled">مفعل</span>
+                    </label>
+                </div>
             </div>
         </div>
 
-        <!-- التنبيهات الذكية -->
-        <div class="admin-col-alerts">
-            <div class="smart-alerts-section">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-                    <h3 style="color:#1a365d; font-size:18px; display:flex; align-items:center; gap:10px;">
-                        <i class="fas fa-brain" style="color:#8e44ad;"></i>
-                        <span data-i18n="smart_alerts.title">التنبيهات الذكية</span>
-                    </h3>
-                    <button id="runSmartAlertsBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483); padding:8px 20px; font-size:14px; margin:0;">
-                        <i class="fas fa-play"></i> <span data-i18n="smart_alerts.run_now">تشغيل الآن</span>
-                    </button>
-                </div>
+        <!-- زر حفظ القواعد -->
+        <button id="saveAlertRulesBtn" class="btn-primary" style="margin:10px 0;">
+            <i class="fas fa-save"></i> <span data-i18n="smart_alerts.save_rules">حفظ القواعد</span>
+        </button>
 
-                <!-- قواعد التنبيهات -->
-                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px; margin:10px 0;">
-                    <!-- 1️⃣ الغياب المتكرر -->
-                    <div class="rule-card" style="background:#f8fcff; padding:14px 16px; border-radius:16px; border:1px solid #e2eaf2;">
-                        <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">🚨 <span data-i18n="smart_alerts.absence">الغياب المتكرر</span></h4>
-                        <div style="display:flex; flex-direction:column; gap:6px;">
-                            <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
-                                <span data-i18n="smart_alerts.consecutive">متتالي:</span>
-                                <input type="number" id="absenceConsecutive" value="3" min="1" max="10" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
-                                <span data-i18n="smart_alerts.monthly">شهري:</span>
-                                <input type="number" id="absenceMonthly" value="5" min="1" max="20" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
-                            </label>
-                            <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
-                                <input type="checkbox" id="absenceEnabled" checked style="width:16px; height:16px;">
-                                <span data-i18n="smart_alerts.enabled">مفعل</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 2️⃣ التأخر الصباحي -->
-                    <div class="rule-card" style="background:#f8fcff; padding:14px 16px; border-radius:16px; border:1px solid #e2eaf2;">
-                        <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">⏰ <span data-i18n="smart_alerts.tardiness">التأخر الصباحي</span></h4>
-                        <div style="display:flex; flex-direction:column; gap:6px;">
-                            <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
-                                <span data-i18n="smart_alerts.per_week">في الأسبوع:</span>
-                                <input type="number" id="tardinessPerWeek" value="3" min="1" max="10" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
-                            </label>
-                            <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
-                                <input type="checkbox" id="tardinessEnabled" checked style="width:16px; height:16px;">
-                                <span data-i18n="smart_alerts.enabled">مفعل</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 3️⃣ الإنجاز التحفيزي -->
-                    <div class="rule-card" style="background:#f8fcff; padding:14px 16px; border-radius:16px; border:1px solid #e2eaf2;">
-                        <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">🎉 <span data-i18n="smart_alerts.achievement">الإنجاز التحفيزي</span></h4>
-                        <div style="display:flex; flex-direction:column; gap:6px;">
-                            <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
-                                <span data-i18n="smart_alerts.consecutive">متتالي:</span>
-                                <input type="number" id="achievementConsecutive" value="10" min="1" max="30" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
-                                <span data-i18n="smart_alerts.monthly">شهري:</span>
-                                <input type="number" id="achievementMonthly" value="20" min="1" max="30" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
-                            </label>
-                            <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
-                                <input type="checkbox" id="achievementEnabled" checked style="width:16px; height:16px;">
-                                <span data-i18n="smart_alerts.enabled">مفعل</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- زر حفظ القواعد -->
-                <button id="saveAlertRulesBtn" class="btn-primary" style="margin:10px 0; padding:8px 20px; font-size:14px;">
-                    <i class="fas fa-save"></i> <span data-i18n="smart_alerts.save_rules">حفظ القواعد</span>
-                </button>
-
-                <!-- قائمة التنبيهات المرسلة -->
-                <div style="margin-top:10px;">
-                    <h4 style="color:#1a365d; font-size:14px; margin-bottom:8px;">
-                        <i class="fas fa-list"></i> <span data-i18n="smart_alerts.sent_alerts">التنبيهات المرسلة</span>
-                    </h4>
-                    <div id="smartAlertsList" style="max-height:150px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
-                </div>
-            </div>
+        <!-- قائمة التنبيهات المرسلة -->
+        <div style="margin-top:15px;">
+            <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">
+                <i class="fas fa-list"></i> <span data-i18n="smart_alerts.sent_alerts">التنبيهات المرسلة</span>
+            </h4>
+            <div id="smartAlertsList" style="max-height:300px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
         </div>
     </div>
 
@@ -523,61 +490,6 @@
             </div>
         </div>
     </div>
-
-    <!-- ==========================================
-     تصميم Card للأزرار
-     ========================================== -->
-<div class="actions-grid">
-    
-    <!-- بطاقة إعدادات المؤسسة -->
-    <div class="action-card" onclick="toggleSettingsForm()">
-        <div class="action-card-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
-            <i class="fas fa-cog"></i>
-        </div>
-        <div class="action-card-content">
-            <h4>إعدادات المؤسسة</h4>
-            <p>تعديل بيانات المدرسة والشعار</p>
-        </div>
-        <span class="action-card-arrow">→</span>
-    </div>
-
-    <!-- بطاقة إضافة طالب -->
-    <div class="action-card" onclick="toggleAddStudentForm()">
-        <div class="action-card-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
-            <i class="fas fa-user-plus"></i>
-        </div>
-        <div class="action-card-content">
-            <h4>إضافة طالب جديد</h4>
-            <p>تسجيل طالب جديد في النظام</p>
-        </div>
-        <span class="action-card-arrow">→</span>
-    </div>
-
-    <!-- بطاقة تغيير الكل إلى داخل -->
-    <div class="action-card" onclick="toggleAllStudents(true)">
-        <div class="action-card-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
-            <i class="fas fa-arrow-left"></i>
-        </div>
-        <div class="action-card-content">
-            <h4>تغيير الكل إلى داخل</h4>
-            <p>تسجيل دخول جميع الطلاب</p>
-        </div>
-        <span class="action-card-arrow">←</span>
-    </div>
-
-    <!-- بطاقة تغيير الكل إلى خارج -->
-    <div class="action-card" onclick="toggleAllStudents(false)">
-        <div class="action-card-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
-            <i class="fas fa-arrow-right"></i>
-        </div>
-        <div class="action-card-content">
-            <h4>تغيير الكل إلى خارج</h4>
-            <p>تسجيل خروج جميع الطلاب</p>
-        </div>
-        <span class="action-card-arrow">→</span>
-    </div>
-
-</div>
 
     <!-- ========================================== -->
     <!-- تسجيل Service Worker -->
