@@ -925,7 +925,6 @@ async function subscribeToPush() {
         }
 
         const registration = await navigator.serviceWorker.ready;
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
 
         let subscription = await registration.pushManager.getSubscription();
         
@@ -937,7 +936,6 @@ async function subscribeToPush() {
 
         subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: convertedKey,
         });
 
         console.log('✅ اشتراك جديد تم إنشاؤه');
