@@ -28,207 +28,6 @@ let availableCameras = [];
 let allStudents = [];
 let searchQuery = '';
 
-// =============================================
-// دوال المصادقة (Login, Register, Logout)
-// =============================================
-
-// دالة تسجيل الدخول
-async function handleLogin() {
-    const email = document.getElementById('loginEmail')?.value;
-    const password = document.getElementById('loginPassword')?.value;
-
-    if (!email || !password) {
-        showToast('⚠️ الرجاء إدخال البريد الإلكتروني وكلمة المرور', 'warning');
-        return;
-    }
-
-    try {
-        const response = await fetch(API_BASE_URL + '/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'فشل تسجيل الدخول');
-        }
-
-        // حفظ التوكن ومعلومات المستخدم
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-
-        showToast('✅ تم تسجيل الدخول بنجاح', 'success');
-
-        // توجيه المستخدم حسب دوره
-        if (data.user.role === 'admin') {
-            showAdminDashboard();
-        } else if (data.user.role === 'parent') {
-            showParentDashboard();
-        } else {
-            showToast('⚠️ دور غير معروف', 'warning');
-        }
-    } catch (error) {
-        console.error('Login error:', error);
-        showToast('❌ ' + error.message, 'error');
-    }
-}
-
-// دالة التسجيل
-async function handleRegister() {
-    const name = document.getElementById('regName')?.value;
-    const email = document.getElementById('regEmail')?.value;
-    const password = document.getElementById('regPassword')?.value;
-    const phone = document.getElementById('regPhone')?.value;
-    const role = document.getElementById('regRole')?.value;
-
-    if (!name || !email || !password) {
-        showToast('⚠️ الرجاء ملء جميع الحقول المطلوبة', 'warning');
-        return;
-    }
-
-    if (password.length < 6) {
-        showToast('⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'warning');
-        return;
-    }
-
-    try {
-        const response = await fetch(API_BASE_URL + '/api/auth/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name, email, password, phone, role })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'فشل التسجيل');
-        }
-
-        showToast('✅ تم التسجيل بنجاح، يمكنك تسجيل الدخول الآن', 'success');
-
-        // العودة إلى شاشة تسجيل الدخول
-        document.getElementById('registerScreen').style.display = 'none';
-        document.getElementById('loginScreen').style.display = 'block';
-
-        // تنظيف الحقول
-        document.getElementById('regName').value = '';
-        document.getElementById('regEmail').value = '';
-        document.getElementById('regPassword').value = '';
-        document.getElementById('regPhone').value = '';
-
-    } catch (error) {
-        console.error('Register error:', error);
-        showToast('❌ ' + error.message, 'error');
-    }
-}
-
-// دالة تسجيل الخروج
-function handleLogout(role = 'admin') {
-    // تأكيد تسجيل الخروج
-    if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
-
-    // مسح البيانات المحلية
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-
-    // إخفاء لوحات التحكم
-    const adminDashboard = document.getElementById('adminDashboard');
-    const parentDashboard = document.getElementById('parentDashboard');
-    const loginScreen = document.getElementById('loginScreen');
-
-    if (adminDashboard) adminDashboard.style.display = 'none';
-    if (parentDashboard) parentDashboard.style.display = 'none';
-    if (loginScreen) loginScreen.style.display = 'block';
-
-    showToast('✅ تم تسجيل الخروج بنجاح', 'success');
-}
-
-// =============================================
-// دوال عرض لوحات التحكم
-// =============================================
-
-function showAdminDashboard() {
-    const adminDashboard = document.getElementById('adminDashboard');
-    const parentDashboard = document.getElementById('parentDashboard');
-    const loginScreen = document.getElementById('loginScreen');
-    const registerScreen = document.getElementById('registerScreen');
-
-    if (adminDashboard) adminDashboard.style.display = 'block';
-    if (parentDashboard) parentDashboard.style.display = 'none';
-    if (loginScreen) loginScreen.style.display = 'none';
-    if (registerScreen) registerScreen.style.display = 'none';
-
-    // تحميل بيانات لوحة المدير
-    if (typeof loadAdminData === 'function') {
-        loadAdminData();
-    }
-}
-
-function showParentDashboard() {
-    const adminDashboard = document.getElementById('adminDashboard');
-    const parentDashboard = document.getElementById('parentDashboard');
-    const loginScreen = document.getElementById('loginScreen');
-    const registerScreen = document.getElementById('registerScreen');
-
-    if (adminDashboard) adminDashboard.style.display = 'none';
-    if (parentDashboard) parentDashboard.style.display = 'block';
-    if (loginScreen) loginScreen.style.display = 'none';
-    if (registerScreen) registerScreen.style.display = 'none';
-
-    // تحميل بيانات ولي الأمر
-    if (typeof loadParentData === 'function') {
-        loadParentData();
-    }
-}
-
-// =============================================
-// التحقق من حالة تسجيل الدخول عند تحميل الصفحة
-// =============================================
-
-function checkAuthStatus() {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-
-    if (token && userStr) {
-        try {
-            const user = JSON.parse(userStr);
-            if (user.role === 'admin') {
-                showAdminDashboard();
-            } else if (user.role === 'parent') {
-                showParentDashboard();
-            } else {
-                // دور غير معروف، العودة لتسجيل الدخول
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-            }
-        } catch (e) {
-            console.error('Error parsing user data:', e);
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-        }
-    }
-}
-
-// =============================================
-// دالة مساعدة آمنة لربط الأحداث (Safe Event Binder)
-// =============================================
-function safeAddEventListener(elementId, event, handler) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.addEventListener(event, handler);
-    } else {
-        // console.debug(`⚠️ العنصر "${elementId}" غير موجود في هذه الصفحة`);
-    }
-}
-
-safeAddEventListener('loginBtn', 'click', handleLogin);
-
 // ==========================================
 // زر تغيير اللغة - التحديث لجميع الشاشات
 // ==========================================
@@ -703,7 +502,6 @@ socket.on('status-changed', (data) => {
 // 7. دوال API مع التوكن
 // ==========================================
 function fetchWithAuth(url, options = {}) {
-    const token = localStorage.getItem('token');
     const headers = {
         'Content-Type': 'application/json',
     };
@@ -711,8 +509,7 @@ function fetchWithAuth(url, options = {}) {
         headers['Authorization'] = 'Bearer ' + token;
     } else {
         console.warn('⚠️ fetchWithAuth: لا يوجد توكن');
-        // لا نرفض الـ Promise هنا، بل نستمر ولكن بدون توكن
-        // return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
+        return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
     }
 
     return fetch(API_BASE_URL + url, {
@@ -2932,71 +2729,85 @@ function setupHolidayEvents() {
 // 19. أحداث المصادقة وربط الأحداث (DOM فقط)
 // ==========================================
 function setupAuthEvents() {
-    // تسجيل الدخول
-    const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', handleLogin);
-    }
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        if (!email || !password) return alert('املأ جميع الحقول');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل تسجيل الدخول');
+        }
+    });
 
-    // التسجيل
-    const registerBtn = document.getElementById('registerBtn');
-    if (registerBtn) {
-        registerBtn.addEventListener('click', handleRegister);
-    }
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const role = document.getElementById('regRole').value;
+        if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
+        if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, phone, role })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل التسجيل');
+        }
+    });
 
-    // التبديل بين شاشتي تسجيل الدخول والتسجيل
-    const showRegister = document.getElementById('showRegister');
-    if (showRegister) {
-        showRegister.addEventListener('click', (e) => {
-            e.preventDefault();
-            const loginScreen = document.getElementById('loginScreen');
-            const registerScreen = document.getElementById('registerScreen');
-            if (loginScreen) loginScreen.style.display = 'none';
-            if (registerScreen) registerScreen.style.display = 'block';
-        });
-    }
+    document.getElementById('showRegister').addEventListener('click', showRegister);
+    document.getElementById('showLogin').addEventListener('click', showLogin);
+    document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
+    document.getElementById('logoutBtnParent').addEventListener('click', logout);
 
-    const showLogin = document.getElementById('showLogin');
-    if (showLogin) {
-        showLogin.addEventListener('click', (e) => {
-            e.preventDefault();
-            const loginScreen = document.getElementById('loginScreen');
-            const registerScreen = document.getElementById('registerScreen');
-            if (registerScreen) registerScreen.style.display = 'none';
-            if (loginScreen) loginScreen.style.display = 'block';
-        });
-    }
+    document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsForm);
+    document.getElementById('saveSettingsBtn').addEventListener('click', saveSchoolSettings);
+    document.getElementById('toggleAddStudentBtn').addEventListener('click', toggleAddStudentForm);
+    document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
+    document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
+    document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
+    
+    document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
+        toggleAllStudents(true);
+    });
+    document.getElementById('toggleAllOutsideBtn').addEventListener('click', function() {
+        toggleAllStudents(false);
+    });
 
-    // أزرار الخروج
-    const logoutBtnAdmin = document.getElementById('logoutBtnAdmin');
-    if (logoutBtnAdmin) {
-        logoutBtnAdmin.addEventListener('click', () => handleLogout('admin'));
-    }
+    document.getElementById('adminShowOldLogsBtn').addEventListener('click', function() {
+        toggleAdminOldLogs(true);
+    });
+    document.getElementById('adminHideOldLogsBtn').addEventListener('click', function() {
+        toggleAdminOldLogs(false);
+    });
 
-    const logoutBtnParent = document.getElementById('logoutBtnParent');
-    if (logoutBtnParent) {
-        logoutBtnParent.addEventListener('click', () => handleLogout('parent'));
-    }
+    document.getElementById('parentShowOldLogsBtn').addEventListener('click', function() {
+        toggleParentOldLogs(true);
+    });
+    document.getElementById('parentHideOldLogsBtn').addEventListener('click', function() {
+        toggleParentOldLogs(false);
+    });
 
-    // تسجيل الدخول بالضغط على Enter
-    const loginEmail = document.getElementById('loginEmail');
-    const loginPassword = document.getElementById('loginPassword');
-    if (loginEmail) {
-        loginEmail.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const btn = document.getElementById('loginBtn');
-                if (btn) btn.click();
-            }
-        });
-    }
-    if (loginPassword) {
-        loginPassword.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const btn = document.getElementById('loginBtn');
-                if (btn) btn.click();
-            }
-        });
-    }
+    document.getElementById('showOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(true);
+    });
+    document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(false);
+    });
 }
 
 // ==========================================
@@ -3265,64 +3076,6 @@ async function initNotifications() {
         btn.innerText = '🔔 تفعيل الإشعارات';
     });
 }
-
-// دالة عرض الإشعارات (Toast)
-function showToast(message, type = 'info') {
-    const colors = {
-        success: '#28a745',
-        error: '#dc3545',
-        info: '#17a2b8',
-        warning: '#ffc107'
-    };
-    
-    // إزالة أي Toast موجود سابقاً
-    const existing = document.querySelector('.toast-message');
-    if (existing) existing.remove();
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast-message';
-    toast.style.cssText = `
-        position: fixed; 
-        bottom: 30px; 
-        right: 30px; 
-        background: ${colors[type] || '#333'}; 
-        color: white; 
-        padding: 15px 25px; 
-        border-radius: 12px; 
-        z-index: 9999; 
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        font-family: 'Tajawal', sans-serif;
-        font-size: 16px;
-        animation: slideInUp 0.3s ease;
-        max-width: 90%;
-        direction: rtl;
-    `;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.animation = 'slideOutDown 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-// دالة تحديث عدد التلاميذ في البطاقة
-function updateStudentCountInCard(count) {
-    const badge = document.getElementById('studentCount');
-    if (badge) badge.textContent = count || 0;
-}
-
-// دالة تحديث عدد طلبات الغياب المعلقة
-function updatePendingAbsencesCount(count) {
-    const badge = document.getElementById('pendingAbsences');
-    if (badge) badge.textContent = count || 0;
-}
-
-// تصدير الدوال للاستخدام في الملفات الأخرى (students.js, absences.js)
-window.showToast = showToast;
-window.updateStudentCountInCard = updateStudentCountInCard;
-window.updatePendingAbsencesCount = updatePendingAbsencesCount;
-window.fetchWithAuth = fetchWithAuth;
 
 // ==========================================
 // 20. بدء التطبيق
