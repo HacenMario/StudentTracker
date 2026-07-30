@@ -473,4 +473,5 @@ module.exports = {
   checkAbsenceAlerts,
   checkTardinessAlerts,
   checkAchievementAlerts,
+  getSchoolDaysInRange,
 };
