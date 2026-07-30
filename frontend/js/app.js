@@ -502,6 +502,7 @@ socket.on('status-changed', (data) => {
 // 7. دوال API مع التوكن
 // ==========================================
 function fetchWithAuth(url, options = {}) {
+    const token = localStorage.getItem('token');
     const headers = {
         'Content-Type': 'application/json',
     };
@@ -509,7 +510,8 @@ function fetchWithAuth(url, options = {}) {
         headers['Authorization'] = 'Bearer ' + token;
     } else {
         console.warn('⚠️ fetchWithAuth: لا يوجد توكن');
-        return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
+        // لا نرفض الـ Promise هنا، بل نستمر ولكن بدون توكن
+        // return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
     }
 
     return fetch(API_BASE_URL + url, {
@@ -3076,6 +3078,64 @@ async function initNotifications() {
         btn.innerText = '🔔 تفعيل الإشعارات';
     });
 }
+
+// دالة عرض الإشعارات (Toast)
+function showToast(message, type = 'info') {
+    const colors = {
+        success: '#28a745',
+        error: '#dc3545',
+        info: '#17a2b8',
+        warning: '#ffc107'
+    };
+    
+    // إزالة أي Toast موجود سابقاً
+    const existing = document.querySelector('.toast-message');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-message';
+    toast.style.cssText = `
+        position: fixed; 
+        bottom: 30px; 
+        right: 30px; 
+        background: ${colors[type] || '#333'}; 
+        color: white; 
+        padding: 15px 25px; 
+        border-radius: 12px; 
+        z-index: 9999; 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        font-family: 'Tajawal', sans-serif;
+        font-size: 16px;
+        animation: slideInUp 0.3s ease;
+        max-width: 90%;
+        direction: rtl;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOutDown 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// دالة تحديث عدد التلاميذ في البطاقة
+function updateStudentCountInCard(count) {
+    const badge = document.getElementById('studentCount');
+    if (badge) badge.textContent = count || 0;
+}
+
+// دالة تحديث عدد طلبات الغياب المعلقة
+function updatePendingAbsencesCount(count) {
+    const badge = document.getElementById('pendingAbsences');
+    if (badge) badge.textContent = count || 0;
+}
+
+// تصدير الدوال للاستخدام في الملفات الأخرى (students.js, absences.js)
+window.showToast = showToast;
+window.updateStudentCountInCard = updateStudentCountInCard;
+window.updatePendingAbsencesCount = updatePendingAbsencesCount;
+window.fetchWithAuth = fetchWithAuth;
 
 // ==========================================
 // 20. بدء التطبيق
