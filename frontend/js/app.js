@@ -29,6 +29,193 @@ let allStudents = [];
 let searchQuery = '';
 
 // =============================================
+// دوال المصادقة (Login, Register, Logout)
+// =============================================
+
+// دالة تسجيل الدخول
+async function handleLogin() {
+    const email = document.getElementById('loginEmail')?.value;
+    const password = document.getElementById('loginPassword')?.value;
+
+    if (!email || !password) {
+        showToast('⚠️ الرجاء إدخال البريد الإلكتروني وكلمة المرور', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch(API_BASE_URL + '/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'فشل تسجيل الدخول');
+        }
+
+        // حفظ التوكن ومعلومات المستخدم
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        showToast('✅ تم تسجيل الدخول بنجاح', 'success');
+
+        // توجيه المستخدم حسب دوره
+        if (data.user.role === 'admin') {
+            showAdminDashboard();
+        } else if (data.user.role === 'parent') {
+            showParentDashboard();
+        } else {
+            showToast('⚠️ دور غير معروف', 'warning');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showToast('❌ ' + error.message, 'error');
+    }
+}
+
+// دالة التسجيل
+async function handleRegister() {
+    const name = document.getElementById('regName')?.value;
+    const email = document.getElementById('regEmail')?.value;
+    const password = document.getElementById('regPassword')?.value;
+    const phone = document.getElementById('regPhone')?.value;
+    const role = document.getElementById('regRole')?.value;
+
+    if (!name || !email || !password) {
+        showToast('⚠️ الرجاء ملء جميع الحقول المطلوبة', 'warning');
+        return;
+    }
+
+    if (password.length < 6) {
+        showToast('⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch(API_BASE_URL + '/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, email, password, phone, role })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'فشل التسجيل');
+        }
+
+        showToast('✅ تم التسجيل بنجاح، يمكنك تسجيل الدخول الآن', 'success');
+
+        // العودة إلى شاشة تسجيل الدخول
+        document.getElementById('registerScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'block';
+
+        // تنظيف الحقول
+        document.getElementById('regName').value = '';
+        document.getElementById('regEmail').value = '';
+        document.getElementById('regPassword').value = '';
+        document.getElementById('regPhone').value = '';
+
+    } catch (error) {
+        console.error('Register error:', error);
+        showToast('❌ ' + error.message, 'error');
+    }
+}
+
+// دالة تسجيل الخروج
+function handleLogout(role = 'admin') {
+    // تأكيد تسجيل الخروج
+    if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+
+    // مسح البيانات المحلية
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+
+    // إخفاء لوحات التحكم
+    const adminDashboard = document.getElementById('adminDashboard');
+    const parentDashboard = document.getElementById('parentDashboard');
+    const loginScreen = document.getElementById('loginScreen');
+
+    if (adminDashboard) adminDashboard.style.display = 'none';
+    if (parentDashboard) parentDashboard.style.display = 'none';
+    if (loginScreen) loginScreen.style.display = 'block';
+
+    showToast('✅ تم تسجيل الخروج بنجاح', 'success');
+}
+
+// =============================================
+// دوال عرض لوحات التحكم
+// =============================================
+
+function showAdminDashboard() {
+    const adminDashboard = document.getElementById('adminDashboard');
+    const parentDashboard = document.getElementById('parentDashboard');
+    const loginScreen = document.getElementById('loginScreen');
+    const registerScreen = document.getElementById('registerScreen');
+
+    if (adminDashboard) adminDashboard.style.display = 'block';
+    if (parentDashboard) parentDashboard.style.display = 'none';
+    if (loginScreen) loginScreen.style.display = 'none';
+    if (registerScreen) registerScreen.style.display = 'none';
+
+    // تحميل بيانات لوحة المدير
+    if (typeof loadAdminData === 'function') {
+        loadAdminData();
+    }
+}
+
+function showParentDashboard() {
+    const adminDashboard = document.getElementById('adminDashboard');
+    const parentDashboard = document.getElementById('parentDashboard');
+    const loginScreen = document.getElementById('loginScreen');
+    const registerScreen = document.getElementById('registerScreen');
+
+    if (adminDashboard) adminDashboard.style.display = 'none';
+    if (parentDashboard) parentDashboard.style.display = 'block';
+    if (loginScreen) loginScreen.style.display = 'none';
+    if (registerScreen) registerScreen.style.display = 'none';
+
+    // تحميل بيانات ولي الأمر
+    if (typeof loadParentData === 'function') {
+        loadParentData();
+    }
+}
+
+// =============================================
+// التحقق من حالة تسجيل الدخول عند تحميل الصفحة
+// =============================================
+
+function checkAuthStatus() {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            if (user.role === 'admin') {
+                showAdminDashboard();
+            } else if (user.role === 'parent') {
+                showParentDashboard();
+            } else {
+                // دور غير معروف، العودة لتسجيل الدخول
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            }
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+        }
+    }
+}
+
+// =============================================
 // دالة مساعدة آمنة لربط الأحداث (Safe Event Binder)
 // =============================================
 function safeAddEventListener(elementId, event, handler) {
