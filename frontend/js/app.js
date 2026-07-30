@@ -2474,7 +2474,7 @@ function renderHolidays(holidays, containerId) {
   if (!container) return;
 
   if (!holidays || holidays.length === 0) {
-    container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">📭 لا توجد عطل مسجلة</div>`;
+    container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('holidays.no_holidays')}</div>`;
     return;
   }
 
@@ -2486,10 +2486,12 @@ function renderHolidays(holidays, containerId) {
     const day = String(date.getDate()).padStart(2, '0');
     const formattedDate = `${year}-${month}-${day}`;
     
-    // ✅ حالة العطلة (مفعلة/معطلة)
-    const isActive = h.isActive !== false; // افتراضيًا مفعلة
-    const statusText = isActive ? '🟢 مفعلة' : '🔴 معطلة';
+    const isActive = h.isActive !== false;
+    const statusText = isActive ? translate('holidays.active') : translate('holidays.inactive');
     const statusColor = isActive ? '#27ae60' : '#e74c3c';
+    const toggleText = isActive ? translate('holidays.toggle') : translate('holidays.activate');
+    const toggleColor = isActive ? '#f39c12' : '#27ae60';
+    const toggleIcon = isActive ? 'fa-pause' : 'fa-play';
     
     html += `
       <div class="log-item" style="padding:8px 12px; border-bottom:1px solid #eef4fa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
@@ -2501,7 +2503,7 @@ function renderHolidays(holidays, containerId) {
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button onclick="handleToggleHoliday('${h._id}')" 
-                  style="background: ${isActive ? '#f39c12' : '#27ae60'}; 
+                  style="background: ${toggleColor}; 
                          border: none; 
                          color: white; 
                          padding: 5px 12px; 
@@ -2509,8 +2511,8 @@ function renderHolidays(holidays, containerId) {
                          cursor: pointer; 
                          font-size: 13px;
                          transition: 0.3s;">
-            <i class="fas ${isActive ? 'fa-pause' : 'fa-play'}"></i> 
-            ${isActive ? 'تعطيل' : 'تفعيل'}
+            <i class="fas ${toggleIcon}"></i> 
+            ${toggleText}
           </button>
           <button onclick="handleEditHoliday('${h._id}')" 
                   style="background: #3498db; 
@@ -2521,7 +2523,7 @@ function renderHolidays(holidays, containerId) {
                          cursor: pointer; 
                          font-size: 13px;
                          transition: 0.3s;">
-            <i class="fas fa-edit"></i> تعديل
+            <i class="fas fa-edit"></i> ${translate('holidays.edit')}
           </button>
           <button onclick="handleDeleteHoliday('${h._id}')" 
                   style="background: #e74c3c; 
@@ -2532,7 +2534,7 @@ function renderHolidays(holidays, containerId) {
                          cursor: pointer; 
                          font-size: 13px;
                          transition: 0.3s;">
-            <i class="fas fa-trash-alt"></i> حذف
+            <i class="fas fa-trash-alt"></i> ${translate('common.delete')}
           </button>
         </div>
       </div>
