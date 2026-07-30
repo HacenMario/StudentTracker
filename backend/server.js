@@ -571,32 +571,6 @@ await sendPushNotificationToParent(
   }
 });
 
-// ==========================================
-// دالة مساعدة: جلب أيام الدوام فقط (استثناء العطل)
-// ==========================================
-async function getSchoolDaysInRange(startDate, endDate) {
-  const days = [];
-  const current = new Date(startDate);
-  const end = new Date(endDate);
-  
-  // جلب جميع العطل في النطاق دفعة واحدة
-  const holidays = await Holiday.find({
-    date: { $gte: startDate, $lte: endDate }
-  });
-  const holidayDates = holidays.map(h => 
-    new Date(h.date).toISOString().split('T')[0]
-  );
-  
-  while (current <= end) {
-    const dateStr = current.toISOString().split('T')[0];
-    if (!holidayDates.includes(dateStr)) {
-      days.push(new Date(current));
-    }
-    current.setDate(current.getDate() + 1);
-  }
-  return days;
-}
-
 app.get('/api/test-holidays', auth, async (req, res) => {
   try {
     const today = new Date();
