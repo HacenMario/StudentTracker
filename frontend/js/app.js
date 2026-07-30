@@ -473,87 +473,131 @@ function applySchoolSettings() {
 }
 
 async function saveSchoolSettings() {
-    const schoolName = document.getElementById('settingsSchoolName').value.trim();
-    const address = document.getElementById('settingsAddress').value.trim();
-    const phone = document.getElementById('settingsPhone').value.trim();
-    const email = document.getElementById('settingsEmail').value.trim();
-    const schoolEndTime = document.getElementById('settingsEndTime').value || '16:00';
-    const notificationBeforeMinutes = parseInt(document.getElementById('settingsNotifyBefore').value) || 30;
+    // ✅ جلب البيانات من النموذج
+    const schoolName = document.getElementById('settingsSchoolName')?.value?.trim() || '';
+    const address = document.getElementById('settingsAddress')?.value?.trim() || '';
+    const phone = document.getElementById('settingsPhone')?.value?.trim() || '';
+    const email = document.getElementById('settingsEmail')?.value?.trim() || '';
+    const schoolEndTime = document.getElementById('settingsEndTime')?.value || '16:00';
+    const notificationBeforeMinutes = parseInt(document.getElementById('settingsNotifyBefore')?.value) || 30;
 
-    let logo = schoolSettings ? schoolSettings.logo : '';
-    let logoFileName = schoolSettings ? schoolSettings.logoFileName : '';
+    // ✅ التحقق من صحة البيانات
+    if (!schoolName) {
+        showToast('⚠️ الرجاء إدخال اسم المدرسة', 'warning');
+        return;
+    }
+
+    // ✅ معالجة الشعار إذا تم رفعه
+    let logo = schoolSettings?.logo || '';
+    let logoFileName = schoolSettings?.logoFileName || '';
     
     const fileInput = document.getElementById('settingsLogoUpload');
-    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+    if (fileInput?.files?.length > 0) {
         const file = fileInput.files[0];
+        
+        // ✅ التحقق من حجم الملف (أقل من 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            showToast('⚠️ حجم الصورة كبير جداً (الحد الأقصى 2MB)', 'warning');
+            return;
+        }
+        
         const reader = new FileReader();
-        const base64 = await new Promise((resolve) => {
+        logo = await new Promise((resolve) => {
             reader.onload = (e) => resolve(e.target.result);
             reader.readAsDataURL(file);
         });
-        logo = base64;
         logoFileName = file.name;
     }
 
+    // ✅ عرض نافذة تأكيد
     const confirmed = await showConfirmModal(
         translate('settings.save'),
         translate('settings.confirm')
     );
+    
     if (!confirmed) return;
 
     try {
+        // ✅ إرسال طلب الحفظ
         const res = await fetchWithAuth('/api/settings', {
             method: 'PUT',
-            body: JSON.stringify({ schoolName, address, phone, email, logo, logoFileName, schoolEndTime, notificationBeforeMinutes })
+            body: JSON.stringify({ 
+                schoolName, 
+                address, 
+                phone, 
+                email, 
+                logo, 
+                logoFileName, 
+                schoolEndTime, 
+                notificationBeforeMinutes 
+            })
         });
-        if (!res.ok) throw new Error(translate('common.error'));
-        const data = await res.json();
-        schoolSettings = data;
+
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل حفظ الإعدادات');
+        }
+
+        // ✅ تحديث البيانات المحلية
+        schoolSettings = await res.json();
         applySchoolSettings();
-        alert(translate('settings.success'));
+        
+        // ✅ إخفاء النموذج
         document.getElementById('settingsForm').style.display = 'none';
-        document.getElementById('toggleSettingsBtn').innerHTML = `<i class="fas fa-cog"></i> ${translate('settings.school')}`;
+        document.getElementById('toggleSettingsBtn').innerHTML = 
+            `<i class="fas fa-cog"></i> ${translate('settings.school')}`;
+        
+        // ✅ عرض رسالة نجاح
+        showToast('✅ تم حفظ إعدادات المدرسة بنجاح', 'success');
+        
     } catch (err) {
-        alert(translate('common.error'));
+        console.error('❌ خطأ في حفظ الإعدادات:', err);
+        showToast('❌ ' + (err.message || translate('common.error')), 'error');
     }
 }
 
+// ✅ جعل الدالة عامة
+window.saveSchoolSettings = saveSchoolSettings;
+
+/**
+ * تبديل إظهار/إخفاء نموذج الإعدادات
+ */
 function toggleSettingsForm() {
     const form = document.getElementById('settingsForm');
     const btn = document.getElementById('toggleSettingsBtn');
+    
     if (!form || !btn) return;
-    if (form.style.display === 'none') {
+    
+    if (form.style.display === 'none' || form.style.display === '') {
+        // ✅ عرض النموذج
         form.style.display = 'block';
         btn.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.close')}`;
+        
+        // ✅ تعبئة الحقول بالبيانات الحالية
         if (schoolSettings) {
             document.getElementById('settingsSchoolName').value = schoolSettings.schoolName || '';
             document.getElementById('settingsAddress').value = schoolSettings.address || '';
             document.getElementById('settingsPhone').value = schoolSettings.phone || '';
             document.getElementById('settingsEmail').value = schoolSettings.email || '';
+            document.getElementById('settingsEndTime').value = schoolSettings.schoolEndTime || '16:00';
+            document.getElementById('settingsNotifyBefore').value = schoolSettings.notificationBeforeMinutes || 30;
+            
             const preview = document.getElementById('logoPreview');
             if (schoolSettings.logo) {
-                preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي">`;
+                preview.innerHTML = `<img src="${schoolSettings.logo}" alt="الشعار الحالي" style="max-width:150px; max-height:150px; border-radius:8px;">`;
             } else {
                 preview.innerHTML = '<span style="color:#8a9aaa;">لا يوجد شعار حالياً</span>';
             }
         }
     } else {
+        // ✅ إخفاء النموذج
         form.style.display = 'none';
         btn.innerHTML = `<i class="fas fa-cog"></i> ${translate('settings.school')}`;
     }
 }
 
-document.getElementById('settingsLogoUpload').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const preview = document.getElementById('logoPreview');
-            preview.innerHTML = `<img src="${event.target.result}" alt="الشعار الجديد">`;
-        };
-        reader.readAsDataURL(file);
-    }
-});
+// ✅ جعل الدالة عامة
+window.toggleSettingsForm = toggleSettingsForm;
 
 // ==========================================
 // 10. دوال الإشعارات (Web Push)
@@ -886,24 +930,55 @@ function toggleOldNotifications(show) {
 }
 
 // ==========================================
-// 12. دوال التغيير الجماعي
+// دوال التغيير الجماعي - إصدار مُصحح
 // ==========================================
+
+/**
+ * تغيير حالة جميع الطلاب (داخل أو خارج)
+ * @param {boolean} status - true = داخل، false = خارج
+ */
 async function toggleAllStudents(status) {
+    // ✅ تحديد النص المترجم حسب الحالة
     const statusText = status ? translate('student.inside') : translate('student.outside');
+    
+    // ✅ عرض نافذة تأكيد قبل التنفيذ
     const confirmed = await showConfirmModal(
         translate('bulk.all_inside'),
         translate('bulk.confirm', { status: statusText })
     );
+    
     if (!confirmed) return;
 
-    if (socket) {
-        socket.emit('toggle-all-status', { newStatus: status });
-        const key = status ? 'attendance.all_students_inside' : 'attendance.all_students_outside';
-        addLog('', new Date(), 'adminLogContainer', key);
-    } else {
-        alert(translate('common.error'));
+    // ✅ التحقق من اتصال Socket
+    if (!socket) {
+        alert(translate('common.error') + ': الاتصال بالخادم غير متاح');
+        return;
     }
+
+    // ✅ إرسال الأمر عبر Socket
+    socket.emit('toggle-all-status', { newStatus: status });
+    
+    // ✅ إضافة سجل في لوحة المدير
+    const key = status ? 'attendance.all_students_inside' : 'attendance.all_students_outside';
+    addLog('', new Date(), 'adminLogContainer', key);
+    
+    // ✅ عرض رسالة نجاح
+    showToast(`✅ تم تغيير حالة جميع الطلاب إلى ${statusText}`, 'success');
 }
+
+// ✅ جعل الدالة عامة للاستخدام في HTML
+window.toggleAllStudents = toggleAllStudents;
+
+// ✅ دالة مساعدة لتغيير الكل إلى داخل
+window.toggleAllInside = function() {
+    toggleAllStudents(true);
+};
+
+// ✅ دالة مساعدة لتغيير الكل إلى خارج
+window.toggleAllOutside = function() {
+    toggleAllStudents(false);
+};
+
 // ==========================================
 // 13. دوال المدير
 // ==========================================
@@ -1128,51 +1203,89 @@ document.getElementById('editStudentModal').addEventListener('click', function(e
 // ==========================================
 // 16. دوال المدير (إضافة طالب، إشعارات، إلخ)
 // ==========================================
+// ==========================================
+// إضافة طالب جديد - إصدار مُصحح
+// ==========================================
+
+/**
+ * إضافة طالب جديد إلى النظام
+ */
 async function adminAddStudent() {
-    const name = document.getElementById('adminStudentName').value.trim();
-    const parentEmail = document.getElementById('adminParentEmail').value.trim();
-    const parentName = document.getElementById('adminParentName').value.trim();
-    const parentPhone = document.getElementById('adminParentPhone').value.trim();
-    const address = document.getElementById('adminAddress').value.trim();
+    // ✅ جلب البيانات من النموذج
+    const name = document.getElementById('adminStudentName')?.value?.trim() || '';
+    const parentEmail = document.getElementById('adminParentEmail')?.value?.trim() || '';
+    const parentName = document.getElementById('adminParentName')?.value?.trim() || '';
+    const parentPhone = document.getElementById('adminParentPhone')?.value?.trim() || '';
+    const address = document.getElementById('adminAddress')?.value?.trim() || '';
     
+    // ✅ التحقق من صحة البيانات
     if (!name || !parentEmail || !parentName || !parentPhone) {
-        alert(translate('common.error') + ': ' + translate('student.add'));
+        showToast('⚠️ الرجاء ملء جميع الحقول المطلوبة', 'warning');
         return;
     }
 
+    // ✅ التحقق من صحة البريد الإلكتروني
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(parentEmail)) {
+        showToast('⚠️ البريد الإلكتروني غير صحيح', 'warning');
+        return;
+    }
+
+    // ✅ عرض نافذة تأكيد
     const confirmed = await showConfirmModal(
         translate('student.add_new'),
         translate('student.confirm_add', { name, parentName })
     );
+    
     if (!confirmed) return;
 
     try {
+        // ✅ إرسال طلب الإضافة
         const res = await fetchWithAuth('/api/students', {
             method: 'POST',
-            body: JSON.stringify({ name, parentEmail, parentName, parentPhone, address })
+            body: JSON.stringify({ 
+                name, 
+                parentEmail, 
+                parentName, 
+                parentPhone, 
+                address 
+            })
         });
 
-        if (res.ok) {
-            document.getElementById('adminStudentName').value = '';
-            document.getElementById('adminParentEmail').value = '';
-            document.getElementById('adminParentName').value = '';
-            document.getElementById('adminParentPhone').value = '';
-            document.getElementById('adminAddress').value = '';
-            
-            loadAdminStudents();
-            addLog('', new Date(), 'adminLogContainer', 'attendance.student_added', { name });
-            
-            document.getElementById('addStudentForm').style.display = 'none';
-            document.getElementById('toggleAddStudentBtn').innerHTML = `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
-        } else {
-            const data = await res.json();
-            alert(translate('common.error') + ': ' + (data.message || translate('common.error')));
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل إضافة الطالب');
         }
+
+        // ✅ تفريغ الحقول بعد النجاح
+        document.getElementById('adminStudentName').value = '';
+        document.getElementById('adminParentEmail').value = '';
+        document.getElementById('adminParentName').value = '';
+        document.getElementById('adminParentPhone').value = '';
+        document.getElementById('adminAddress').value = '';
+        
+        // ✅ تحديث القائمة
+        await loadAdminStudents();
+        
+        // ✅ إضافة سجل
+        addLog('', new Date(), 'adminLogContainer', 'attendance.student_added', { name });
+        
+        // ✅ إخفاء النموذج
+        document.getElementById('addStudentForm').style.display = 'none';
+        document.getElementById('toggleAddStudentBtn').innerHTML = 
+            `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
+        
+        // ✅ عرض رسالة نجاح
+        showToast(`✅ تم إضافة الطالب ${name} بنجاح`, 'success');
+        
     } catch (err) {
         console.error('❌ خطأ في إضافة الطالب:', err);
-        alert(translate('common.error') + ': ' + err.message);
+        showToast('❌ ' + (err.message || translate('common.error')), 'error');
     }
 }
+
+// ✅ جعل الدالة عامة
+window.adminAddStudent = adminAddStudent;
 
 function toggleAddStudentForm() {
     const form = document.getElementById('addStudentForm');
@@ -2805,42 +2918,76 @@ async function initNotifications() {
 // 25. دوال المصادقة مع Toast
 // ==========================================
 function showToast(message, type = 'info') {
-    const colors = {
-        success: '#28a745',
-        error: '#dc3545',
-        info: '#17a2b8',
-        warning: '#ffc107'
-    };
-    
+    // ✅ إزالة أي Toast موجود مسبقاً
     const existing = document.querySelector('.toast-message');
     if (existing) existing.remove();
     
+    // ✅ تحديد الألوان حسب النوع
+    const colors = {
+        success: '#10b981',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+    };
+    
+    // ✅ إنشاء عنصر Toast
     const toast = document.createElement('div');
     toast.className = 'toast-message';
     toast.style.cssText = `
-        position: fixed; 
-        bottom: 30px; 
-        right: 30px; 
-        background: ${colors[type] || '#333'}; 
-        color: white; 
-        padding: 15px 25px; 
-        border-radius: 12px; 
-        z-index: 9999; 
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${colors[type] || '#6b7280'};
+        color: white;
+        padding: 14px 28px;
+        border-radius: 12px;
+        z-index: 99999;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         font-family: 'Tajawal', sans-serif;
         font-size: 16px;
-        animation: slideInUp 0.3s ease;
+        font-weight: 500;
+        animation: slideUp 0.3s ease;
         max-width: 90%;
+        text-align: center;
         direction: rtl;
+        border: 1px solid rgba(255,255,255,0.1);
     `;
-    toast.textContent = message;
+    
+    // ✅ إضافة أيقونة حسب النوع
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
+    
+    toast.textContent = `${icons[type] || ''} ${message}`;
     document.body.appendChild(toast);
     
+    // ✅ إزالة بعد 3 ثواني
     setTimeout(() => {
-        toast.style.animation = 'slideOutDown 0.3s ease';
+        toast.style.animation = 'slideDown 0.3s ease';
         setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, 3500);
 }
+
+// ✅ إضافة الأنيميشن
+const toastStyle = document.createElement('style');
+toastStyle.textContent = `
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateX(-50%) translateY(30px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    @keyframes slideDown {
+        from { opacity: 1; transform: translateX(-50%) translateY(0); }
+        to { opacity: 0; transform: translateX(-50%) translateY(30px); }
+    }
+`;
+document.head.appendChild(toastStyle);
+
+// ✅ جعل الدالة عامة
+window.showToast = showToast;
 
 async function handleLogin() {
     const email = document.getElementById('loginEmail')?.value;
