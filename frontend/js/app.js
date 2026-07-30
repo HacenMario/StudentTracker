@@ -2278,7 +2278,7 @@ function setupSmartAlertEvents() {
 }
 
 // ==========================================
-// دوال إدارة العطل والإجازات
+// دوال إدارة العطل والإجازات (معدلة)
 // ==========================================
 
 // جلب جميع العطل
@@ -2293,12 +2293,12 @@ async function loadHolidays() {
   }
 }
 
-// إضافة عطلة جديدة
-async function addHoliday(date, name, description) {
+// ✅ إضافة عطلة جديدة (معدلة لدعم endDate)
+async function addHoliday(date, endDate, name, description) {
   try {
     const res = await fetchWithAuth('/api/holidays', {
       method: 'POST',
-      body: JSON.stringify({ date, name, description }),
+      body: JSON.stringify({ date, endDate, name, description }),
     });
     return await res.json();
   } catch (err) {
@@ -2333,9 +2333,24 @@ async function toggleHolidayStatus(id) {
   }
 }
 
+// ✅ تعديل عطلة (معدلة لدعم endDate)
+async function updateHoliday(id, date, endDate, name, description) {
+  try {
+    const res = await fetchWithAuth('/api/holidays/' + id, {
+      method: 'PUT',
+      body: JSON.stringify({ date, endDate, name, description }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'فشل التعديل');
+    return data;
+  } catch (err) {
+    console.error('❌ خطأ في تعديل العطلة:', err);
+    return { success: false, message: err.message };
+  }
+}
+
 // دالة معالجة تبديل الحالة (مع تأكيد)
 window.handleToggleHoliday = async function(id) {
-  // جلب اسم العطلة لعرضه في رسالة التأكيد
   const holidays = await loadHolidays();
   const holiday = holidays.find(h => h._id === id);
   const name = holiday ? holiday.name : 'هذه العطلة';
@@ -2358,25 +2373,8 @@ window.handleToggleHoliday = async function(id) {
   }
 };
 
-// تعديل عطلة
-async function updateHoliday(id, date, name, description) {
-  try {
-    const res = await fetchWithAuth('/api/holidays/' + id, {
-      method: 'PUT',
-      body: JSON.stringify({ date, name, description }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'فشل التعديل');
-    return data;
-  } catch (err) {
-    console.error('❌ خطأ في تعديل العطلة:', err);
-    return { success: false, message: err.message };
-  }
-}
-
-// دالة معالجة التعديل
+// ✅ دالة معالجة التعديل (معدلة لدعم endDate)
 window.handleEditHoliday = async function(id) {
-  // جلب بيانات العطلة
   const holidays = await loadHolidays();
   const holiday = holidays.find(h => h._id === id);
   if (!holiday) {
@@ -2384,11 +2382,11 @@ window.handleEditHoliday = async function(id) {
     return;
   }
   
-  // ✅ إنشاء نموذج تعديل منبثق
   const date = new Date(holiday.date);
   const formattedDate = date.toISOString().split('T')[0];
+  const endDate = holiday.endDate ? new Date(holiday.endDate) : null;
+  const formattedEndDate = endDate ? endDate.toISOString().split('T')[0] : '';
   
-  // إنشاء نافذة تعديل مخصصة
   const modal = document.createElement('div');
   modal.style.cssText = `
     position: fixed;
@@ -2404,8 +2402,12 @@ window.handleEditHoliday = async function(id) {
     <div style="background: white; padding: 25px; border-radius: 12px; width: 400px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
       <h3 style="margin-top: 0; color: #2c3e50;">✏️ تعديل العطلة</h3>
       <div class="form-group" style="margin-bottom: 12px;">
-        <label>📅 التاريخ</label>
+        <label>📅 تاريخ البداية</label>
         <input type="date" id="editHolidayDate" value="${formattedDate}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+      </div>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>📅 تاريخ النهاية (اختياري - للإجازات المتعددة الأيام)</label>
+        <input type="date" id="editHolidayEndDate" value="${formattedEndDate}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
       </div>
       <div class="form-group" style="margin-bottom: 12px;">
         <label>📝 اسم العطلة</label>
@@ -2427,13 +2429,13 @@ window.handleEditHoliday = async function(id) {
   `;
   document.body.appendChild(modal);
   
-  // ربط أحداث النافذة
   document.getElementById('cancelEditHolidayBtn').addEventListener('click', function() {
     modal.remove();
   });
   
   document.getElementById('saveEditHolidayBtn').addEventListener('click', async function() {
     const newDate = document.getElementById('editHolidayDate').value;
+    const newEndDate = document.getElementById('editHolidayEndDate').value || newDate;
     const newName = document.getElementById('editHolidayName').value.trim();
     const newDescription = document.getElementById('editHolidayDescription').value.trim();
     
@@ -2445,7 +2447,7 @@ window.handleEditHoliday = async function(id) {
     this.disabled = true;
     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
     
-    const result = await updateHoliday(id, newDate, newName, newDescription);
+    const result = await updateHoliday(id, newDate, newEndDate, newName, newDescription);
     
     this.disabled = false;
     this.innerHTML = '<i class="fas fa-save"></i> حفظ التعديلات';
@@ -2460,7 +2462,6 @@ window.handleEditHoliday = async function(id) {
     }
   });
   
-  // إغلاق النافذة عند النقر خارجها
   modal.addEventListener('click', function(e) {
     if (e.target === modal) {
       modal.remove();
@@ -2468,7 +2469,7 @@ window.handleEditHoliday = async function(id) {
   });
 };
 
-// عرض العطل في الواجهة
+// ✅ عرض العطل في الواجهة (معدل لعرض مدة العطلة)
 function renderHolidays(holidays, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -2480,11 +2481,13 @@ function renderHolidays(holidays, containerId) {
 
   let html = '';
   holidays.forEach(h => {
-    const date = new Date(h.date);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
+    const startDate = new Date(h.date);
+    const endDate = h.endDate ? new Date(h.endDate) : new Date(h.date);
+    
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
+    
+    const dateDisplay = startStr === endStr ? startStr : `${startStr} → ${endStr}`;
     
     const isActive = h.isActive !== false;
     const statusText = isActive ? translate('holidays.active') : translate('holidays.inactive');
@@ -2496,7 +2499,7 @@ function renderHolidays(holidays, containerId) {
     html += `
       <div class="log-item" style="padding:8px 12px; border-bottom:1px solid #eef4fa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <span>📅 ${formattedDate}</span>
+          <span>📅 ${dateDisplay}</span>
           <span style="font-weight: bold;">${h.name}</span>
           ${h.description ? `<span style="color:#7f8c8d; font-size:13px;">(${h.description})</span>` : ''}
           <span style="color: ${statusColor}; font-size:13px; font-weight: bold;">${statusText}</span>
@@ -2561,6 +2564,7 @@ window.handleDeleteHoliday = async function(id) {
   }
 };
 
+// ✅ إعداد أحداث العطل (معدل لدعم endDate)
 function setupHolidayEvents() {
   console.log('🔧 جاري إعداد أحداث العطل...');
   
@@ -2572,7 +2576,6 @@ function setupHolidayEvents() {
     return;
   }
 
-  // ✅ إذا كان النموذج غير موجود، ننشئه
   if (!form) {
     console.log('📝 النموذج غير موجود، جاري إنشائه...');
     form = document.createElement('div');
@@ -2580,8 +2583,12 @@ function setupHolidayEvents() {
     form.style.cssText = 'display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;';
     form.innerHTML = `
         <div class="form-group">
-            <label>📅 التاريخ</label>
+            <label>📅 تاريخ البداية</label>
             <input type="date" id="holidayDate" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>📅 تاريخ النهاية (اختياري - للإجازات المتعددة الأيام)</label>
+            <input type="date" id="holidayEndDate" class="form-control">
         </div>
         <div class="form-group">
             <label>📝 اسم العطلة</label>
@@ -2600,24 +2607,20 @@ function setupHolidayEvents() {
             </button>
         </div>
     `;
-    
     toggleBtn.parentNode.insertBefore(form, toggleBtn.nextSibling);
     console.log('✅ تم إنشاء النموذج بنجاح');
   }
 
-  // ✅ إزالة أي مستمعات قديمة (لمنع التكرار)
   const newToggleBtn = toggleBtn.cloneNode(true);
   toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
   toggleBtn = newToggleBtn;
   
-  // ✅ الآن نربط الأحداث مرة واحدة فقط
   const saveBtn = document.getElementById('saveHolidayBtn');
   const cancelBtn = document.getElementById('cancelHolidayBtn');
 
-  // ✅ إظهار/إخفاء النموذج (مع منع التكرار)
   toggleBtn.addEventListener('click', function(e) {
     e.preventDefault();
-    e.stopPropagation(); // ✅ منع انتشار الحدث
+    e.stopPropagation();
     
     console.log('🔄 تم النقر على زر إضافة عطلة');
     
@@ -2626,7 +2629,6 @@ function setupHolidayEvents() {
       return;
     }
     
-    // ✅ تبديل الحالة
     if (form.style.display === 'none' || form.style.display === '') {
       form.style.display = 'block';
       this.innerHTML = '<i class="fas fa-times"></i> إغلاق النموذج';
@@ -2636,11 +2638,9 @@ function setupHolidayEvents() {
       this.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
       console.log('✅ تم إخفاء النموذج');
     }
-  }, { once: false }); // ✅ لا تستخدم once حتى يعمل الزر أكثر من مرة
+  }, { once: false });
 
-  // إلغاء النموذج
   if (cancelBtn) {
-    // ✅ إزالة المستمعات القديمة
     const newCancelBtn = cancelBtn.cloneNode(true);
     cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
     
@@ -2653,9 +2653,7 @@ function setupHolidayEvents() {
     });
   }
 
-  // حفظ العطلة
   if (saveBtn) {
-    // ✅ إزالة المستمعات القديمة
     const newSaveBtn = saveBtn.cloneNode(true);
     saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
     
@@ -2665,6 +2663,7 @@ function setupHolidayEvents() {
       console.log('💾 محاولة حفظ العطلة...');
       
       const date = document.getElementById('holidayDate')?.value;
+      const endDate = document.getElementById('holidayEndDate')?.value || date;
       const name = document.getElementById('holidayName')?.value.trim();
       const description = document.getElementById('holidayDescription')?.value.trim();
 
@@ -2676,7 +2675,7 @@ function setupHolidayEvents() {
       this.disabled = true;
       this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
 
-      const result = await addHoliday(date, name, description);
+      const result = await addHoliday(date, endDate, name, description);
       
       this.disabled = false;
       this.innerHTML = '<i class="fas fa-save"></i> حفظ العطلة';
@@ -2686,6 +2685,7 @@ function setupHolidayEvents() {
         if (form) form.style.display = 'none';
         if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
         document.getElementById('holidayDate').value = '';
+        document.getElementById('holidayEndDate').value = '';
         document.getElementById('holidayName').value = '';
         document.getElementById('holidayDescription').value = '';
         
@@ -2697,7 +2697,6 @@ function setupHolidayEvents() {
     });
   }
 
-  // تحميل العطل
   if (document.getElementById('holidaysList')) {
     loadHolidays().then(holidays => {
       renderHolidays(holidays, 'holidaysList');
