@@ -78,4 +78,53 @@ router.delete('/:id', auth, isAdmin, async (req, res) => {
   }
 });
 
+// ==========================================
+// 5. تبديل حالة العطلة (تفعيل/تعطيل) - للمدير فقط
+// ==========================================
+router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
+  try {
+    const holiday = await Holiday.findById(req.params.id);
+    if (!holiday) {
+      return res.status(404).json({ success: false, message: 'العطلة غير موجودة' });
+    }
+    
+    // تبديل الحالة (إذا كانت مفعلة تصبح معطلة والعكس)
+    holiday.isActive = holiday.isActive === false ? true : false;
+    await holiday.save();
+    
+    const statusText = holiday.isActive ? 'تفعيل' : 'تعطيل';
+    res.json({ 
+      success: true, 
+      message: `✅ تم ${statusText} العطلة بنجاح`,
+      holiday 
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ==========================================
+// 6. تعديل عطلة (للمدير فقط)
+// ==========================================
+router.put('/:id', auth, isAdmin, async (req, res) => {
+  try {
+    const { date, name, description } = req.body;
+    const holiday = await Holiday.findById(req.params.id);
+    
+    if (!holiday) {
+      return res.status(404).json({ success: false, message: 'العطلة غير موجودة' });
+    }
+    
+    if (date) holiday.date = new Date(date);
+    if (name) holiday.name = name;
+    if (description !== undefined) holiday.description = description;
+    
+    await holiday.save();
+    res.json({ success: true, message: '✅ تم تعديل العطلة بنجاح', holiday });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+
 module.exports = router;
