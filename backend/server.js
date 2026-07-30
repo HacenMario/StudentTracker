@@ -573,14 +573,12 @@ await sendPushNotificationToParent(
 
 app.get('/api/test-holidays', auth, async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 30);
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1); // أول الشهر
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // آخر الشهر
     
-    // ✅ جلب العطل المفعلة في النطاق
     const holidays = await Holiday.find({
-      date: { $gte: startDate, $lte: today },
+      date: { $gte: startDate, $lte: endDate },
       isActive: true
     });
     
@@ -588,11 +586,10 @@ app.get('/api/test-holidays', auth, async (req, res) => {
       new Date(h.date).toISOString().split('T')[0]
     );
     
-    // ✅ حساب أيام الدوام يدوياً
     let schoolDaysCount = 0;
     const current = new Date(startDate);
     
-    while (current <= today) {
+    while (current <= endDate) {
       const dateStr = current.toISOString().split('T')[0];
       if (!holidayDates.includes(dateStr)) {
         schoolDaysCount++;
@@ -600,14 +597,18 @@ app.get('/api/test-holidays', auth, async (req, res) => {
       current.setDate(current.getDate() + 1);
     }
     
+    const totalDays = endDate.getDate(); // ✅ عدد أيام الشهر (28-31)
+    
     res.json({
-      totalDays: 30,
-      schoolDays: schoolDaysCount,  // ✅ أصبحت 29
+      totalDays: totalDays,
+      schoolDays: schoolDaysCount,
       holidays: holidays.map(h => ({
         name: h.name,
         date: new Date(h.date).toISOString().split('T')[0]
       })),
-      message: `✅ تم استثناء ${holidays.length} يوم عطلة من أصل 30 يوم`
+      month: now.toLocaleString('ar-EG', { month: 'long' }),
+      year: now.getFullYear(),
+      message: `✅ تم استثناء ${holidays.length} يوم عطلة من أصل ${totalDays} يوم في هذا الشهر`
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
