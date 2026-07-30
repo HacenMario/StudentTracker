@@ -1298,3 +1298,71 @@ header h1 {
         justify-content: center;
     }
 }
+/* ==========================================
+   تصميم بطاقات الإجراءات
+   ========================================== */
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.action-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border: 2px solid transparent;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    border-color: #667eea;
+}
+
+.action-card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.action-card-content {
+    flex: 1;
+}
+
+.action-card-content h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: #2d3748;
+}
+
+.action-card-content p {
+    margin: 0;
+    font-size: 13px;
+    color: #718096;
+}
+
+.action-card-arrow {
+    font-size: 20px;
+    color: #a0aec0;
+    transition: all 0.3s ease;
+}
+
+.action-card:hover .action-card-arrow {
+    transform: translateX(5px);
+    color: #667eea;
+}
