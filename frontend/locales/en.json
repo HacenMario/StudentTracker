@@ -222,19 +222,33 @@
   "leaving_notification": {
     "title": "⏰ Leaving Alert",
     "body": "⏰ Alert: {minutes} minutes until {studentName} leaves school"
-  },
-  "holidays": {
-    "title": "Holidays Management",
-    "add": "Add Holiday",
-    "date": "Date",
-    "name": "Holiday Name",
-    "description": "Description (optional)",
-    "save": "Save",
-    "delete": "Delete Holiday",
-    "confirm_delete": "Are you sure you want to delete this holiday?",
-    "close_form": "Close Form",
-    "fill_all": "Please enter date and holiday name",
-    "no_holidays": "📭 No holidays registered"
+},
+"holidays": {
+  "title": "Holidays Management",
+  "add": "Add Holiday",
+  "date": "Date",
+  "name": "Holiday Name",
+  "description": "Description (optional)",
+  "save": "Save",
+  "delete": "Delete Holiday",
+  "confirm_delete": "Are you sure you want to delete this holiday?",
+  "close_form": "Close Form",
+  "fill_all": "Please enter date and holiday name",
+  "no_holidays": "📭 No holidays registered",
+  "edit": "Edit Holiday",
+  "toggle": "Deactivate",
+  "activate": "Activate",
+  "active": "Active",
+  "inactive": "Inactive",
+  "status": "Status",
+  "confirm_toggle": "Are you sure you want to {action} the holiday \"{name}\"?",
+  "edit_title": "✏️ Edit Holiday",
+  "save_edit": "Save Changes",
+  "cancel_edit": "Cancel Edit",
+  "edit_success": "✅ Holiday updated successfully",
+  "toggle_success": "✅ Holiday {action} successfully",
+  "not_found": "❌ Holiday not found",
+  "duplicate": "⚠️ A holiday already exists on this date"
 },
   "system": {
     "sender": "System"
