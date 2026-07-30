@@ -2962,6 +2962,119 @@ function startNewScannerForSearch(cameraId) {
     });
 }
 
+// دوال الإشعارات
+async function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('✅ Service Worker registered successfully');
+            return registration;
+        } catch (error) {
+            console.error('❌ Service Worker registration failed:', error);
+            return null;
+        }
+    }
+    return null;
+}
+
+async function subscribeUser(registration) {
+    try {
+        const permission = await Notification.requestPermission();
+        
+        if (permission !== 'granted') {
+            const statusEl = document.getElementById('notificationStatus');
+            if (statusEl) statusEl.innerText = '❌ تم رفض الإشعارات.';
+            return false;
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+        });
+
+        const response = await fetch('/api/subscribe', {
+            method: 'POST',
+            body: JSON.stringify(subscription),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (response.ok) {
+            const statusEl = document.getElementById('notificationStatus');
+            const btnEl = document.getElementById('enableNotificationsBtn');
+            if (statusEl) statusEl.innerText = '✅ الإشعارات مفعلة بنجاح!';
+            if (btnEl) btnEl.style.display = 'none';
+            return true;
+        } else {
+            const statusEl = document.getElementById('notificationStatus');
+            if (statusEl) statusEl.innerText = '❌ فشل الحفظ في الخادم.';
+            return false;
+        }
+    } catch (error) {
+        console.error('Subscription error:', error);
+        const statusEl = document.getElementById('notificationStatus');
+        if (statusEl) statusEl.innerText = '❌ حدث خطأ أثناء التفعيل.';
+        return false;
+    }
+}
+
+async function checkSubscriptionStatus() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        const statusEl = document.getElementById('notificationStatus');
+        if (statusEl) statusEl.innerText = '⚠️ المتصفح لا يدعم الإشعارات.';
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        const btnEl = document.getElementById('enableNotificationsBtn');
+        const statusEl = document.getElementById('notificationStatus');
+
+        if (subscription) {
+            if (btnEl) btnEl.style.display = 'none';
+            if (statusEl) statusEl.innerText = '✅ الإشعارات مفعلة.';
+        } else {
+            if (btnEl) btnEl.style.display = 'block';
+            if (statusEl) statusEl.innerText = '🔔 اضغط لتفعيل الإشعارات.';
+        }
+    } catch (error) {
+        console.error('Check subscription error:', error);
+    }
+}
+
+// تشغيل الكود عند تحميل الصفحة (بأمان دون التعارض مع أحداث DOMContentLoaded الأخرى)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNotifications);
+} else {
+    initNotifications();
+}
+
+async function initNotifications() {
+    // تأكد من وجود عناصر الإشعارات في الصفحة قبل المتابعة
+    const btn = document.getElementById('enableNotificationsBtn');
+    if (!btn) {
+        console.log('⚠️ زر تفعيل الإشعارات غير موجود في هذه الصفحة، تخطي الكود.');
+        return;
+    }
+
+    await registerServiceWorker();
+    await checkSubscriptionStatus();
+
+    btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        btn.innerText = 'جاري التفعيل...';
+
+        const registration = await navigator.serviceWorker.ready;
+        await subscribeUser(registration);
+
+        btn.disabled = false;
+        btn.innerText = '🔔 تفعيل الإشعارات';
+    });
+}
+
 // ==========================================
 // 20. بدء التطبيق
 // ==========================================
