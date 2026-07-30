@@ -925,6 +925,7 @@ async function subscribeToPush() {
         }
 
         const registration = await navigator.serviceWorker.ready;
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
 
         let subscription = await registration.pushManager.getSubscription();
         
