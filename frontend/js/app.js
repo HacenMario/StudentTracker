@@ -364,7 +364,7 @@ function showAdminDashboard() {
     loadLeaveRequests().then(requests => {
         renderLeaveRequests(requests, 'leaveRequestsList');
     });
-}
+    
     // ✅ إضافة أحداث العطل عند عرض لوحة المدير
     setupHolidayEvents();
 }
