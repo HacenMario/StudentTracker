@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة التلاميذ</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- رأس الصفحة -->
+        <div class="page-header">
+            <button onclick="goBack()" class="btn-back">
+                <i class="fas fa-arrow-right"></i> العودة
+            </button>
+            <h1><i class="fas fa-users"></i> إدارة التلاميذ</h1>
+            <button onclick="openAddStudentModal()" class="btn-primary">
+                <i class="fas fa-plus"></i> إضافة تلميذ
+            </button>
+        </div>
+
+        <!-- فلتر وبحث -->
+        <div class="filter-section">
+            <input type="text" id="searchStudent" placeholder="🔍 بحث عن تلميذ..." onkeyup="filterStudents()">
+            <select id="filterClass" onchange="filterStudents()">
+                <option value="">كل الفصول</option>
+                <option value="1">السنة الأولى</option>
+                <option value="2">السنة الثانية</option>
+                <option value="3">السنة الثالثة</option>
+                <option value="4">السنة الرابعة</option>
+                <option value="5">السنة الخامسة</option>
+            </select>
+        </div>
+
+        <!-- شبكة البطاقات -->
+        <div id="studentsGrid" class="students-grid">
+            <!-- سيتم تعبئتها بواسطة JavaScript -->
+        </div>
+    </div>
+
+    <!-- مودال إضافة/تعديل تلميذ -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="studentModalTitle">إضافة تلميذ جديد</h2>
+                <span class="close" onclick="closeStudentModal()">&times;</span>
+            </div>
+            <form id="studentForm">
+                <input type="hidden" id="studentId">
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <input type="text" id="studentName" required>
+                </div>
+                <div class="form-group">
+                    <label>الفصل</label>
+                    <select id="studentClass" required>
+                        <option value="1">السنة الأولى</option>
+                        <option value="2">السنة الثانية</option>
+                        <option value="3">السنة الثالثة</option>
+                        <option value="4">السنة الرابعة</option>
+                        <option value="5">السنة الخامسة</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ولي الأمر</label>
+                    <select id="studentParent" required>
+                        <!-- سيتم تعبئته من الـ API -->
+                    </select>
+                </div>
+                <button type="submit" class="btn-success">حفظ</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/students.js"></script>
+</body>
+</html>
