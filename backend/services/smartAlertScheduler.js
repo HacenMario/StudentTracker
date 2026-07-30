@@ -75,20 +75,23 @@ async function getSchoolDaysInRange(startDate, endDate) {
   const current = new Date(startDate);
   const end = new Date(endDate);
   
-  // ✅ جلب العطل المفعلة في النطاق
+  // ✅ جلب جميع العطل المفعلة التي تتداخل مع النطاق
   const holidays = await Holiday.find({
     $or: [
-      { date: { $gte: startDate, $lte: endDate } },   
-      { endDate: { $gte: startDate, $lte: endDate } },      
+      // عطل تبدأ في النطاق
+      { date: { $gte: startDate, $lte: endDate } },
+      // عطل تنتهي في النطاق
+      { endDate: { $gte: startDate, $lte: endDate } },
+      // عطل تمتد عبر النطاق (تبدأ قبله وتنتهي بعده)
       { 
-        date: { $lte: startDate },                       
-        endDate: { $gte: startDate }           
+        date: { $lte: startDate },
+        endDate: { $gte: startDate }
       }
     ],
     isActive: true
   });
   
-  // ✅ إنشاء قائمة بجميع تواريخ العطل (لكل يوم في الفترة)
+  // ✅ إنشاء مجموعة بجميع تواريخ العطل في النطاق
   const holidayDates = new Set();
   for (const holiday of holidays) {
     const start = new Date(holiday.date);
@@ -101,6 +104,7 @@ async function getSchoolDaysInRange(startDate, endDate) {
     }
   }
   
+  // ✅ حساب أيام الدوام
   while (current <= end) {
     const dateStr = current.toISOString().split('T')[0];
     if (!holidayDates.has(dateStr)) {
