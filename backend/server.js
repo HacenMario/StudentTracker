@@ -583,6 +583,7 @@ app.get('/api/test-holidays', auth, async (req, res) => {
     
     const holidays = await Holiday.find({
       date: { $gte: startDate, $lte: today }
+      isActive: true
     });
     
     res.json({
