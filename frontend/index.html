@@ -118,9 +118,12 @@
     <div class="admin-row">
         <!-- إعدادات المدرسة -->
         <div class="admin-col">
-<button id="toggleSettingsBtn" onclick="toggleSettingsForm()">
-    <i class="fas fa-cog"></i> إعدادات المؤسسة
-</button>
+    <button id="toggleSettingsBtn" 
+            class="btn-settings btn-click-effect"
+            onclick="toggleSettingsForm()">
+        <span class="btn-icon">⚙️</span>
+        <span data-i18n="settings.school">إعدادات المؤسسة</span>
+    </button>
             <div id="settingsForm" style="display:none;" class="add-student-form">
                 <h4 style="margin-bottom:12px;" data-i18n="settings.title">تعديل معلومات المدرسة</h4>
                 <div class="form-grid">
@@ -150,9 +153,12 @@
 
         <!-- إضافة طالب جديد -->
         <div class="admin-col">
-<button id="toggleAddStudentBtn" onclick="toggleAddStudentForm()">
-    <i class="fas fa-plus-circle"></i> إضافة طالب جديد
-</button>
+    <button id="toggleAddStudentBtn" 
+            class="btn-add btn-click-effect"
+            onclick="toggleAddStudentForm()">
+        <span class="btn-icon">➕</span>
+        <span data-i18n="student.add_new">إضافة طالب جديد</span>
+    </button>
             <div id="addStudentForm" style="display:none;" class="add-student-form">
                 <div class="form-grid">
                     <input type="text" id="adminStudentName" placeholder="اسم التلميذ" data-i18n="student.name">
@@ -170,12 +176,18 @@
 
     <!-- الصف الثاني: أزرار التغيير الجماعي + مسح QR -->
     <div class="admin-row">
-<button onclick="toggleAllStudents(true)" class="btn-enter-all">
-    <i class="fas fa-arrow-right"></i> تغيير الكل إلى داخل
-</button>
-<button onclick="toggleAllStudents(false)" class="btn-exit-all">
-    <i class="fas fa-arrow-left"></i> تغيير الكل إلى خارج
-</button>
+    <button class="btn-bulk-enter btn-click-effect btn-glow"
+            onclick="toggleAllStudents(true)">
+        <span class="btn-icon">📥</span>
+        <span>تغيير الكل إلى <strong>داخل</strong></span>
+        <span class="btn-icon">⬅️</span>
+    </button>
+    <button class="btn-bulk-exit btn-click-effect btn-glow"
+            onclick="toggleAllStudents(false)">
+        <span class="btn-icon">📤</span>
+        <span>تغيير الكل إلى <strong>خارج</strong></span>
+        <span class="btn-icon">➡️</span>
+    </button>
         <button id="openScannerBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #3498db, #2980b9); flex:1;">
             <i class="fas fa-qrcode"></i> <span data-i18n="common.scan_qr">مسح QR Code</span>
         </button>
