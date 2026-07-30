@@ -2368,64 +2368,96 @@ window.handleDeleteHoliday = async function(id) {
 
 // ربط أحداث العطل
 function setupHolidayEvents() {
-  // إظهار/إخفاء نموذج الإضافة
-  document.getElementById('toggleHolidayFormBtn')?.addEventListener('click', function() {
-    const form = document.getElementById('holidayForm');
-    if (form.style.display === 'none') {
+  console.log('🔧 جاري إعداد أحداث العطل...');
+  
+  const toggleBtn = document.getElementById('toggleHolidayFormBtn');
+  const form = document.getElementById('holidayForm');
+  const saveBtn = document.getElementById('saveHolidayBtn');
+  const cancelBtn = document.getElementById('cancelHolidayBtn');
+  const holidaysList = document.getElementById('holidaysList');
+
+  // التحقق من وجود العناصر
+  console.log('✅ toggleHolidayFormBtn:', toggleBtn ? 'موجود' : 'غير موجود');
+  console.log('✅ holidayForm:', form ? 'موجود' : 'غير موجود');
+  console.log('✅ saveHolidayBtn:', saveBtn ? 'موجود' : 'غير موجود');
+  console.log('✅ cancelHolidayBtn:', cancelBtn ? 'موجود' : 'غير موجود');
+  console.log('✅ holidaysList:', holidaysList ? 'موجود' : 'غير موجود');
+
+  // إذا كانت العناصر غير موجودة، نخرج من الدالة
+  if (!toggleBtn) {
+    console.warn('⚠️ عناصر العطل غير موجودة في الصفحة');
+    return;
+  }
+
+  // إظهار/إخفاء النموذج
+  toggleBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    console.log('🔄 تم النقر على زر إضافة عطلة');
+    
+    if (form.style.display === 'none' || form.style.display === '') {
       form.style.display = 'block';
-      this.innerHTML = '<i class="fas fa-times"></i> ' + translate('holidays.close_form');
+      this.innerHTML = '<i class="fas fa-times"></i> إغلاق النموذج';
     } else {
       form.style.display = 'none';
-      this.innerHTML = '<i class="fas fa-plus"></i> ' + translate('holidays.add');
+      this.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
     }
   });
 
   // إلغاء النموذج
-  document.getElementById('cancelHolidayBtn')?.addEventListener('click', function() {
-    document.getElementById('holidayForm').style.display = 'none';
-    document.getElementById('toggleHolidayFormBtn').innerHTML = '<i class="fas fa-plus"></i> ' + translate('holidays.add');
-  });
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', function() {
+      form.style.display = 'none';
+      toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
+    });
+  }
 
   // حفظ العطلة
-  document.getElementById('saveHolidayBtn')?.addEventListener('click', async function() {
-    const date = document.getElementById('holidayDate').value;
-    const name = document.getElementById('holidayName').value.trim();
-    const description = document.getElementById('holidayDescription').value.trim();
-
-    if (!date || !name) {
-      alert(translate('holidays.fill_all'));
-      return;
-    }
-
-    this.disabled = true;
-    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + translate('common.loading');
-
-    const result = await addHoliday(date, name, description);
-    
-    this.disabled = false;
-    this.innerHTML = '<i class="fas fa-save"></i> ' + translate('holidays.save');
-
-    if (result.success) {
-      alert(result.message);
-      document.getElementById('holidayForm').style.display = 'none';
-      document.getElementById('toggleHolidayFormBtn').innerHTML = '<i class="fas fa-plus"></i> ' + translate('holidays.add');
-      document.getElementById('holidayDate').value = '';
-      document.getElementById('holidayName').value = '';
-      document.getElementById('holidayDescription').value = '';
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      console.log('💾 محاولة حفظ العطلة...');
       
-      const holidays = await loadHolidays();
-      renderHolidays(holidays, 'holidaysList');
-    } else {
-      alert(result.message || translate('common.error'));
-    }
-  });
+      const date = document.getElementById('holidayDate').value;
+      const name = document.getElementById('holidayName').value.trim();
+      const description = document.getElementById('holidayDescription').value.trim();
 
-  // تحميل العطل عند ظهور الصفحة
-  if (document.getElementById('holidaysList')) {
+      if (!date || !name) {
+        alert('الرجاء إدخال التاريخ واسم العطلة');
+        return;
+      }
+
+      this.disabled = true;
+      this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+
+      const result = await addHoliday(date, name, description);
+      
+      this.disabled = false;
+      this.innerHTML = '<i class="fas fa-save"></i> حفظ العطلة';
+
+      if (result.success) {
+        alert('✅ ' + result.message);
+        form.style.display = 'none';
+        toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
+        document.getElementById('holidayDate').value = '';
+        document.getElementById('holidayName').value = '';
+        document.getElementById('holidayDescription').value = '';
+        
+        const holidays = await loadHolidays();
+        renderHolidays(holidays, 'holidaysList');
+      } else {
+        alert('❌ ' + (result.message || 'حدث خطأ'));
+      }
+    });
+  }
+
+  // تحميل العطل
+  if (holidaysList) {
     loadHolidays().then(holidays => {
       renderHolidays(holidays, 'holidaysList');
     });
   }
+  
+  console.log('✅ تم إعداد أحداث العطل بنجاح');
 }
 
 // ==========================================
