@@ -934,10 +934,14 @@ async function subscribeToPush() {
             return subscription;
         }
 
-        subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-        });
+const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
 
+subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: applicationServerKey
+});
+
+        
         console.log('✅ اشتراك جديد تم إنشاؤه');
         await sendSubscriptionToServer(subscription);
         
