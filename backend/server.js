@@ -582,7 +582,7 @@ app.get('/api/test-holidays', auth, async (req, res) => {
     const schoolDays = await getSchoolDaysInRange(startDate, today);
     
     const holidays = await Holiday.find({
-      date: { $gte: startDate, $lte: today }
+      date: { $gte: startDate, $lte: today },
       isActive: true
     });
     
