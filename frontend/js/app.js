@@ -2372,7 +2372,6 @@ function setupHolidayEvents() {
   let toggleBtn = document.getElementById('toggleHolidayFormBtn');
   let form = document.getElementById('holidayForm');
   
-  // ✅ إذا كان الزر غير موجود، نخرج
   if (!toggleBtn) {
     console.warn('⚠️ زر إضافة عطلة غير موجود');
     return;
@@ -2407,27 +2406,32 @@ function setupHolidayEvents() {
         </div>
     `;
     
-    // إضافة النموذج بعد الزر مباشرة
     toggleBtn.parentNode.insertBefore(form, toggleBtn.nextSibling);
     console.log('✅ تم إنشاء النموذج بنجاح');
   }
 
-  // ✅ الآن نربط الأحداث
+  // ✅ إزالة أي مستمعات قديمة (لمنع التكرار)
+  const newToggleBtn = toggleBtn.cloneNode(true);
+  toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+  toggleBtn = newToggleBtn;
+  
+  // ✅ الآن نربط الأحداث مرة واحدة فقط
   const saveBtn = document.getElementById('saveHolidayBtn');
   const cancelBtn = document.getElementById('cancelHolidayBtn');
-  const holidaysList = document.getElementById('holidaysList');
 
-  // إظهار/إخفاء النموذج
+  // ✅ إظهار/إخفاء النموذج (مع منع التكرار)
   toggleBtn.addEventListener('click', function(e) {
     e.preventDefault();
+    e.stopPropagation(); // ✅ منع انتشار الحدث
+    
     console.log('🔄 تم النقر على زر إضافة عطلة');
     
-    // ✅ التأكد من أن form موجود
     if (!form) {
       console.error('❌ النموذج غير موجود!');
       return;
     }
     
+    // ✅ تبديل الحالة
     if (form.style.display === 'none' || form.style.display === '') {
       form.style.display = 'block';
       this.innerHTML = '<i class="fas fa-times"></i> إغلاق النموذج';
@@ -2437,20 +2441,32 @@ function setupHolidayEvents() {
       this.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
       console.log('✅ تم إخفاء النموذج');
     }
-  });
+  }, { once: false }); // ✅ لا تستخدم once حتى يعمل الزر أكثر من مرة
 
   // إلغاء النموذج
   if (cancelBtn) {
-    cancelBtn.addEventListener('click', function() {
+    // ✅ إزالة المستمعات القديمة
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+    
+    newCancelBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
       if (form) form.style.display = 'none';
       if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
+      console.log('✅ تم إلغاء النموذج');
     });
   }
 
   // حفظ العطلة
   if (saveBtn) {
-    saveBtn.addEventListener('click', async function(e) {
+    // ✅ إزالة المستمعات القديمة
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    
+    newSaveBtn.addEventListener('click', async function(e) {
       e.preventDefault();
+      e.stopPropagation();
       console.log('💾 محاولة حفظ العطلة...');
       
       const date = document.getElementById('holidayDate')?.value;
