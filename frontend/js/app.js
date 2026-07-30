@@ -2366,48 +2366,84 @@ window.handleDeleteHoliday = async function(id) {
   }
 };
 
-// ربط أحداث العطل
 function setupHolidayEvents() {
   console.log('🔧 جاري إعداد أحداث العطل...');
   
-  const toggleBtn = document.getElementById('toggleHolidayFormBtn');
-  const form = document.getElementById('holidayForm');
+  let toggleBtn = document.getElementById('toggleHolidayFormBtn');
+  let form = document.getElementById('holidayForm');
+  
+  // ✅ إذا كان الزر غير موجود، نخرج
+  if (!toggleBtn) {
+    console.warn('⚠️ زر إضافة عطلة غير موجود');
+    return;
+  }
+
+  // ✅ إذا كان النموذج غير موجود، ننشئه
+  if (!form) {
+    console.log('📝 النموذج غير موجود، جاري إنشائه...');
+    form = document.createElement('div');
+    form.id = 'holidayForm';
+    form.style.cssText = 'display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;';
+    form.innerHTML = `
+        <div class="form-group">
+            <label>📅 التاريخ</label>
+            <input type="date" id="holidayDate" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>📝 اسم العطلة</label>
+            <input type="text" id="holidayName" class="form-control" placeholder="مثال: عيد الفطر">
+        </div>
+        <div class="form-group">
+            <label>📋 وصف (اختياري)</label>
+            <textarea id="holidayDescription" class="form-control" placeholder="وصف العطلة..."></textarea>
+        </div>
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 10px;">
+            <button id="saveHolidayBtn" class="btn-success">
+                <i class="fas fa-save"></i> حفظ العطلة
+            </button>
+            <button id="cancelHolidayBtn" class="btn-secondary">
+                <i class="fas fa-times"></i> إلغاء
+            </button>
+        </div>
+    `;
+    
+    // إضافة النموذج بعد الزر مباشرة
+    toggleBtn.parentNode.insertBefore(form, toggleBtn.nextSibling);
+    console.log('✅ تم إنشاء النموذج بنجاح');
+  }
+
+  // ✅ الآن نربط الأحداث
   const saveBtn = document.getElementById('saveHolidayBtn');
   const cancelBtn = document.getElementById('cancelHolidayBtn');
   const holidaysList = document.getElementById('holidaysList');
-
-  // التحقق من وجود العناصر
-  console.log('✅ toggleHolidayFormBtn:', toggleBtn ? 'موجود' : 'غير موجود');
-  console.log('✅ holidayForm:', form ? 'موجود' : 'غير موجود');
-  console.log('✅ saveHolidayBtn:', saveBtn ? 'موجود' : 'غير موجود');
-  console.log('✅ cancelHolidayBtn:', cancelBtn ? 'موجود' : 'غير موجود');
-  console.log('✅ holidaysList:', holidaysList ? 'موجود' : 'غير موجود');
-
-  // إذا كانت العناصر غير موجودة، نخرج من الدالة
-  if (!toggleBtn) {
-    console.warn('⚠️ عناصر العطل غير موجودة في الصفحة');
-    return;
-  }
 
   // إظهار/إخفاء النموذج
   toggleBtn.addEventListener('click', function(e) {
     e.preventDefault();
     console.log('🔄 تم النقر على زر إضافة عطلة');
     
+    // ✅ التأكد من أن form موجود
+    if (!form) {
+      console.error('❌ النموذج غير موجود!');
+      return;
+    }
+    
     if (form.style.display === 'none' || form.style.display === '') {
       form.style.display = 'block';
       this.innerHTML = '<i class="fas fa-times"></i> إغلاق النموذج';
+      console.log('✅ تم إظهار النموذج');
     } else {
       form.style.display = 'none';
       this.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
+      console.log('✅ تم إخفاء النموذج');
     }
   });
 
   // إلغاء النموذج
   if (cancelBtn) {
     cancelBtn.addEventListener('click', function() {
-      form.style.display = 'none';
-      toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
+      if (form) form.style.display = 'none';
+      if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
     });
   }
 
@@ -2417,9 +2453,9 @@ function setupHolidayEvents() {
       e.preventDefault();
       console.log('💾 محاولة حفظ العطلة...');
       
-      const date = document.getElementById('holidayDate').value;
-      const name = document.getElementById('holidayName').value.trim();
-      const description = document.getElementById('holidayDescription').value.trim();
+      const date = document.getElementById('holidayDate')?.value;
+      const name = document.getElementById('holidayName')?.value.trim();
+      const description = document.getElementById('holidayDescription')?.value.trim();
 
       if (!date || !name) {
         alert('الرجاء إدخال التاريخ واسم العطلة');
@@ -2436,8 +2472,8 @@ function setupHolidayEvents() {
 
       if (result.success) {
         alert('✅ ' + result.message);
-        form.style.display = 'none';
-        toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
+        if (form) form.style.display = 'none';
+        if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
         document.getElementById('holidayDate').value = '';
         document.getElementById('holidayName').value = '';
         document.getElementById('holidayDescription').value = '';
@@ -2451,7 +2487,7 @@ function setupHolidayEvents() {
   }
 
   // تحميل العطل
-  if (holidaysList) {
+  if (document.getElementById('holidaysList')) {
     loadHolidays().then(holidays => {
       renderHolidays(holidays, 'holidaysList');
     });
