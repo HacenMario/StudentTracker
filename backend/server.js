@@ -578,17 +578,31 @@ app.get('/api/test-holidays', auth, async (req, res) => {
     const startDate = new Date(today);
     startDate.setDate(startDate.getDate() - 30);
     
-    // استخدام الدالة المستوردة
-    const schoolDays = await getSchoolDaysInRange(startDate, today);
-    
+    // ✅ جلب العطل المفعلة في النطاق
     const holidays = await Holiday.find({
       date: { $gte: startDate, $lte: today },
       isActive: true
     });
     
+    const holidayDates = holidays.map(h => 
+      new Date(h.date).toISOString().split('T')[0]
+    );
+    
+    // ✅ حساب أيام الدوام يدوياً
+    let schoolDaysCount = 0;
+    const current = new Date(startDate);
+    
+    while (current <= today) {
+      const dateStr = current.toISOString().split('T')[0];
+      if (!holidayDates.includes(dateStr)) {
+        schoolDaysCount++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    
     res.json({
       totalDays: 30,
-      schoolDays: schoolDays.length,
+      schoolDays: schoolDaysCount,  // ✅ أصبحت 29
       holidays: holidays.map(h => ({
         name: h.name,
         date: new Date(h.date).toISOString().split('T')[0]
