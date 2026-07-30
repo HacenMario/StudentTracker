@@ -2318,6 +2318,156 @@ async function deleteHoliday(id) {
   }
 }
 
+// تبديل حالة العطلة (تفعيل/تعطيل)
+async function toggleHolidayStatus(id) {
+  try {
+    const res = await fetchWithAuth('/api/holidays/' + id + '/toggle', {
+      method: 'PUT',
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'فشل تحديث الحالة');
+    return data;
+  } catch (err) {
+    console.error('❌ خطأ في تبديل حالة العطلة:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+// دالة معالجة تبديل الحالة (مع تأكيد)
+window.handleToggleHoliday = async function(id) {
+  // جلب اسم العطلة لعرضه في رسالة التأكيد
+  const holidays = await loadHolidays();
+  const holiday = holidays.find(h => h._id === id);
+  const name = holiday ? holiday.name : 'هذه العطلة';
+  const currentStatus = holiday?.isActive !== false;
+  const action = currentStatus ? 'تعطيل' : 'تفعيل';
+  
+  const confirmed = await showConfirmModal(
+    `${action} العطلة`,
+    `هل أنت متأكد من ${action} عطلة "${name}"؟`
+  );
+  if (!confirmed) return;
+  
+  const result = await toggleHolidayStatus(id);
+  if (result.success) {
+    alert('✅ ' + result.message);
+    const holidays = await loadHolidays();
+    renderHolidays(holidays, 'holidaysList');
+  } else {
+    alert('❌ ' + (result.message || 'حدث خطأ'));
+  }
+};
+
+// تعديل عطلة
+async function updateHoliday(id, date, name, description) {
+  try {
+    const res = await fetchWithAuth('/api/holidays/' + id, {
+      method: 'PUT',
+      body: JSON.stringify({ date, name, description }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'فشل التعديل');
+    return data;
+  } catch (err) {
+    console.error('❌ خطأ في تعديل العطلة:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+// دالة معالجة التعديل
+window.handleEditHoliday = async function(id) {
+  // جلب بيانات العطلة
+  const holidays = await loadHolidays();
+  const holiday = holidays.find(h => h._id === id);
+  if (!holiday) {
+    alert('❌ العطلة غير موجودة');
+    return;
+  }
+  
+  // ✅ إنشاء نموذج تعديل منبثق
+  const date = new Date(holiday.date);
+  const formattedDate = date.toISOString().split('T')[0];
+  
+  // إنشاء نافذة تعديل مخصصة
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  `;
+  modal.innerHTML = `
+    <div style="background: white; padding: 25px; border-radius: 12px; width: 400px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <h3 style="margin-top: 0; color: #2c3e50;">✏️ تعديل العطلة</h3>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>📅 التاريخ</label>
+        <input type="date" id="editHolidayDate" value="${formattedDate}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+      </div>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>📝 اسم العطلة</label>
+        <input type="text" id="editHolidayName" value="${holiday.name}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+      </div>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>📋 وصف (اختياري)</label>
+        <textarea id="editHolidayDescription" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; resize: vertical;">${holiday.description || ''}</textarea>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button id="saveEditHolidayBtn" class="btn-success" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: #27ae60; color: white; cursor: pointer;">
+          <i class="fas fa-save"></i> حفظ التعديلات
+        </button>
+        <button id="cancelEditHolidayBtn" class="btn-secondary" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: #95a5a6; color: white; cursor: pointer;">
+          <i class="fas fa-times"></i> إلغاء
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  
+  // ربط أحداث النافذة
+  document.getElementById('cancelEditHolidayBtn').addEventListener('click', function() {
+    modal.remove();
+  });
+  
+  document.getElementById('saveEditHolidayBtn').addEventListener('click', async function() {
+    const newDate = document.getElementById('editHolidayDate').value;
+    const newName = document.getElementById('editHolidayName').value.trim();
+    const newDescription = document.getElementById('editHolidayDescription').value.trim();
+    
+    if (!newDate || !newName) {
+      alert('الرجاء إدخال التاريخ واسم العطلة');
+      return;
+    }
+    
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+    
+    const result = await updateHoliday(id, newDate, newName, newDescription);
+    
+    this.disabled = false;
+    this.innerHTML = '<i class="fas fa-save"></i> حفظ التعديلات';
+    
+    if (result.success) {
+      alert('✅ ' + result.message);
+      modal.remove();
+      const holidays = await loadHolidays();
+      renderHolidays(holidays, 'holidaysList');
+    } else {
+      alert('❌ ' + (result.message || 'حدث خطأ'));
+    }
+  });
+  
+  // إغلاق النافذة عند النقر خارجها
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+};
+
 // عرض العطل في الواجهة
 function renderHolidays(holidays, containerId) {
   const container = document.getElementById(containerId);
@@ -2331,19 +2481,60 @@ function renderHolidays(holidays, containerId) {
   let html = '';
   holidays.forEach(h => {
     const date = new Date(h.date);
-    
-    // ✅ التنسيق العادي (أرقام إنجليزية) YYYY-MM-DD
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const formattedDate = `${year}-${month}-${day}`;
     
+    // ✅ حالة العطلة (مفعلة/معطلة)
+    const isActive = h.isActive !== false; // افتراضيًا مفعلة
+    const statusText = isActive ? '🟢 مفعلة' : '🔴 معطلة';
+    const statusColor = isActive ? '#27ae60' : '#e74c3c';
+    
     html += `
-      <div class="log-item" style="padding:8px 12px; border-bottom:1px solid #eef4fa; display: flex; justify-content: space-between; align-items: center;">
-        <span>📅 ${formattedDate} - ${h.name} ${h.description ? ' (' + h.description + ')' : ''}</span>
-        <button onclick="handleDeleteHoliday('${h._id}')" style="background:transparent; border:none; color:#e74c3c; cursor:pointer; font-size:14px;">
-          <i class="fas fa-trash-alt"></i>
-        </button>
+      <div class="log-item" style="padding:8px 12px; border-bottom:1px solid #eef4fa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span>📅 ${formattedDate}</span>
+          <span style="font-weight: bold;">${h.name}</span>
+          ${h.description ? `<span style="color:#7f8c8d; font-size:13px;">(${h.description})</span>` : ''}
+          <span style="color: ${statusColor}; font-size:13px; font-weight: bold;">${statusText}</span>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button onclick="handleToggleHoliday('${h._id}')" 
+                  style="background: ${isActive ? '#f39c12' : '#27ae60'}; 
+                         border: none; 
+                         color: white; 
+                         padding: 5px 12px; 
+                         border-radius: 6px; 
+                         cursor: pointer; 
+                         font-size: 13px;
+                         transition: 0.3s;">
+            <i class="fas ${isActive ? 'fa-pause' : 'fa-play'}"></i> 
+            ${isActive ? 'تعطيل' : 'تفعيل'}
+          </button>
+          <button onclick="handleEditHoliday('${h._id}')" 
+                  style="background: #3498db; 
+                         border: none; 
+                         color: white; 
+                         padding: 5px 12px; 
+                         border-radius: 6px; 
+                         cursor: pointer; 
+                         font-size: 13px;
+                         transition: 0.3s;">
+            <i class="fas fa-edit"></i> تعديل
+          </button>
+          <button onclick="handleDeleteHoliday('${h._id}')" 
+                  style="background: #e74c3c; 
+                         border: none; 
+                         color: white; 
+                         padding: 5px 12px; 
+                         border-radius: 6px; 
+                         cursor: pointer; 
+                         font-size: 13px;
+                         transition: 0.3s;">
+            <i class="fas fa-trash-alt"></i> حذف
+          </button>
+        </div>
       </div>
     `;
   });
