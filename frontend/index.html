@@ -524,6 +524,61 @@
         </div>
     </div>
 
+    <!-- ==========================================
+     تصميم Card للأزرار
+     ========================================== -->
+<div class="actions-grid">
+    
+    <!-- بطاقة إعدادات المؤسسة -->
+    <div class="action-card" onclick="toggleSettingsForm()">
+        <div class="action-card-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+            <i class="fas fa-cog"></i>
+        </div>
+        <div class="action-card-content">
+            <h4>إعدادات المؤسسة</h4>
+            <p>تعديل بيانات المدرسة والشعار</p>
+        </div>
+        <span class="action-card-arrow">→</span>
+    </div>
+
+    <!-- بطاقة إضافة طالب -->
+    <div class="action-card" onclick="toggleAddStudentForm()">
+        <div class="action-card-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="action-card-content">
+            <h4>إضافة طالب جديد</h4>
+            <p>تسجيل طالب جديد في النظام</p>
+        </div>
+        <span class="action-card-arrow">→</span>
+    </div>
+
+    <!-- بطاقة تغيير الكل إلى داخل -->
+    <div class="action-card" onclick="toggleAllStudents(true)">
+        <div class="action-card-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
+            <i class="fas fa-arrow-left"></i>
+        </div>
+        <div class="action-card-content">
+            <h4>تغيير الكل إلى داخل</h4>
+            <p>تسجيل دخول جميع الطلاب</p>
+        </div>
+        <span class="action-card-arrow">←</span>
+    </div>
+
+    <!-- بطاقة تغيير الكل إلى خارج -->
+    <div class="action-card" onclick="toggleAllStudents(false)">
+        <div class="action-card-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+            <i class="fas fa-arrow-right"></i>
+        </div>
+        <div class="action-card-content">
+            <h4>تغيير الكل إلى خارج</h4>
+            <p>تسجيل خروج جميع الطلاب</p>
+        </div>
+        <span class="action-card-arrow">→</span>
+    </div>
+
+</div>
+
     <!-- ========================================== -->
     <!-- تسجيل Service Worker -->
     <!-- ========================================== -->
