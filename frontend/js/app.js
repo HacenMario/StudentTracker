@@ -28,6 +28,20 @@ let availableCameras = [];
 let allStudents = [];
 let searchQuery = '';
 
+// =============================================
+// دالة مساعدة آمنة لربط الأحداث (Safe Event Binder)
+// =============================================
+function safeAddEventListener(elementId, event, handler) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.addEventListener(event, handler);
+    } else {
+        // console.debug(`⚠️ العنصر "${elementId}" غير موجود في هذه الصفحة`);
+    }
+}
+
+safeAddEventListener('loginBtn', 'click', handleLogin);
+
 // ==========================================
 // زر تغيير اللغة - التحديث لجميع الشاشات
 // ==========================================
