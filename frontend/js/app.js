@@ -2576,6 +2576,7 @@ function setupHolidayEvents() {
     return;
   }
 
+  // ✅ إذا كان النموذج غير موجود، ننشئه
   if (!form) {
     console.log('📝 النموذج غير موجود، جاري إنشائه...');
     form = document.createElement('div');
@@ -2609,6 +2610,24 @@ function setupHolidayEvents() {
     `;
     toggleBtn.parentNode.insertBefore(form, toggleBtn.nextSibling);
     console.log('✅ تم إنشاء النموذج بنجاح');
+  } else {
+    // ✅ إذا كان النموذج موجوداً، تأكد من وجود حقل endDate
+    let endDateInput = document.getElementById('holidayEndDate');
+    if (!endDateInput) {
+      console.log('⚠️ حقل تاريخ النهاية غير موجود، جاري إضافته...');
+      const formGroups = form.querySelectorAll('.form-group');
+      if (formGroups.length >= 1) {
+        const newField = document.createElement('div');
+        newField.className = 'form-group';
+        newField.style.marginBottom = '12px';
+        newField.innerHTML = `
+            <label>📅 تاريخ النهاية (اختياري - للإجازات المتعددة الأيام)</label>
+            <input type="date" id="holidayEndDate" class="form-control">
+        `;
+        formGroups[0].after(newField);
+        console.log('✅ تم إضافة حقل تاريخ النهاية');
+      }
+    }
   }
 
   const newToggleBtn = toggleBtn.cloneNode(true);
