@@ -3187,6 +3187,16 @@ function showParentDashboard() {
     if (loginScreen) loginScreen.style.display = 'none';
     if (registerScreen) registerScreen.style.display = 'none';
 
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('parentDashboard').style.display = 'block';
+    connectSocket();
+    loadParentStudents();
+    loadParentLogs();
+    loadParentNotifications();
+}
+
     // تحميل بيانات ولي الأمر
     if (typeof loadParentData === 'function') {
         loadParentData();
