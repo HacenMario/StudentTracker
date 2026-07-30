@@ -189,6 +189,51 @@ function updateDynamicTexts() {
 }
 
 // ==========================================
+// تأثيرات إضافية للأزرار
+// ==========================================
+
+/**
+ * إضافة تأثير عند النقر على الزر
+ */
+function addButtonEffects() {
+    document.querySelectorAll('.btn-click-effect').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            // ✅ إضافة تأثير اللمس
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+            
+            // ✅ إضافة تأثير صوتي (اختياري)
+            // playClickSound();
+        });
+    });
+}
+
+/**
+ * تفعيل تأثير التوهج للأزرار
+ */
+function activateGlowButtons() {
+    document.querySelectorAll('.btn-glow').forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.animation = 'none';
+            this.style.boxShadow = '0 0 50px rgba(102, 126, 234, 0.8)';
+        });
+        
+        btn.addEventListener('mouseleave', function() {
+            this.style.animation = 'glowPulse 2s ease-in-out infinite';
+            this.style.boxShadow = '';
+        });
+    });
+}
+
+// ✅ استدعاء الدوال عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    addButtonEffects();
+    activateGlowButtons();
+});
+
+// ==========================================
 // 4. دوال مساعدة
 // ==========================================
 function getStatusText(isInside) {
