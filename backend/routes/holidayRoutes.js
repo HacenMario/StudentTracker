@@ -40,20 +40,28 @@ router.get('/range', auth, async (req, res) => {
 // ==========================================
 router.post('/', auth, isAdmin, async (req, res) => {
   try {
-    const { date, name, description, isRecurring } = req.body;
+    const { date, endDate, name, description, isRecurring } = req.body;
     
     if (!date || !name) {
       return res.status(400).json({ message: 'التاريخ والاسم مطلوبان' });
     }
     
-    // التحقق من عدم وجود عطلة في نفس التاريخ
-    const existing = await Holiday.findOne({ date: new Date(date) });
+    // ✅ التحقق من عدم وجود عطلة تتداخل مع التاريخ
+    const existing = await Holiday.findOne({
+      $or: [
+        { date: new Date(date) },
+        { endDate: { $gte: new Date(date), $lte: new Date(endDate || date) } },
+        { date: { $lte: new Date(endDate || date) }, endDate: { $gte: new Date(date) } }
+      ]
+    });
+    
     if (existing) {
-      return res.status(400).json({ message: 'يوجد عطلة في هذا التاريخ بالفعل' });
+      return res.status(400).json({ message: 'يوجد عطلة تتداخل مع هذا التاريخ' });
     }
     
     const holiday = new Holiday({
       date: new Date(date),
+      endDate: endDate ? new Date(endDate) : null,
       name,
       description: description || '',
       isRecurring: isRecurring || false,
