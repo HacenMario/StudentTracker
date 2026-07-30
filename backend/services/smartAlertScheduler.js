@@ -75,7 +75,7 @@ async function getSchoolDaysInRange(startDate, endDate) {
   const current = new Date(startDate);
   const end = new Date(endDate);
   
-  // ✅ جلب العطل المفعلة فقط
+  // ✅ جلب جميع العطل المفعلة في النطاق دفعة واحدة
   const holidays = await Holiday.find({
     date: { $gte: startDate, $lte: endDate },
     isActive: true  // ✅ استثناء العطل المعطلة فقط
