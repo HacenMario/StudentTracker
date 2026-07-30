@@ -906,3 +906,183 @@ header h1 {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(142, 68, 173, 0.3);
 }
+/* ========================================== */
+/* تنسيق الصفوف والأعمدة */
+/* ========================================== */
+
+.admin-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.admin-row-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.admin-col {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 15px;
+}
+
+.admin-col-log {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 15px;
+}
+
+.admin-col-leave {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 15px;
+}
+
+.admin-col-holiday {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 15px;
+}
+
+.admin-col-alerts {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 15px;
+}
+
+/* ========================================== */
+/* تنسيق سجل النشاطات مع تمرير */
+/* ========================================== */
+
+#adminLogContainer {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+#adminLogContainer::-webkit-scrollbar {
+    width: 6px;
+}
+
+#adminLogContainer::-webkit-scrollbar-track {
+    background: #eef4fa;
+    border-radius: 10px;
+}
+
+#adminLogContainer::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 10px;
+}
+
+/* ========================================== */
+/* تنسيق طلبات الأعذار مع تمرير */
+/* ========================================== */
+
+.leave-requests-container {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.leave-requests-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.leave-requests-container::-webkit-scrollbar-track {
+    background: #eef4fa;
+    border-radius: 10px;
+}
+
+.leave-requests-container::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 10px;
+}
+
+/* ========================================== */
+/* تنسيق قائمة التلاميذ مع تمرير */
+/* ========================================== */
+
+.students-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    padding: 10px 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.students-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.students-grid::-webkit-scrollbar-track {
+    background: #eef4fa;
+    border-radius: 10px;
+}
+
+.students-grid::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 10px;
+}
+
+/* ========================================== */
+/* تنسيق التنبيهات الذكية */
+/* ========================================== */
+
+#smartAlertsList {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #eef4fa;
+    border-radius: 12px;
+    padding: 4px 0;
+}
+
+#smartAlertsList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#smartAlertsList::-webkit-scrollbar-track {
+    background: #eef4fa;
+    border-radius: 10px;
+}
+
+#smartAlertsList::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 10px;
+}
+
+/* ========================================== */
+/* تنسيق التجاوب مع الشاشات الصغيرة */
+/* ========================================== */
+
+@media (max-width: 992px) {
+    .admin-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .admin-row-two {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .students-grid {
+        grid-template-columns: 1fr;
+        max-height: 300px;
+    }
+    
+    .admin-col-log,
+    .admin-col-leave,
+    .admin-col-holiday,
+    .admin-col-alerts {
+        padding: 10px;
+    }
+    
+    .notification-forms {
+        grid-template-columns: 1fr;
+    }
+}
