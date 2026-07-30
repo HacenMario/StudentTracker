@@ -565,6 +565,38 @@ await sendPushNotificationToParent(
 });
 
 // ==========================================
+// ✅ مسار اختبار استثناء العطل
+// ==========================================
+app.get('/api/test-holidays', auth, async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - 30);
+    
+    // جلب أيام الدوام
+    const schoolDays = await getSchoolDaysInRange(startDate, today);
+    
+    // جلب جميع العطل في النطاق
+    const holidays = await Holiday.find({
+      date: { $gte: startDate, $lte: today }
+    });
+    
+    res.json({
+      totalDays: 30,
+      schoolDays: schoolDays.length,
+      holidays: holidays.map(h => ({
+        name: h.name,
+        date: new Date(h.date).toISOString().split('T')[0]
+      })),
+      message: `✅ تم استثناء ${holidays.length} يوم عطلة من أصل 30 يوم`
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
 // الاتصال بقاعدة البيانات وبدء الخادم
 // ==========================================
 const PORT = process.env.PORT || 5000;
