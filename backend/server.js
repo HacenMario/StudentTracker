@@ -396,60 +396,62 @@ socket.on('toggle-status', async (studentId) => {
   // ----------------------
   // 4. تغيير حالة جميع الطلاب دفعة واحدة
   // ----------------------
-  socket.on('toggle-all-status', async (data) => {
+socket.on('toggle-all-status', async (data) => {
     if (socket.user.role !== 'admin') {
-      socket.emit('error', { message: 'غير مصرح لك' });
-      return;
+        socket.emit('error', { message: 'غير مصرح لك' });
+        return;
     }
 
-    const { newStatus } = data;
+    const { newStatus, adjustedTime } = data;
     try {
-      const students = await Student.find();
-      const updatedParents = new Set();
+        const students = await Student.find();
+        const updatedParents = new Set();
 
-      for (const student of students) {
-        student.isInside = newStatus;
-        student.lastUpdate = new Date();
-        await student.save();
+        for (const student of students) {
+            student.isInside = newStatus;
+            // ✅ استخدام الوقت المعدل من العميل (منقوص منه ساعة)
+            student.lastUpdate = adjustedTime ? new Date(adjustedTime) : new Date();
+            await student.save();
 
-        const attendance = new Attendance({
-          student: student._id,
-          status: newStatus ? 'in' : 'out',
-          method: 'manual',
+            const attendance = new Attendance({
+                student: student._id,
+                status: newStatus ? 'in' : 'out',
+                method: 'manual',
+                timestamp: adjustedTime ? new Date(adjustedTime) : new Date(),
+            });
+            await attendance.save();
+
+            if (student.parentEmail) updatedParents.add(student.parentEmail);
+        }
+
+        const statusText = newStatus ? 'داخل 🏫' : 'خارج 🚪';
+        const message = `تم تغيير حالة جميع الطلاب إلى ${statusText}`;
+
+        io.emit('status-changed', {
+            message: message,
+            isBulk: true,
         });
-        await attendance.save();
 
-        if (student.parentEmail) updatedParents.add(student.parentEmail);
-      }
+        for (const email of updatedParents) {
+            const notification = new Notification({
+                target: email,
+                message: message,
+                sender: 'Admin',
+            });
+            await notification.save();
 
-      const statusText = newStatus ? 'داخل 🏫' : 'خارج 🚪';
-      const message = `تم تغيير حالة جميع الطلاب إلى ${statusText}`;
-
-      io.emit('status-changed', {
-        message: message,
-        isBulk: true,
-      });
-
-      for (const email of updatedParents) {
-        const notification = new Notification({
-          target: email,
-          message: message,
-          sender: 'Admin',
-        });
-        await notification.save();
-
-        await sendPushNotificationToParent(
-          'تحديث جماعي',
-          message,
-          { url: '/parent-dashboard' },
-          email
-        );
-      }
+            await sendPushNotificationToParent(
+                'تحديث جماعي',
+                message,
+                { url: '/parent-dashboard' },
+                email
+            );
+        }
     } catch (error) {
-      console.error('❌ خطأ في التغيير الجماعي:', error);
-      socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
+        console.error('❌ خطأ في التغيير الجماعي:', error);
+        socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
     }
-  });
+});
 
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
