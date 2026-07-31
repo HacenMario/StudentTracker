@@ -402,23 +402,25 @@ socket.on('toggle-all-status', async (data) => {
         return;
     }
 
-    const { newStatus, adjustedTime } = data;
+    const { newStatus } = data;
     try {
         const students = await Student.find();
         const updatedParents = new Set();
 
+        // ✅ حساب الوقت الحالي منقوصاً منه ساعة واحدة
+        const now = new Date();
+        now.setHours(now.getHours() - 1); // طرح ساعة واحدة
+
         for (const student of students) {
             student.isInside = newStatus;
-            // ✅ استخدام الوقت المرسل من العميل (بتوقيت UTC)
-            const now = adjustedTime ? new Date(adjustedTime) : new Date();
-            student.lastUpdate = now;
+            student.lastUpdate = now; // استخدام الوقت المنقوص
             await student.save();
 
             const attendance = new Attendance({
                 student: student._id,
                 status: newStatus ? 'in' : 'out',
                 method: 'manual',
-                timestamp: now,
+                timestamp: now, // استخدام الوقت المنقوص أيضاً
             });
             await attendance.save();
 
@@ -448,6 +450,10 @@ socket.on('toggle-all-status', async (data) => {
                 email
             );
         }
+
+        // ✅ إرسال رد للمدير لتحديث الواجهة
+        socket.emit('toggle-all-done', { success: true });
+
     } catch (error) {
         console.error('❌ خطأ في التغيير الجماعي:', error);
         socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
