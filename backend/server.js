@@ -231,40 +231,71 @@ io.on('connection', (socket) => {
   // 1. تبديل حالة الطالب (للمدير)
   // ----------------------
 socket.on('toggle-status', async (studentId) => {
-  if (socket.user.role !== 'admin') {
-    socket.emit('error', { message: 'غير مصرح لك' });
-    return;
-  }
-
-  try {
-    const student = await Student.findById(studentId);
-    if (!student) {
-      socket.emit('error', { message: 'الطالب غير موجود' });
-      return;
+    if (socket.user.role !== 'admin') {
+        socket.emit('error', { message: 'غير مصرح لك' });
+        return;
     }
 
-    // ✅ تغيير الحالة بدون طرح ساعة
-    student.isInside = !student.isInside;
-    student.lastUpdate = new Date(); // الوقت المحلي الصحيح
-    await student.save();
+    try {
+        const student = await Student.findById(studentId);
+        if (!student) {
+            socket.emit('error', { message: 'الطالب غير موجود' });
+            return;
+        }
 
-    // ✅ تسجيل الحضور بدون طرح ساعة
-    const attendance = new Attendance({
-      student: student._id,
-      status: student.isInside ? 'in' : 'out',
-      method: 'manual',
-      timestamp: new Date(), // الوقت المحلي الصحيح
-    });
-    await attendance.save();
+        // ✅ تغيير الحالة بدون طرح ساعة
+        student.isInside = !student.isInside;
+        student.lastUpdate = new Date(); // ← الوقت المحلي للخادم (Africa/Algiers) لكن يُخزن بـ UTC
+        await student.save();
 
-    const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
-    const message = `التلميذ ${student.name} أصبح ${statusText}`;
+        // ✅ تسجيل الحضور بدون طرح ساعة
+        const attendance = new Attendance({
+            student: student._id,
+            status: student.isInside ? 'in' : 'out',
+            method: 'manual',
+            timestamp: new Date(), // ← نفس الشيء
+        });
+        await attendance.save();
 
-    // ... بقية الكود (إرسال الإشعارات) كما هو ...
-  } catch (error) {
-    console.error('❌ خطأ في تغيير حالة الطالب:', error);
-    socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
-  }
+        const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
+        const message = `التلميذ ${student.name} أصبح ${statusText}`;
+
+        // إرسال الإشعارات (نفس الكود السابق)
+        if (student.parentEmail) {
+            await sendPushNotificationToParent(
+                'status_title',
+                'status_body',
+                { name: student.name, status: statusText, url: '/parent-dashboard' },
+                student.parentEmail
+            );
+
+            const notification = new Notification({
+                target: student.parentEmail,
+                message: message,
+                sender: 'Admin',
+            });
+            await notification.save();
+
+            const targetSocketId = userSockets.get(student.parentEmail);
+            if (targetSocketId) {
+                io.to(targetSocketId).emit('notification', {
+                    message: message,
+                    notificationId: notification._id,
+                    createdAt: notification.createdAt,
+                });
+            }
+        }
+
+        io.emit('status-changed', {
+            student: student,
+            parentEmail: student.parentEmail,
+            parentId: student.parentId,
+        });
+
+    } catch (error) {
+        console.error('❌ خطأ في تغيير حالة الطالب:', error);
+        socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
+    }
 });
 
   // ----------------------
