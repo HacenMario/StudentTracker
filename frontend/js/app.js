@@ -388,33 +388,12 @@ function showParentDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
-    
-    // ✅ جلب بيانات ولي الأمر من localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-        try {
-            currentUser = JSON.parse(storedUser);
-        } catch(e) {}
-    }
-    
-    // ✅ عرض الاسم والبريد من currentUser
-    document.getElementById('parentNameDisplay').textContent = currentUser?.name || 'غير معروف';
-    document.getElementById('parentEmailDisplay').textContent = currentUser?.email || 'غير معروف';
-    
-    // ✅ استخراج رقم الهاتف من الطلاب المرتبطين (إذا وجدوا)
-    const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
-    let phone = 'غير معروف';
-    if (students.length > 0 && students[0].parentPhone) {
-        phone = students[0].parentPhone;
-    }
-    document.getElementById('parentPhoneDisplay').textContent = phone;
-    
     connectSocket();
-    loadParentStudents();
+    loadParentStudents(); // ✅ هذه الدالة غير متزامنة (async)
+    // ❌ لا تستدعي fillLeaveStudents() هنا مباشرةً
+    // بدلاً من ذلك، سيتم استدعاؤها تلقائياً بعد تحميل البيانات
     loadParentLogs();
     loadParentNotifications();
-    loadParentChildren();
-    setupParentMessageForm();
 }
 
 // ==========================================
@@ -475,34 +454,20 @@ socket.on('status-changed', (data) => {
 });
     
     socket.on('notification', (data) => {
-    if (currentUser.role === 'parent') {
-        if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
-            loadParentStudents();
-            const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
-            const displayMessage = translate('attendance.student_became', { 
-                name: data.student.name, 
-                status: statusText 
-            });
-
-            // ✅ إنشاء سجل جديد وإضافته إلى parentLogs
-            const logEntry = {
-                message: displayMessage,
-                time: formatFullTime(new Date()),  // سيتم إضافة ساعة داخل addLog
-                date: new Date(),
-                key: 'attendance.student_became',
-                params: { name: data.student.name, status: statusText },
-                studentName: data.student.name
+        if (currentUser.role === 'parent') {
+            const newNotification = {
+                message: data.message,
+                createdAt: data.createdAt || new Date().toISOString(),
+                isRead: false,
+                _id: data.notificationId || 'temp_' + Date.now()
             };
-            parentLogs.unshift(logEntry);
-            
-            // ✅ عرض السجلات المحدثة
-            renderParentLogs(parentShowOldLogs);
-            
-            // ✅ إشعار المتصفح
-            showBrowserNotification(translate('notification.title'), displayMessage);
+            allNotifications.unshift(newNotification);
+            renderNotifications(showOldNotifications);
+            showBrowserNotification('📢 إشعار من المدرسة', data.message);
+        } else if (currentUser.role === 'admin') {
+            loadAdminLogs();
         }
-    }
-});
+    });
 
     socket.on('notification-error', (data) => {
         alert(data.message);
@@ -519,28 +484,19 @@ socket.on('status-changed', (data) => {
 // 7. دوال API مع التوكن
 // ==========================================
 function fetchWithAuth(url, options = {}) {
-    if (!token) {
-        token = localStorage.getItem('token');
-    }
-    
     const headers = {
-        'Authorization': token ? 'Bearer ' + token : '',
+        'Content-Type': 'application/json',
     };
-    
-    // ✅ إذا لم يكن هناك جسم أو كان FormData، نترك Content-Type للمتصفح
-    if (!options.isFormData) {
-        headers['Content-Type'] = 'application/json';
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    } else {
+        console.warn('⚠️ fetchWithAuth: لا يوجد توكن');
+        return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
     }
-    
-    // إذا كان options.body من نوع FormData، نحذف Content-Type
-    const finalHeaders = { ...headers, ...options.headers };
-    if (options.isFormData) {
-        delete finalHeaders['Content-Type'];
-    }
-    
+
     return fetch(API_BASE_URL + url, {
         ...options,
-        headers: finalHeaders
+        headers: { ...headers, ...options.headers }
     });
 }
 
@@ -1298,12 +1254,7 @@ function renderStudents(students, containerId, showAdminControls) {
     }
     let html = '';
     students.forEach(s => {
-        // ✅ عرض الصورة - استخدم الصورة المخزنة (base64) أو الصورة الافتراضية
-        let imageUrl = s.profileImage && s.profileImage.trim() !== '' 
-            ? s.profileImage 
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
-
-        // ✅ إصلاح الوقت: إضافة ساعة واحدة إلى lastUpdate
+        // ✅ إضافة ساعة واحدة إلى lastUpdate قبل التنسيق
         const lastUpdateDate = new Date(s.lastUpdate);
         lastUpdateDate.setHours(lastUpdateDate.getHours() + 1);
         const lastUpdateStr = formatFullTime(lastUpdateDate);
@@ -1314,17 +1265,15 @@ function renderStudents(students, containerId, showAdminControls) {
         const toggleClass = s.isInside ? 'exit' : 'enter';
         const parentLabel = translate('student.parent_name');
         const lastUpdateLabel = translate('student.last_update');
+        const lastEntryExitLabel = translate('attendance.last_entry_exit');
 
         html += `
             <div class="student-card" data-id="${s._id}">
-                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                    <img src="${imageUrl}" alt="${s.name}" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid #2b6cb0;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=4A90D9&color=fff&size=128&rounded=true'" />
-                    <div>
-                        <div class="student-name">${s.name} (${s.studentId})</div>
-                        <div style="font-size:14px;color:#4a5a6e;">${parentLabel}: ${s.parentName}</div>
-                        <div style="font-size:13px;color:#6a7a8e;">📞 ${s.parentPhone}</div>
-                        <span class="student-time">🕒 ${lastUpdateLabel}: ${lastUpdateStr}</span>
-                    </div>
+                <div>
+                    <div class="student-name">${s.name} (${s.studentId})</div>
+                    <div style="font-size:14px;color:#4a5a6e;">${parentLabel}: ${s.parentName}</div>
+                    <div style="font-size:13px;color:#6a7a8e;">📞 ${s.parentPhone}</div>
+                    <span class="student-time">🕒 ${lastUpdateLabel}: ${lastUpdateStr}</span>
                 </div>
                 <span class="status-badge ${statusClass}">${statusText}</span>
                 <div class="card-actions">
@@ -1333,7 +1282,7 @@ function renderStudents(students, containerId, showAdminControls) {
                         <button class="btn-delete" onclick="adminDelete('${s._id}')">${translate('common.delete')}</button>
                         <button class="btn-edit" onclick="openEditStudent('${s._id}')"><i class="fas fa-edit"></i> ${translate('common.edit')}</button>
                     ` : `
-                        <span style="font-size:13px;color:#7b8b9e;">${translate('attendance.last_entry_exit')}: ${lastUpdateStr}</span>
+                        <span style="font-size:13px;color:#7b8b9e;">${lastEntryExitLabel}: ${lastUpdateStr}</span>
                     `}
                     <button class="btn-qr" onclick="downloadQR('${s._id}')"><i class="fas fa-qrcode"></i> ${translate('common.qr')}</button>
                 </div>
@@ -1419,29 +1368,25 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     const address = document.getElementById('editAddress').value.trim();
 
     if (!name || !parentName || !parentPhone || !parentEmail) {
-        alert('الرجاء ملء جميع الحقول المطلوبة');
+        alert(translate('common.error'));
         return;
     }
 
     const confirmed = await showConfirmModal(
-        'تعديل الطالب',
-        `هل أنت متأكد من تعديل "${name}"؟`
+        translate('student.edit'),
+        translate('student.confirm_edit')
     );
     if (!confirmed) return;
 
     try {
-        const payload = { name, parentName, parentPhone, parentEmail, address };
-
         const res = await fetchWithAuth('/api/students/' + id, {
             method: 'PUT',
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ name, parentName, parentPhone, parentEmail, address })
         });
-
         if (!res.ok) {
             const error = await res.json();
-            throw new Error(error.message || error.msg || 'فشل التعديل');
+            throw new Error(error.message || 'فشل التعديل');
         }
-
         alert('✅ تم تعديل معلومات الطالب بنجاح');
         document.getElementById('editStudentModal').style.display = 'none';
         loadAdminStudents();
@@ -1503,48 +1448,48 @@ async function adminAddStudent() {
     const parentName = document.getElementById('adminParentName').value.trim();
     const parentPhone = document.getElementById('adminParentPhone').value.trim();
     const address = document.getElementById('adminAddress').value.trim();
-
+    
     if (!name || !parentEmail || !parentName || !parentPhone) {
-        alert('الرجاء ملء جميع الحقول المطلوبة');
+        alert(translate('common.error') + ': ' + translate('student.add'));
         return;
     }
 
     const confirmed = await showConfirmModal(
-        'إضافة طالب جديد',
-        `هل أنت متأكد من إضافة "${name}"؟`
+        translate('student.add_new'),
+        translate('student.confirm_add', { name, parentName })
     );
     if (!confirmed) return;
 
     try {
-        const payload = { name, parentEmail, parentName, parentPhone, address };
-
         const res = await fetchWithAuth('/api/students', {
             method: 'POST',
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ name, parentEmail, parentName, parentPhone, address })
         });
 
-        if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.message || error.msg || 'فشل الإضافة');
+        if (res.ok) {
+            // تفريغ الحقول
+            document.getElementById('adminStudentName').value = '';
+            document.getElementById('adminParentEmail').value = '';
+            document.getElementById('adminParentName').value = '';
+            document.getElementById('adminParentPhone').value = '';
+            document.getElementById('adminAddress').value = '';
+            
+            // ✅ تحديث القائمة
+            loadAdminStudents();
+            
+            // ✅ إضافة السجل باستخدام المفتاح (بدلاً من النص المترجم)
+            addLog('', new Date(), 'adminLogContainer', 'attendance.student_added', { name });
+            
+            // إخفاء النموذج
+            document.getElementById('addStudentForm').style.display = 'none';
+            document.getElementById('toggleAddStudentBtn').innerHTML = `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
+        } else {
+            const data = await res.json();
+            alert(translate('common.error') + ': ' + (data.message || translate('common.error')));
         }
-
-        // تفريغ الحقول
-        document.getElementById('adminStudentName').value = '';
-        document.getElementById('adminParentEmail').value = '';
-        document.getElementById('adminParentName').value = '';
-        document.getElementById('adminParentPhone').value = '';
-        document.getElementById('adminAddress').value = '';
-
-        loadAdminStudents();
-        addLog('', new Date(), 'adminLogContainer', 'attendance.student_added', { name });
-
-        document.getElementById('addStudentForm').style.display = 'none';
-        document.getElementById('toggleAddStudentBtn').innerHTML = '<i class="fas fa-plus-circle"></i> إضافة طالب جديد';
-
-        alert('✅ تم إضافة الطالب بنجاح');
     } catch (err) {
-        console.error('❌ خطأ:', err);
-        alert('خطأ: ' + err.message);
+        console.error('❌ خطأ في إضافة الطالب:', err);
+        alert(translate('common.error') + ': ' + err.message);
     }
 }
 
@@ -1612,10 +1557,12 @@ function addLog(message, date, containerId, key = null, params = {}) {
     const originalDate = date || new Date();
     let displayDate = new Date(originalDate);
 
+    // ✅ فقط لسجل ولي الأمر نضيف ساعة للعرض
     if (containerId === 'parentLogContainer') {
-    displayDate.setHours(displayDate.getHours() + 1);
-}
-const time = formatFullTime(displayDate);
+        displayDate.setHours(displayDate.getHours() + 1);
+    }
+
+    const time = formatFullTime(displayDate);
 
     const logEntry = {
         message,
@@ -1755,9 +1702,10 @@ async function loadAttendance(studentId) {
             const key = isEntry ? 'attendance.entry' : 'attendance.exit';
             const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
             
-const timestampDate = new Date(r.timestamp);
-timestampDate.setHours(timestampDate.getHours() + 1);
-const timeStr = formatFullTime(timestampDate);
+            // إضافة ساعة إلى timestamp
+            const timestampDate = new Date(r.timestamp);
+            timestampDate.setHours(timestampDate.getHours() + 1);
+            const timeStr = formatFullTime(timestampDate);
             
             return {
                 message: message,
@@ -3104,140 +3052,6 @@ async function initNotifications() {
         btn.disabled = false;
         btn.innerText = '🔔 تفعيل الإشعارات';
     });
-}
-
-// ==========================================
-// دوال ولي الأمر الجديدة
-// ==========================================
-
-// 1. جلب قائمة الأبناء وعرضها
-async function loadParentChildren() {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
-        const response = await fetch(API_BASE_URL + '/api/parent/my-children', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('فشل في جلب الأبناء');
-        const students = await response.json();
-        console.log('👨‍👩‍👦 بيانات الأبناء:', students);
-
-        const container = document.getElementById('parentStudentsList');
-        if (!container) return;
-        container.innerHTML = '';
-
-        if (students.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#888;">لا يوجد أبناء مسجلين</p>';
-            return;
-        }
-
-        const select = document.getElementById('parentStudentSelect');
-        if (select) {
-            select.innerHTML = '<option value="">-- اختر الطالب --</option>';
-        }
-
-        students.forEach(student => {
-            if (select) {
-                const option = document.createElement('option');
-                option.value = student._id;
-                option.textContent = student.name;
-                select.appendChild(option);
-            }
-
-            // ✅ عرض الصورة
-            let imageUrl = student.profileImage && student.profileImage.trim() !== '' 
-                ? student.profileImage 
-                : `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
-
-            const card = document.createElement('div');
-            card.className = 'student-card';
-            card.innerHTML = `
-                <img src="${imageUrl}" alt="${student.name}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #2b6cb0;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true'" />
-                <h4>${student.name}</h4>
-                <p class="parent-detail">👨‍👩‍👦 ولي الأمر: <span>${student.parentName}</span></p>
-                <p class="parent-detail">📧 البريد: <span>${student.parentEmail}</span></p>
-                <p class="parent-detail">🆔 الرقم: <span>${student.studentId || 'غير محدد'}</span></p>
-            `;
-            container.appendChild(card);
-        });
-    } catch (error) {
-        console.error('خطأ في تحميل الأبناء:', error);
-        const container = document.getElementById('parentStudentsList');
-        if (container) {
-            container.innerHTML = `<p style="color:red;">حدث خطأ: ${error.message}</p>`;
-        }
-    }
-}
-
-// 2. معالجة إرسال رسالة ولي الأمر
-function setupParentMessageForm() {
-    const form = document.getElementById('parentMessageForm');
-    const alertDiv = document.getElementById('parentMessageAlert');
-    if (!form || !alertDiv) return;
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const studentId = document.getElementById('parentStudentSelect').value;
-        const subject = document.getElementById('parentSubjectInput').value.trim();
-        const message = document.getElementById('parentMessageInput').value.trim();
-        const token = localStorage.getItem('token');
-
-        if (!studentId) {
-            showParentAlert('الرجاء اختيار الطالب.', 'error');
-            return;
-        }
-        if (!message) {
-            showParentAlert('الرجاء كتابة نص الرسالة.', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('parentSendMessageBtn');
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'جاري الإرسال...';
-        }
-
-        try {
-            const response = await fetch(API_BASE_URL + '/api/parent/send-message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ studentId, subject, message })
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                showParentAlert('✅ تم إرسال رسالتك بنجاح!', 'success');
-                form.reset();
-                document.getElementById('parentStudentSelect').value = '';
-            } else {
-                showParentAlert(`❌ فشل الإرسال: ${data.msg || 'خطأ غير معروف'}`, 'error');
-            }
-        } catch (error) {
-            console.error(error);
-            showParentAlert('❌ حدث خطأ في الاتصال بالخادم.', 'error');
-        } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'إرسال الرسالة';
-            }
-        }
-    });
-
-    function showParentAlert(text, type) {
-        alertDiv.textContent = text;
-        alertDiv.className = 'alert-msg-form';
-        alertDiv.classList.add(type === 'success' ? 'alert-success-form' : 'alert-error-form');
-        clearTimeout(window.parentAlertTimeout);
-        window.parentAlertTimeout = setTimeout(() => {
-            alertDiv.className = 'alert-msg-form';
-            alertDiv.textContent = '';
-        }, 6000);
-    }
 }
 
 // ==========================================
