@@ -1298,12 +1298,12 @@ function renderStudents(students, containerId, showAdminControls) {
     }
     let html = '';
     students.forEach(s => {
-        // ✅ عرض الصورة - استخدم الصورة المخزنة (base64) أو الصورة الافتراضية
+        // ✅ استخدام الصورة المخزنة أو الافتراضية
         let imageUrl = s.profileImage && s.profileImage.trim() !== '' 
             ? s.profileImage 
             : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
 
-        // ✅ تنسيق الوقت باستخدام دالة formatFullTime (تستخدم توقيت الجزائر)
+        // ✅ استخدام formatFullTime مع الإزاحة الثابتة
         const lastUpdateStr = formatFullTime(s.lastUpdate);
 
         const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
@@ -1446,7 +1446,7 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
             parentPhone,
             parentEmail,
             address,
-            profileImage  // إذا كانت فارغة، قد لا يحدث تغيير
+            profileImage
         };
 
         const res = await fetchWithAuth('/api/students/' + id, {
@@ -1529,85 +1529,6 @@ async function adminAddStudent() {
     const parentName = document.getElementById('adminParentName').value.trim();
     const parentPhone = document.getElementById('adminParentPhone').value.trim();
     const address = document.getElementById('adminAddress').value.trim();
-    const imageFile = document.getElementById('adminStudentImage').files[0];
-    
-    if (!name || !parentEmail || !parentName || !parentPhone) {
-        alert('الرجاء ملء جميع الحقول المطلوبة');
-        return;
-    }
-
-    const confirmed = await showConfirmModal(
-        'إضافة طالب جديد',
-        `هل أنت متأكد من إضافة "${name}"؟`
-    );
-    if (!confirmed) return;
-
-    try {
-        // ✅ تحويل الصورة إلى base64
-        let profileImage = '';
-        if (imageFile) {
-            const reader = new FileReader();
-            profileImage = await new Promise((resolve) => {
-                reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(imageFile);
-            });
-            console.log('📸 حجم الصورة base64:', profileImage.length, 'حروف');
-        }
-
-        // ✅ إرسال البيانات كـ JSON (تأكد من اسم الحقل: profileImage أو image)
-        const payload = {
-            name,
-            parentEmail,
-            parentName,
-            parentPhone,
-            address,
-            profileImage // جرب تغييره إلى image إذا كان الخادم يتوقع ذلك
-        };
-
-        const res = await fetchWithAuth('/api/students', {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-
-        const text = await res.text();
-        console.log('📨 استجابة الخادم (إضافة):', text);
-        
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('استجابة غير صالحة: ' + text);
-        }
-
-        if (!res.ok) {
-            throw new Error(data.message || data.msg || 'فشل الإضافة');
-        }
-
-        // تفريغ الحقول
-        document.getElementById('adminStudentName').value = '';
-        document.getElementById('adminParentEmail').value = '';
-        document.getElementById('adminParentName').value = '';
-        document.getElementById('adminParentPhone').value = '';
-        document.getElementById('adminAddress').value = '';
-        document.getElementById('adminStudentImage').value = '';
-        
-        loadAdminStudents();
-        addLog('', new Date(), 'adminLogContainer', 'attendance.student_added', { name });
-        
-        document.getElementById('addStudentForm').style.display = 'none';
-        document.getElementById('toggleAddStudentBtn').innerHTML = '<i class="fas fa-plus-circle"></i> إضافة طالب جديد';
-        
-        alert('✅ تم إضافة الطالب بنجاح');
-    } catch (err) {
-        console.error('❌ خطأ:', err);
-        alert('خطأ: ' + err.message);
-    }
-}async function adminAddStudent() {
-    const name = document.getElementById('adminStudentName').value.trim();
-    const parentEmail = document.getElementById('adminParentEmail').value.trim();
-    const parentName = document.getElementById('adminParentName').value.trim();
-    const parentPhone = document.getElementById('adminParentPhone').value.trim();
-    const address = document.getElementById('adminAddress').value.trim();
     const fileInput = document.getElementById('adminStudentImage');
     const file = fileInput ? fileInput.files[0] : null;
 
@@ -1623,7 +1544,6 @@ async function adminAddStudent() {
     if (!confirmed) return;
 
     try {
-        // ✅ تحويل الصورة إلى base64 (تماماً كما في submitLeaveRequest)
         let profileImage = '';
         if (file) {
             const reader = new FileReader();
@@ -1634,14 +1554,13 @@ async function adminAddStudent() {
             console.log('📸 الصورة المحولة (base64):', profileImage.substring(0, 50) + '...');
         }
 
-        // ✅ إرسال البيانات بنفس شكل طلب الإجازة (JSON)
         const payload = {
             name,
             parentEmail,
             parentName,
             parentPhone,
             address,
-            profileImage  // بنفس الاسم
+            profileImage
         };
 
         const res = await fetchWithAuth('/api/students', {
@@ -3257,7 +3176,6 @@ async function loadParentChildren() {
         });
         if (!response.ok) throw new Error('فشل في جلب الأبناء');
         const students = await response.json();
-        console.log('👨‍👩‍👦 بيانات الأبناء:', students); // ✅ طباعة البيانات
 
         const container = document.getElementById('parentStudentsList');
         if (!container) return;
@@ -3281,18 +3199,14 @@ async function loadParentChildren() {
                 select.appendChild(option);
             }
 
-            // ✅ استخدام الصورة المخزنة (base64) أو الصورة الافتراضية
-            let imageUrl = student.profileImage;
-            if (!imageUrl || imageUrl === '') {
-                imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
-            }
-            // إذا كانت الصورة base64، نستخدمها مباشرة في src
-            console.log(`🖼️ صورة ${student.name}:`, imageUrl ? (imageUrl.substring(0, 50) + '...') : 'لا توجد');
+            let imageUrl = student.profileImage && student.profileImage.trim() !== '' 
+                ? student.profileImage 
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
 
             const card = document.createElement('div');
             card.className = 'student-card';
             card.innerHTML = `
-                <img src="${imageUrl}" alt="${student.name}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true'" />
+                <img src="${imageUrl}" alt="${student.name}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #2b6cb0;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true'" />
                 <h4>${student.name}</h4>
                 <p class="parent-detail">👨‍👩‍👦 ولي الأمر: <span>${student.parentName}</span></p>
                 <p class="parent-detail">📧 البريد: <span>${student.parentEmail}</span></p>
