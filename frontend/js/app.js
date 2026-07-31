@@ -560,7 +560,7 @@ async function loadSchoolSettings() {
 
 function applySchoolSettings() {
     if (!schoolSettings) return;
-    document.getElementById('schoolName').textContent = schoolSettings.schoolName || 'مدرسة النور الابتدائية';
+    document.getElementById('schoolName').textContent = schoolSettings.schoolName || 'إبتدائية عقبة بن نافع';
     document.getElementById('schoolAddress').textContent = '📍 ' + (schoolSettings.address || 'العنوان غير محدد');
     document.getElementById('schoolContact').textContent = '📞 ' + (schoolSettings.phone || '') + ' | ✉️ ' + (schoolSettings.email || '');
     
