@@ -398,6 +398,7 @@ function showParentDashboard() {
     loadParentNotifications();
     loadParentChildren(); // تعبئة القائمة المنسدلة
     setupParentMessageForm();
+    loadParentSmartAlerts();
 }
 
 // دالة جديدة لجلب معلومات ولي الأمر وعرضها
@@ -431,6 +432,22 @@ async function fetchParentInfo() {
         document.getElementById('parentNameDisplay').textContent = 'حدث خطأ في التحميل';
         document.getElementById('parentEmailDisplay').textContent = '---';
         document.getElementById('parentPhoneDisplay').textContent = '---';
+    }
+}
+
+// ✅ دالة جديدة لتحميل التنبيهات الذكية الخاصة بولي الأمر
+async function loadParentSmartAlerts() {
+    try {
+        const res = await fetchWithAuth('/api/smart-alerts');
+        if (!res.ok) throw new Error('فشل جلب التنبيهات');
+        const alerts = await res.json();
+        renderSmartAlerts(alerts, 'parentSmartAlertsList');
+    } catch (err) {
+        console.error('❌ خطأ في تحميل التنبيهات الذكية لولي الأمر:', err);
+        const container = document.getElementById('parentSmartAlertsList');
+        if (container) {
+            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
+        }
     }
 }
 
