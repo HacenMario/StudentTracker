@@ -407,20 +407,20 @@ socket.on('toggle-all-status', async (data) => {
         const students = await Student.find();
         const updatedParents = new Set();
 
-        // ✅ حساب الوقت الحالي منقوصاً منه ساعة واحدة
+        // حساب الوقت الحالي
         const now = new Date();
-        now.setHours(now.getHours() - 1); // طرح ساعة واحدة
+        now.setHours(now.getHours());
 
         for (const student of students) {
             student.isInside = newStatus;
-            student.lastUpdate = now; // استخدام الوقت المنقوص
+            student.lastUpdate = now;
             await student.save();
 
             const attendance = new Attendance({
                 student: student._id,
                 status: newStatus ? 'in' : 'out',
                 method: 'manual',
-                timestamp: now, // استخدام الوقت المنقوص أيضاً
+                timestamp: now,
             });
             await attendance.save();
 
