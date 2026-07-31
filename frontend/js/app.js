@@ -1675,11 +1675,12 @@ async function loadParentStudents() {
         // ✅ تخزين الطلاب في localStorage
         localStorage.setItem('parentStudents', JSON.stringify(students));
         
-        // ✅ تعبئة قائمة الطلاب في نموذج الإجازات (بعد تحميل البيانات)
+        // ✅ تعبئة قائمة الطلاب في نموذج الإجازات
         fillLeaveStudents();
         
+        // ✅ تحميل سجل الحضور لجميع الأبناء
         if (students.length > 0) {
-            await loadAttendance(students[0]._id);
+            await loadAllAttendance(students);
         } else {
             parentLogs = [];
             renderParentLogs(parentShowOldLogs);
@@ -1689,35 +1690,76 @@ async function loadParentStudents() {
     }
 }
 
+// ✅ دالة لجلب سجل الحضور لجميع الأبناء
+async function loadAllAttendance(students) {
+    try {
+        let allLogs = [];
+        
+        for (const student of students) {
+            const res = await fetchWithAuth('/api/students/' + student._id + '/attendance');
+            if (!res.ok) continue;
+            const records = await res.json();
+            
+            const logs = records.map(r => {
+                const isEntry = r.status === 'in';
+                const key = isEntry ? 'attendance.entry' : 'attendance.exit';
+                const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
+                
+                const timestampDate = new Date(r.timestamp);
+                timestampDate.setHours(timestampDate.getHours() + 1);
+                const timeStr = formatFullTime(timestampDate);
+                
+                return {
+                    message: `${student.name}: ${message}`,
+                    time: timeStr,
+                    date: new Date(r.timestamp),
+                    key: key,
+                    params: {},
+                    studentName: student.name
+                };
+            });
+            
+            allLogs = allLogs.concat(logs);
+        }
+        
+        allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        parentLogs = allLogs;
+        renderParentLogs(parentShowOldLogs);
+    } catch (err) {
+        console.error('❌ خطأ في جلب سجل الحضور لجميع الأبناء:', err);
+        parentLogs = [];
+        renderParentLogs(parentShowOldLogs);
+    }
+}
+
 // ✅ تم تعديل هذه الدالة لإضافة الترجمة
 async function loadAttendance(studentId) {
+    // هذه الدالة لم تعد تستخدم مباشرة، لكن نتركها للتوافق
     try {
         const res = await fetchWithAuth('/api/students/' + studentId + '/attendance');
         if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
         
-        // ✅ تحويل السجلات إلى صيغة parentLogs مع إضافة ساعة
         parentLogs = records.map(r => {
             const isEntry = r.status === 'in';
             const key = isEntry ? 'attendance.entry' : 'attendance.exit';
             const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
             
-            // إضافة ساعة إلى timestamp
             const timestampDate = new Date(r.timestamp);
             timestampDate.setHours(timestampDate.getHours() + 1);
             const timeStr = formatFullTime(timestampDate);
             
             return {
                 message: message,
-                time: timeStr,                  // الوقت المعدل للعرض
-                date: new Date(r.timestamp),    // التاريخ الأصلي للترتيب
+                time: timeStr,
+                date: new Date(r.timestamp),
                 key: key,
                 params: {},
                 studentName: r.studentName || ''
             };
         });
         
-        // ✅ عرض السجلات
         renderParentLogs(parentShowOldLogs);
     } catch (err) {
         console.error('❌ خطأ في جلب سجل الحضور:', err);
