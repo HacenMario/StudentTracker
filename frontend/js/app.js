@@ -388,26 +388,12 @@ function showParentDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
-    
-    // ✅ عرض معلومات ولي الأمر من localStorage
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    document.getElementById('parentNameDisplay').textContent = userData.name || 'غير معروف';
-    document.getElementById('parentEmailDisplay').textContent = userData.email || 'غير معروف';
-    
-    // ✅ استخراج رقم الهاتف من الطلاب المخزنين (إن وجد)
-    const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
-    let phone = 'غير معروف';
-    if (students.length > 0 && students[0].parentPhone) {
-        phone = students[0].parentPhone;
-    }
-    document.getElementById('parentPhoneDisplay').textContent = phone;
-    
     connectSocket();
-    loadParentStudents();      // الدالة الموجودة أصلاً لتخزين الطلاب
+    loadParentStudents(); // ✅ هذه الدالة غير متزامنة (async)
+    // ❌ لا تستدعي fillLeaveStudents() هنا مباشرةً
+    // بدلاً من ذلك، سيتم استدعاؤها تلقائياً بعد تحميل البيانات
     loadParentLogs();
     loadParentNotifications();
-    loadParentChildren();      // ✅ جلب الأبناء وتعبئة القائمة
-    setupParentMessageForm();  // ✅ ربط نموذج إرسال الرسالة
 }
 
 // ==========================================
@@ -1689,12 +1675,11 @@ async function loadParentStudents() {
         // ✅ تخزين الطلاب في localStorage
         localStorage.setItem('parentStudents', JSON.stringify(students));
         
-        // ✅ تعبئة قائمة الطلاب في نموذج الإجازات
+        // ✅ تعبئة قائمة الطلاب في نموذج الإجازات (بعد تحميل البيانات)
         fillLeaveStudents();
         
-        // ✅ تحميل سجل الحضور لجميع الأبناء
         if (students.length > 0) {
-            await loadAllAttendance(students);
+            await loadAttendance(students[0]._id);
         } else {
             parentLogs = [];
             renderParentLogs(parentShowOldLogs);
@@ -1704,76 +1689,35 @@ async function loadParentStudents() {
     }
 }
 
-// ✅ دالة لجلب سجل الحضور لجميع الأبناء
-async function loadAllAttendance(students) {
-    try {
-        let allLogs = [];
-        
-        for (const student of students) {
-            const res = await fetchWithAuth('/api/students/' + student._id + '/attendance');
-            if (!res.ok) continue;
-            const records = await res.json();
-            
-            const logs = records.map(r => {
-                const isEntry = r.status === 'in';
-                const key = isEntry ? 'attendance.entry' : 'attendance.exit';
-                const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
-                
-                const timestampDate = new Date(r.timestamp);
-                timestampDate.setHours(timestampDate.getHours() + 1);
-                const timeStr = formatFullTime(timestampDate);
-                
-                return {
-                    message: `${student.name}: ${message}`,
-                    time: timeStr,
-                    date: new Date(r.timestamp),
-                    key: key,
-                    params: {},
-                    studentName: student.name
-                };
-            });
-            
-            allLogs = allLogs.concat(logs);
-        }
-        
-        allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        parentLogs = allLogs;
-        renderParentLogs(parentShowOldLogs);
-    } catch (err) {
-        console.error('❌ خطأ في جلب سجل الحضور لجميع الأبناء:', err);
-        parentLogs = [];
-        renderParentLogs(parentShowOldLogs);
-    }
-}
-
 // ✅ تم تعديل هذه الدالة لإضافة الترجمة
 async function loadAttendance(studentId) {
-    // هذه الدالة لم تعد تستخدم مباشرة، لكن نتركها للتوافق
     try {
         const res = await fetchWithAuth('/api/students/' + studentId + '/attendance');
         if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
         
+        // ✅ تحويل السجلات إلى صيغة parentLogs مع إضافة ساعة
         parentLogs = records.map(r => {
             const isEntry = r.status === 'in';
             const key = isEntry ? 'attendance.entry' : 'attendance.exit';
             const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
             
+            // إضافة ساعة إلى timestamp
             const timestampDate = new Date(r.timestamp);
             timestampDate.setHours(timestampDate.getHours() + 1);
             const timeStr = formatFullTime(timestampDate);
             
             return {
                 message: message,
-                time: timeStr,
-                date: new Date(r.timestamp),
+                time: timeStr,                  // الوقت المعدل للعرض
+                date: new Date(r.timestamp),    // التاريخ الأصلي للترتيب
                 key: key,
                 params: {},
                 studentName: r.studentName || ''
             };
         });
         
+        // ✅ عرض السجلات
         renderParentLogs(parentShowOldLogs);
     } catch (err) {
         console.error('❌ خطأ في جلب سجل الحضور:', err);
@@ -3108,112 +3052,6 @@ async function initNotifications() {
         btn.disabled = false;
         btn.innerText = '🔔 تفعيل الإشعارات';
     });
-}
-
-// ==========================================
-// دوال ولي الأمر الجديدة (إرسال رسائل)
-// ==========================================
-
-// 1. جلب قائمة الأبناء وعرضها مع تعبئة القائمة المنسدلة
-async function loadParentChildren() {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
-        const response = await fetch(API_BASE_URL + '/api/parent/my-children', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('فشل في جلب الأبناء');
-        const students = await response.json();
-
-        // تحديث قائمة الطلاب في الـ select
-        const select = document.getElementById('parentStudentSelect');
-        if (select) {
-            select.innerHTML = '<option value="">-- اختر الطالب --</option>';
-            students.forEach(student => {
-                const option = document.createElement('option');
-                option.value = student._id;
-                option.textContent = student.name;
-                select.appendChild(option);
-            });
-        }
-
-        // تخزين الطلاب في localStorage للاستخدامات الأخرى
-        localStorage.setItem('parentStudents', JSON.stringify(students));
-
-    } catch (error) {
-        console.error('خطأ في تحميل الأبناء:', error);
-    }
-}
-
-// 2. معالجة إرسال رسالة ولي الأمر
-function setupParentMessageForm() {
-    const form = document.getElementById('parentMessageForm');
-    const alertDiv = document.getElementById('parentMessageAlert');
-    if (!form || !alertDiv) return;
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const studentId = document.getElementById('parentStudentSelect').value;
-        const subject = document.getElementById('parentSubjectInput').value.trim();
-        const message = document.getElementById('parentMessageInput').value.trim();
-        const token = localStorage.getItem('token');
-
-        if (!studentId) {
-            showParentAlert('الرجاء اختيار الطالب.', 'error');
-            return;
-        }
-        if (!message) {
-            showParentAlert('الرجاء كتابة نص الرسالة.', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('parentSendMessageBtn');
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'جاري الإرسال...';
-        }
-
-        try {
-            const response = await fetch(API_BASE_URL + '/api/parent/send-message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ studentId, subject, message })
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                showParentAlert('✅ تم إرسال رسالتك بنجاح!', 'success');
-                form.reset();
-                document.getElementById('parentStudentSelect').value = '';
-            } else {
-                showParentAlert(`❌ فشل الإرسال: ${data.msg || 'خطأ غير معروف'}`, 'error');
-            }
-        } catch (error) {
-            console.error(error);
-            showParentAlert('❌ حدث خطأ في الاتصال بالخادم.', 'error');
-        } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'إرسال الرسالة';
-            }
-        }
-    });
-
-    function showParentAlert(text, type) {
-        alertDiv.textContent = text;
-        alertDiv.className = 'alert-msg-form';
-        alertDiv.classList.add(type === 'success' ? 'alert-success-form' : 'alert-error-form');
-        clearTimeout(window.parentAlertTimeout);
-        window.parentAlertTimeout = setTimeout(() => {
-            alertDiv.className = 'alert-msg-form';
-            alertDiv.textContent = '';
-        }, 6000);
-    }
 }
 
 // ==========================================
