@@ -53,17 +53,21 @@ document.addEventListener('DOMContentLoaded', () => {
         studentSelect.appendChild(option);
 
         // إنشاء بطاقة الطالب
-        const card = document.createElement('div');
-        card.className = 'student-card';
-        card.innerHTML = `
-          <img src="${student.profileImage || '/uploads/students/default-avatar.png'}" 
-               alt="صورة ${student.name}" 
-               onerror="this.src='/uploads/students/default-avatar.png'" />
-          <h4>${student.name}</h4>
-          <p class="parent-detail">👨‍👩‍👦 ولي الأمر: <span>${student.parentName}</span></p>
-          <p class="parent-detail">📧 البريد: <span>${student.parentEmail}</span></p>
-          <p class="parent-detail">🆔 الرقم: <span>${student.studentId || 'غير محدد'}</span></p>
-        `;
+const card = document.createElement('div');
+card.className = 'student-card';
+
+// ✅ استخدم الرابط المخزن، وإن لم يكن موجوداً استخدم رابط UI Avatars
+const imageUrl = student.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
+
+card.innerHTML = `
+  <img src="${imageUrl}" 
+       alt="صورة ${student.name}" 
+       onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true'" />
+  <h4>${student.name}</h4>
+  <p class="parent-detail">👨‍👩‍👦 ولي الأمر: <span>${student.parentName}</span></p>
+  <p class="parent-detail">📧 البريد: <span>${student.parentEmail}</span></p>
+  <p class="parent-detail">🆔 الرقم: <span>${student.studentId || 'غير محدد'}</span></p>
+`;
         studentsContainer.appendChild(card);
       });
     } catch (error) {
