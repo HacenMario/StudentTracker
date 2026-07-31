@@ -389,19 +389,18 @@ function showParentDashboard() {
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
     
-    // ✅ عرض معلومات ولي الأمر من currentUser
-    if (currentUser) {
-        document.getElementById('parentNameDisplay').textContent = currentUser.name || 'غير معروف';
-        document.getElementById('parentEmailDisplay').textContent = currentUser.email || 'غير معروف';
-        document.getElementById('parentPhoneDisplay').textContent = currentUser.phone || 'غير معروف';
-    }
+    // ✅ عرض معلومات ولي الأمر من localStorage مباشرة
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    document.getElementById('parentNameDisplay').textContent = userData.name || 'غير معروف';
+    document.getElementById('parentEmailDisplay').textContent = userData.email || 'غير معروف';
+    document.getElementById('parentPhoneDisplay').textContent = userData.phone || 'غير معروف';
     
     connectSocket();
     loadParentStudents();
     loadParentLogs();
     loadParentNotifications();
-    loadParentChildren();      // جلب الأبناء مع الصور
-    setupParentMessageForm();  // ربط نموذج إرسال الرسالة
+    loadParentChildren();
+    setupParentMessageForm();
 }
 
 // ==========================================
@@ -462,23 +461,32 @@ socket.on('status-changed', (data) => {
 });
     
     socket.on('notification', (data) => {
-        if (currentUser.role === 'parent') {
-            const newNotification = {
-                message: data.message,
-                createdAt: data.createdAt || new Date().toISOString(),
-                isRead: false,
-                _id: data.notificationId || 'temp_' + Date.now()
+    if (currentUser.role === 'parent') {
+        if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
+            loadParentStudents();
+            const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
+            const displayMessage = translate('attendance.student_became', { 
+                name: data.student.name, 
+                status: statusText 
+            });
+
+            // ✅ إنشاء سجل جديد وإضافته إلى parentLogs
+            const logEntry = {
+                message: displayMessage,
+                time: formatFullTime(new Date()),  // سيتم إضافة ساعة داخل addLog
+                date: new Date(),
+                key: 'attendance.student_became',
+                params: { name: data.student.name, status: statusText },
+                studentName: data.student.name
             };
-            allNotifications.unshift(newNotification);
-            renderNotifications(showOldNotifications);
-            showBrowserNotification('📢 إشعار من المدرسة', data.message);
-    } else if (currentUser.role === 'admin') {
-        // ✅ إضافة الإشعار إلى سجل المدير
-        const msg = `📩 ${data.message}`;
-        addLog(msg, new Date(), 'adminLogContainer');
-        // تحديث الواجهة فوراً
-        renderAdminLogs(adminShowOldLogs);
-        loadAdminNotifications();
+            parentLogs.unshift(logEntry);
+            
+            // ✅ عرض السجلات المحدثة
+            renderParentLogs(parentShowOldLogs);
+            
+            // ✅ إشعار المتصفح
+            showBrowserNotification(translate('notification.title'), displayMessage);
+        }
     }
 });
 
@@ -1268,7 +1276,9 @@ function renderStudents(students, containerId, showAdminControls) {
     let html = '';
     students.forEach(s => {
         // ✅ إضافة ساعة واحدة إلى lastUpdate قبل التنسيق
-       const lastUpdateStr = formatFullTime(s.lastUpdate);
+const lastUpdateDate = new Date(s.lastUpdate);
+lastUpdateDate.setHours(lastUpdateDate.getHours() + 1);
+const lastUpdateStr = formatFullTime(lastUpdateDate);
 
         const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
         const statusClass = s.isInside ? 'inside' : 'outside';
@@ -1568,7 +1578,10 @@ function addLog(message, date, containerId, key = null, params = {}) {
     const originalDate = date || new Date();
     let displayDate = new Date(originalDate);
 
-    const time = formatFullTime(displayDate);
+    if (containerId === 'parentLogContainer') {
+    displayDate.setHours(displayDate.getHours() + 1);
+}
+const time = formatFullTime(displayDate);
 
     const logEntry = {
         message,
@@ -1708,7 +1721,9 @@ async function loadAttendance(studentId) {
             const key = isEntry ? 'attendance.entry' : 'attendance.exit';
             const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
             
-            const timeStr = formatFullTime(r.timestamp);
+const timestampDate = new Date(r.timestamp);
+timestampDate.setHours(timestampDate.getHours() + 1);
+const timeStr = formatFullTime(timestampDate);
             
             return {
                 message: message,
