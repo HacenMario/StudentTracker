@@ -13,6 +13,7 @@ const webpush = require('web-push');
 const leaveRoutes = require('./routes/leaveRoutes');
 const { startSmartAlertScheduler } = require('./services/smartAlertScheduler');
 const holidayRoutes = require('./routes/holidayRoutes');
+const parentRoutes = require('./routes/parent');
 
 // استيراد النماذج
 const Student = require('./models/Student');
@@ -70,6 +71,7 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/leave-requests', leaveRoutes);
 app.use('/api/smart-alerts', smartAlertRoutes);
 app.use('/api/holidays', holidayRoutes);
+app.use('/api/parent', parentRoutes);
 
 // ==========================================
 // إعداد Web Push (VAPID)
