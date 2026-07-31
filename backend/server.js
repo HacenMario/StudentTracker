@@ -410,7 +410,7 @@ socket.on('toggle-all-status', async (data) => {
 
         // حساب الوقت الحالي
         const now = new Date();
-        now.setHours(now.getHours());
+        now.setHours(now.getHours() -1);
 
         for (const student of students) {
             student.isInside = newStatus;
