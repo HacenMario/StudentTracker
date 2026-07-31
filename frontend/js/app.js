@@ -3224,6 +3224,51 @@ function setupParentMessageForm() {
 }
 
 // ==========================================
+// الوضع الليلي (Dark Mode)
+// ==========================================
+
+// التحقق من تفضيل المستخدم المخزن
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') {
+    document.body.classList.add('dark-mode');
+    updateDarkModeIcon();
+}
+
+// دالة تبديل الوضع الليلي
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateDarkModeIcon();
+}
+
+// دالة تحديث أيقونة الزر
+function updateDarkModeIcon() {
+    const toggles = document.querySelectorAll('.dark-mode-toggle');
+    const isDark = document.body.classList.contains('dark-mode');
+    toggles.forEach(btn => {
+        btn.innerHTML = isDark 
+            ? '<i class="fas fa-sun"></i>' 
+            : '<i class="fas fa-moon"></i>';
+        btn.title = isDark ? 'الوضع النهاري' : 'الوضع الليلي';
+    });
+}
+
+// ربط حدث النقر على أزرار التبديل
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.dark-mode-toggle')) {
+        toggleDarkMode();
+    }
+});
+
+// عند تحميل الصفحة، تأكد من تحديث الأيقونة
+document.addEventListener('DOMContentLoaded', function() {
+    updateDarkModeIcon();
+});
+
+updateDarkModeIcon();
+
+// ==========================================
 // 20. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', async function() {
