@@ -1254,6 +1254,11 @@ function renderStudents(students, containerId, showAdminControls) {
     }
     let html = '';
     students.forEach(s => {
+        // ✅ إضافة ساعة واحدة إلى lastUpdate قبل التنسيق
+        const lastUpdateDate = new Date(s.lastUpdate);
+        lastUpdateDate.setHours(lastUpdateDate.getHours() + 1);
+        const lastUpdateStr = formatFullTime(lastUpdateDate);
+
         const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
         const statusClass = s.isInside ? 'inside' : 'outside';
         const toggleText = s.isInside ? translate('student.toggle_exit') : translate('student.entry');
@@ -1268,7 +1273,7 @@ function renderStudents(students, containerId, showAdminControls) {
                     <div class="student-name">${s.name} (${s.studentId})</div>
                     <div style="font-size:14px;color:#4a5a6e;">${parentLabel}: ${s.parentName}</div>
                     <div style="font-size:13px;color:#6a7a8e;">📞 ${s.parentPhone}</div>
-                    <span class="student-time">🕒 ${lastUpdateLabel}: ${formatFullTime(s.lastUpdate)}</span>
+                    <span class="student-time">🕒 ${lastUpdateLabel}: ${lastUpdateStr}</span>
                 </div>
                 <span class="status-badge ${statusClass}">${statusText}</span>
                 <div class="card-actions">
@@ -1277,7 +1282,7 @@ function renderStudents(students, containerId, showAdminControls) {
                         <button class="btn-delete" onclick="adminDelete('${s._id}')">${translate('common.delete')}</button>
                         <button class="btn-edit" onclick="openEditStudent('${s._id}')"><i class="fas fa-edit"></i> ${translate('common.edit')}</button>
                     ` : `
-                        <span style="font-size:13px;color:#7b8b9e;">${lastEntryExitLabel}: ${formatFullTime(s.lastUpdate)}</span>
+                        <span style="font-size:13px;color:#7b8b9e;">${lastEntryExitLabel}: ${lastUpdateStr}</span>
                     `}
                     <button class="btn-qr" onclick="downloadQR('${s._id}')"><i class="fas fa-qrcode"></i> ${translate('common.qr')}</button>
                 </div>
@@ -1548,14 +1553,21 @@ function addLog(message, date, containerId, key = null, params = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // استخدم التاريخ كما هو، معتمداً على formatFullTime للعرض الصحيح
-    const logDate = date || new Date();
-    const time = formatFullTime(logDate);
+    // التاريخ الأصلي (للترتيب والحفظ)
+    const originalDate = date || new Date();
+    let displayDate = new Date(originalDate);
+
+    // ✅ فقط لسجل ولي الأمر نضيف ساعة للعرض
+    if (containerId === 'parentLogContainer') {
+        displayDate.setHours(displayDate.getHours() + 1);
+    }
+
+    const time = formatFullTime(displayDate);
 
     const logEntry = {
         message,
-        time,
-        date: logDate,
+        time,                     // الوقت المعدل للعرض
+        date: originalDate,       // التاريخ الأصلي للترتيب
         key: key,
         params: params
     };
@@ -1684,17 +1696,21 @@ async function loadAttendance(studentId) {
         if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
         
-        // ✅ تحويل السجلات إلى صيغة parentLogs
+        // ✅ تحويل السجلات إلى صيغة parentLogs مع إضافة ساعة
         parentLogs = records.map(r => {
-            // تحديد المفتاح المناسب للترجمة
             const isEntry = r.status === 'in';
             const key = isEntry ? 'attendance.entry' : 'attendance.exit';
             const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
             
+            // إضافة ساعة إلى timestamp
+            const timestampDate = new Date(r.timestamp);
+            timestampDate.setHours(timestampDate.getHours() + 1);
+            const timeStr = formatFullTime(timestampDate);
+            
             return {
                 message: message,
-                time: formatFullTime(r.timestamp),
-                date: new Date(r.timestamp),
+                time: timeStr,                  // الوقت المعدل للعرض
+                date: new Date(r.timestamp),    // التاريخ الأصلي للترتيب
                 key: key,
                 params: {},
                 studentName: r.studentName || ''
