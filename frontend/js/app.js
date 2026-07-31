@@ -235,20 +235,33 @@ function getStatusClass(isInside) {
 
 function formatFullTime(dateString) {
     const date = new Date(dateString);
-    
     if (isNaN(date.getTime())) {
         return dateString;
     }
+
+    // ✅ عرض الوقت بتوقيت الجزائر (UTC+1)
+    const options = {
+        timeZone: 'Africa/Algiers',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    };
+    const formatter = new Intl.DateTimeFormat('fr-CA', options);
+    const parts = formatter.formatToParts(date);
     
-    // ✅ عرض الوقت كما هو مخزن في قاعدة البيانات (بدون تعديل)
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    const getPart = (type) => parts.find(p => p.type === type)?.value || '';
+    const year = getPart('year');
+    const month = getPart('month');
+    const day = getPart('day');
+    const hour = getPart('hour');
+    const minute = getPart('minute');
+    const second = getPart('second');
+
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
 
 function isToday(dateString) {
@@ -413,11 +426,6 @@ socket.on('status-changed', (data) => {
         let correctedDate = new Date();
         if (!isNaN(correctedDate.getTime())) {
             const now = new Date();
-            const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
-            if (diffHours > 0.5) {
-                correctedDate = new Date(correctedDate.getTime());
-            }
-        }
         
         // ✅ إضافة السجل إلى adminLogs
         const logEntry = {
@@ -1032,11 +1040,7 @@ async function loadAdminNotifications() {
             let correctedDate = new Date(n.createdAt);
             if (!isNaN(correctedDate.getTime())) {
                 const now = new Date();
-                const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
-                if (diffHours > 0.5) {
-                    correctedDate = new Date(correctedDate.getTime());
-                }
-            }
+
             addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', correctedDate, 'adminLogContainer');
         });
     } catch (err) {
@@ -1182,10 +1186,6 @@ function addNotificationToUI(message, createdAt, isRead = false, id = null) {
     // ✅ تصحيح الوقت إذا كان متقدماً بساعة
     let correctedDate = new Date(createdAt);
     const now = new Date();
-    const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
-    if (diffHours > 0.5) {
-        correctedDate = new Date(correctedDate.getTime());
-    }
     
     const time = formatFullTime(correctedDate);
     li.textContent = message + ' (وقت: ' + time + ')';
@@ -1576,27 +1576,28 @@ async function adminSendParentNotification() {
 // 17. دوال السجل (مع عرض آخر 5 سجلات فقط)
 // ==========================================
 function addLog(message, date, containerId, key = null, params = {}) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-  // ✅ استخدام التاريخ كما هو دون تصحيح
-  const correctedDate = date || new Date();
-  const time = formatFullTime(correctedDate);
-  const logEntry = { 
-    message, 
-    time, 
-    date: correctedDate,
-    key: key,
-    params: params
-  };
+    // ✅ استخدم التاريخ كما هو (بدون تصحيح)
+    const logDate = date || new Date();
+    const time = formatFullTime(logDate); // ستستخدم التوقيت المحلي للجزائر
 
-  if (containerId === 'adminLogContainer') {
-    adminLogs.unshift(logEntry);
-    renderAdminLogs(adminShowOldLogs);
-  } else if (containerId === 'parentLogContainer') {
-    parentLogs.unshift(logEntry);
-    renderParentLogs(parentShowOldLogs);
-  }
+    const logEntry = {
+        message,
+        time,
+        date: logDate,
+        key: key,
+        params: params
+    };
+
+    if (containerId === 'adminLogContainer') {
+        adminLogs.unshift(logEntry);
+        renderAdminLogs(adminShowOldLogs);
+    } else if (containerId === 'parentLogContainer') {
+        parentLogs.unshift(logEntry);
+        renderParentLogs(parentShowOldLogs);
+    }
 }
 
 async function loadAdminLogs() {
