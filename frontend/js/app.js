@@ -1298,13 +1298,13 @@ function renderStudents(students, containerId, showAdminControls) {
     }
     let html = '';
     students.forEach(s => {
-        // ✅ عرض الصورة
-        let imageUrl = s.profileImage;
-        if (!imageUrl || imageUrl === '') {
-            imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
-        }
+        // ✅ عرض الصورة - استخدم الصورة المخزنة (base64) أو الصورة الافتراضية
+        let imageUrl = s.profileImage && s.profileImage.trim() !== '' 
+            ? s.profileImage 
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
 
-        const lastUpdateStr = formatFullTime(s.lastUpdate); // بدون إضافة ساعة (لأن formatFullTime تستخدم Africa/Algiers)
+        // ✅ تنسيق الوقت باستخدام دالة formatFullTime (تستخدم توقيت الجزائر)
+        const lastUpdateStr = formatFullTime(s.lastUpdate);
 
         const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
         const statusClass = s.isInside ? 'inside' : 'outside';
@@ -1415,7 +1415,8 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     const parentPhone = document.getElementById('editParentPhone').value.trim();
     const parentEmail = document.getElementById('editParentEmail').value.trim();
     const address = document.getElementById('editAddress').value.trim();
-    const imageFile = document.getElementById('editStudentImage').files[0];
+    const fileInput = document.getElementById('editStudentImage');
+    const file = fileInput ? fileInput.files[0] : null;
 
     if (!name || !parentName || !parentPhone || !parentEmail) {
         alert('الرجاء ملء جميع الحقول المطلوبة');
@@ -1430,13 +1431,13 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
 
     try {
         let profileImage = '';
-        if (imageFile) {
+        if (file) {
             const reader = new FileReader();
             profileImage = await new Promise((resolve) => {
                 reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(imageFile);
+                reader.readAsDataURL(file);
             });
-            console.log('📸 حجم الصورة base64 (تعديل):', profileImage.length);
+            console.log('📸 الصورة المحولة (تعديل):', profileImage.substring(0, 50) + '...');
         }
 
         const payload = {
@@ -1445,7 +1446,7 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
             parentPhone,
             parentEmail,
             address,
-            profileImage
+            profileImage  // إذا كانت فارغة، قد لا يحدث تغيير
         };
 
         const res = await fetchWithAuth('/api/students/' + id, {
@@ -1455,7 +1456,7 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
 
         const text = await res.text();
         console.log('📨 استجابة الخادم (تعديل):', text);
-        
+
         let data;
         try {
             data = JSON.parse(text);
@@ -1596,6 +1597,86 @@ async function adminAddStudent() {
         document.getElementById('addStudentForm').style.display = 'none';
         document.getElementById('toggleAddStudentBtn').innerHTML = '<i class="fas fa-plus-circle"></i> إضافة طالب جديد';
         
+        alert('✅ تم إضافة الطالب بنجاح');
+    } catch (err) {
+        console.error('❌ خطأ:', err);
+        alert('خطأ: ' + err.message);
+    }
+}async function adminAddStudent() {
+    const name = document.getElementById('adminStudentName').value.trim();
+    const parentEmail = document.getElementById('adminParentEmail').value.trim();
+    const parentName = document.getElementById('adminParentName').value.trim();
+    const parentPhone = document.getElementById('adminParentPhone').value.trim();
+    const address = document.getElementById('adminAddress').value.trim();
+    const fileInput = document.getElementById('adminStudentImage');
+    const file = fileInput ? fileInput.files[0] : null;
+
+    if (!name || !parentEmail || !parentName || !parentPhone) {
+        alert('الرجاء ملء جميع الحقول المطلوبة');
+        return;
+    }
+
+    const confirmed = await showConfirmModal(
+        'إضافة طالب جديد',
+        `هل أنت متأكد من إضافة "${name}"؟`
+    );
+    if (!confirmed) return;
+
+    try {
+        // ✅ تحويل الصورة إلى base64 (تماماً كما في submitLeaveRequest)
+        let profileImage = '';
+        if (file) {
+            const reader = new FileReader();
+            profileImage = await new Promise((resolve) => {
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+            console.log('📸 الصورة المحولة (base64):', profileImage.substring(0, 50) + '...');
+        }
+
+        // ✅ إرسال البيانات بنفس شكل طلب الإجازة (JSON)
+        const payload = {
+            name,
+            parentEmail,
+            parentName,
+            parentPhone,
+            address,
+            profileImage  // بنفس الاسم
+        };
+
+        const res = await fetchWithAuth('/api/students', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        console.log('📨 استجابة الخادم (إضافة):', text);
+
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error('استجابة غير صالحة: ' + text);
+        }
+
+        if (!res.ok) {
+            throw new Error(data.message || data.msg || 'فشل الإضافة');
+        }
+
+        // تفريغ الحقول
+        document.getElementById('adminStudentName').value = '';
+        document.getElementById('adminParentEmail').value = '';
+        document.getElementById('adminParentName').value = '';
+        document.getElementById('adminParentPhone').value = '';
+        document.getElementById('adminAddress').value = '';
+        if (fileInput) fileInput.value = '';
+
+        loadAdminStudents();
+        addLog('', new Date(), 'adminLogContainer', 'attendance.student_added', { name });
+
+        document.getElementById('addStudentForm').style.display = 'none';
+        document.getElementById('toggleAddStudentBtn').innerHTML = '<i class="fas fa-plus-circle"></i> إضافة طالب جديد';
+
         alert('✅ تم إضافة الطالب بنجاح');
     } catch (err) {
         console.error('❌ خطأ:', err);
