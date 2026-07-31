@@ -1576,36 +1576,27 @@ async function adminSendParentNotification() {
 // 17. دوال السجل (مع عرض آخر 5 سجلات فقط)
 // ==========================================
 function addLog(message, date, containerId, key = null, params = {}) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    // ✅ تصحيح الوقت إذا كان متقدماً بساعة
-    let correctedDate = date || new Date();
-    if (correctedDate instanceof Date && !isNaN(correctedDate.getTime())) {
-        const now = new Date();
-        const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
-        // إذا كان الفرق أكبر من 30 دقيقة (أي متقدماً بساعة)، نطرح ساعة
-        if (diffHours > 0.5) {
-            correctedDate = new Date(correctedDate.getTime());
-        }
-    }
-    
-    const time = formatFullTime(correctedDate);
-    const logEntry = { 
-        message, 
-        time, 
-        date: correctedDate,
-        key: key,
-        params: params
-    };
+  const container = document.getElementById(containerId);
+  if (!container) return;
 
-    if (containerId === 'adminLogContainer') {
-        adminLogs.unshift(logEntry);
-        renderAdminLogs(adminShowOldLogs);
-    } else if (containerId === 'parentLogContainer') {
-        parentLogs.unshift(logEntry);
-        renderParentLogs(parentShowOldLogs);
-    }
+  // ✅ استخدام التاريخ كما هو دون تصحيح
+  const correctedDate = date || new Date();
+  const time = formatFullTime(correctedDate);
+  const logEntry = { 
+    message, 
+    time, 
+    date: correctedDate,
+    key: key,
+    params: params
+  };
+
+  if (containerId === 'adminLogContainer') {
+    adminLogs.unshift(logEntry);
+    renderAdminLogs(adminShowOldLogs);
+  } else if (containerId === 'parentLogContainer') {
+    parentLogs.unshift(logEntry);
+    renderParentLogs(parentShowOldLogs);
+  }
 }
 
 async function loadAdminLogs() {
