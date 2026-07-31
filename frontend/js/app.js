@@ -388,26 +388,12 @@ function showParentDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
-    
-    // ✅ عرض معلومات ولي الأمر من localStorage
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    document.getElementById('parentNameDisplay').textContent = userData.name || 'غير معروف';
-    document.getElementById('parentEmailDisplay').textContent = userData.email || 'غير معروف';
-    
-    // ✅ استخراج رقم الهاتف من الطلاب المخزنين (إن وجدوا)
-    const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
-    let phone = 'غير معروف';
-    if (students.length > 0 && students[0].parentPhone) {
-        phone = students[0].parentPhone;
-    }
-    document.getElementById('parentPhoneDisplay').textContent = phone;
-    
     connectSocket();
-    loadParentStudents(); // هذه الدالة موجودة أصلاً وتقوم بتخزين الطلاب في localStorage
+    loadParentStudents(); // ✅ هذه الدالة غير متزامنة (async)
+    // ❌ لا تستدعي fillLeaveStudents() هنا مباشرةً
+    // بدلاً من ذلك، سيتم استدعاؤها تلقائياً بعد تحميل البيانات
     loadParentLogs();
     loadParentNotifications();
-    loadParentChildren();      // ✅ جلب الأبناء مع الصور وتعبئة القائمة
-    setupParentMessageForm();  // ✅ ربط نموذج إرسال الرسالة
 }
 
 // ==========================================
@@ -3066,142 +3052,6 @@ async function initNotifications() {
         btn.disabled = false;
         btn.innerText = '🔔 تفعيل الإشعارات';
     });
-}
-
-// ==========================================
-// دوال ولي الأمر الجديدة (إضافات مستقرة)
-// ==========================================
-
-// 1. جلب قائمة الأبناء وعرضها مع صور افتراضية
-async function loadParentChildren() {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
-        const response = await fetch(API_BASE_URL + '/api/parent/my-children', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('فشل في جلب الأبناء');
-        const students = await response.json();
-
-        const container = document.getElementById('parentStudentsList');
-        if (!container) return;
-        container.innerHTML = '';
-
-        if (students.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#888;">لا يوجد أبناء مسجلين</p>';
-            return;
-        }
-
-        // تعبئة القائمة المنسدلة في نموذج الرسالة
-        const select = document.getElementById('parentStudentSelect');
-        if (select) {
-            select.innerHTML = '<option value="">-- اختر الطالب --</option>';
-        }
-
-        // ✅ تحديث localStorage لتخزين الطلاب (لتستخدمه fillLeaveStudents)
-        localStorage.setItem('parentStudents', JSON.stringify(students));
-
-        students.forEach(student => {
-            // إضافة خيار للقائمة المنسدلة
-            if (select) {
-                const option = document.createElement('option');
-                option.value = student._id;
-                option.textContent = student.name;
-                select.appendChild(option);
-            }
-
-            // ✅ استخدام الصورة الافتراضية فقط (UI Avatars) لتجنب أي مشاكل
-            const imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
-
-            const card = document.createElement('div');
-            card.className = 'student-card';
-            card.innerHTML = `
-                <img src="${imageUrl}" alt="${student.name}" />
-                <h4>${student.name}</h4>
-                <p class="parent-detail">👨‍👩‍👦 ولي الأمر: <span>${student.parentName}</span></p>
-                <p class="parent-detail">📧 البريد: <span>${student.parentEmail}</span></p>
-                <p class="parent-detail">🆔 الرقم: <span>${student.studentId || 'غير محدد'}</span></p>
-            `;
-            container.appendChild(card);
-        });
-    } catch (error) {
-        console.error('خطأ في تحميل الأبناء:', error);
-        const container = document.getElementById('parentStudentsList');
-        if (container) {
-            container.innerHTML = `<p style="color:red;">حدث خطأ: ${error.message}</p>`;
-        }
-    }
-}
-
-// 2. معالجة إرسال رسالة ولي الأمر
-function setupParentMessageForm() {
-    const form = document.getElementById('parentMessageForm');
-    const alertDiv = document.getElementById('parentMessageAlert');
-    if (!form || !alertDiv) return;
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const studentId = document.getElementById('parentStudentSelect').value;
-        const subject = document.getElementById('parentSubjectInput').value.trim();
-        const message = document.getElementById('parentMessageInput').value.trim();
-        const token = localStorage.getItem('token');
-
-        if (!studentId) {
-            showParentAlert('الرجاء اختيار الطالب.', 'error');
-            return;
-        }
-        if (!message) {
-            showParentAlert('الرجاء كتابة نص الرسالة.', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('parentSendMessageBtn');
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'جاري الإرسال...';
-        }
-
-        try {
-            const response = await fetch(API_BASE_URL + '/api/parent/send-message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ studentId, subject, message })
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                showParentAlert('✅ تم إرسال رسالتك بنجاح!', 'success');
-                form.reset();
-                document.getElementById('parentStudentSelect').value = '';
-            } else {
-                showParentAlert(`❌ فشل الإرسال: ${data.msg || 'خطأ غير معروف'}`, 'error');
-            }
-        } catch (error) {
-            console.error(error);
-            showParentAlert('❌ حدث خطأ في الاتصال بالخادم.', 'error');
-        } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'إرسال الرسالة';
-            }
-        }
-    });
-
-    function showParentAlert(text, type) {
-        alertDiv.textContent = text;
-        alertDiv.className = 'alert-msg-form';
-        alertDiv.classList.add(type === 'success' ? 'alert-success-form' : 'alert-error-form');
-        clearTimeout(window.parentAlertTimeout);
-        window.parentAlertTimeout = setTimeout(() => {
-            alertDiv.className = 'alert-msg-form';
-            alertDiv.textContent = '';
-        }, 6000);
-    }
 }
 
 // ==========================================
