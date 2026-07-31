@@ -1298,10 +1298,13 @@ function renderStudents(students, containerId, showAdminControls) {
     }
     let html = '';
     students.forEach(s => {
-        // ✅ إضافة ساعة واحدة إلى lastUpdate قبل التنسيق
-const lastUpdateDate = new Date(s.lastUpdate);
-lastUpdateDate.setHours(lastUpdateDate.getHours() + 1);
-const lastUpdateStr = formatFullTime(lastUpdateDate);
+        // ✅ عرض الصورة
+        let imageUrl = s.profileImage;
+        if (!imageUrl || imageUrl === '') {
+            imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
+        }
+
+        const lastUpdateStr = formatFullTime(s.lastUpdate); // بدون إضافة ساعة (لأن formatFullTime تستخدم Africa/Algiers)
 
         const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
         const statusClass = s.isInside ? 'inside' : 'outside';
@@ -1309,15 +1312,17 @@ const lastUpdateStr = formatFullTime(lastUpdateDate);
         const toggleClass = s.isInside ? 'exit' : 'enter';
         const parentLabel = translate('student.parent_name');
         const lastUpdateLabel = translate('student.last_update');
-        const lastEntryExitLabel = translate('attendance.last_entry_exit');
 
         html += `
             <div class="student-card" data-id="${s._id}">
-                <div>
-                    <div class="student-name">${s.name} (${s.studentId})</div>
-                    <div style="font-size:14px;color:#4a5a6e;">${parentLabel}: ${s.parentName}</div>
-                    <div style="font-size:13px;color:#6a7a8e;">📞 ${s.parentPhone}</div>
-                    <span class="student-time">🕒 ${lastUpdateLabel}: ${lastUpdateStr}</span>
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <img src="${imageUrl}" alt="${s.name}" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid #2b6cb0;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=4A90D9&color=fff&size=128&rounded=true'" />
+                    <div>
+                        <div class="student-name">${s.name} (${s.studentId})</div>
+                        <div style="font-size:14px;color:#4a5a6e;">${parentLabel}: ${s.parentName}</div>
+                        <div style="font-size:13px;color:#6a7a8e;">📞 ${s.parentPhone}</div>
+                        <span class="student-time">🕒 ${lastUpdateLabel}: ${lastUpdateStr}</span>
+                    </div>
                 </div>
                 <span class="status-badge ${statusClass}">${statusText}</span>
                 <div class="card-actions">
@@ -1326,7 +1331,7 @@ const lastUpdateStr = formatFullTime(lastUpdateDate);
                         <button class="btn-delete" onclick="adminDelete('${s._id}')">${translate('common.delete')}</button>
                         <button class="btn-edit" onclick="openEditStudent('${s._id}')"><i class="fas fa-edit"></i> ${translate('common.edit')}</button>
                     ` : `
-                        <span style="font-size:13px;color:#7b8b9e;">${lastEntryExitLabel}: ${lastUpdateStr}</span>
+                        <span style="font-size:13px;color:#7b8b9e;">${translate('attendance.last_entry_exit')}: ${lastUpdateStr}</span>
                     `}
                     <button class="btn-qr" onclick="downloadQR('${s._id}')"><i class="fas fa-qrcode"></i> ${translate('common.qr')}</button>
                 </div>
@@ -1424,7 +1429,6 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     if (!confirmed) return;
 
     try {
-        // ✅ تحويل الصورة إلى base64 إذا وجدت
         let profileImage = '';
         if (imageFile) {
             const reader = new FileReader();
@@ -1432,24 +1436,35 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
                 reader.onload = (e) => resolve(e.target.result);
                 reader.readAsDataURL(imageFile);
             });
+            console.log('📸 حجم الصورة base64 (تعديل):', profileImage.length);
         }
 
-        // ✅ إرسال البيانات كـ JSON
+        const payload = {
+            name,
+            parentName,
+            parentPhone,
+            parentEmail,
+            address,
+            profileImage
+        };
+
         const res = await fetchWithAuth('/api/students/' + id, {
             method: 'PUT',
-            body: JSON.stringify({
-                name,
-                parentName,
-                parentPhone,
-                parentEmail,
-                address,
-                profileImage // سلسلة base64 (إذا كانت فارغة، قد لا نرسلها)
-            })
+            body: JSON.stringify(payload)
         });
 
+        const text = await res.text();
+        console.log('📨 استجابة الخادم (تعديل):', text);
+        
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error('استجابة غير صالحة: ' + text);
+        }
+
         if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.message || error.msg || 'فشل التعديل');
+            throw new Error(data.message || data.msg || 'فشل التعديل');
         }
 
         alert('✅ تم تعديل معلومات الطالب بنجاح');
@@ -1527,7 +1542,7 @@ async function adminAddStudent() {
     if (!confirmed) return;
 
     try {
-        // ✅ تحويل الصورة إلى base64 إذا وجدت
+        // ✅ تحويل الصورة إلى base64
         let profileImage = '';
         if (imageFile) {
             const reader = new FileReader();
@@ -1535,24 +1550,36 @@ async function adminAddStudent() {
                 reader.onload = (e) => resolve(e.target.result);
                 reader.readAsDataURL(imageFile);
             });
+            console.log('📸 حجم الصورة base64:', profileImage.length, 'حروف');
         }
 
-        // ✅ إرسال البيانات كـ JSON
+        // ✅ إرسال البيانات كـ JSON (تأكد من اسم الحقل: profileImage أو image)
+        const payload = {
+            name,
+            parentEmail,
+            parentName,
+            parentPhone,
+            address,
+            profileImage // جرب تغييره إلى image إذا كان الخادم يتوقع ذلك
+        };
+
         const res = await fetchWithAuth('/api/students', {
             method: 'POST',
-            body: JSON.stringify({
-                name,
-                parentEmail,
-                parentName,
-                parentPhone,
-                address,
-                profileImage // سلسلة base64
-            })
+            body: JSON.stringify(payload)
         });
 
+        const text = await res.text();
+        console.log('📨 استجابة الخادم (إضافة):', text);
+        
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error('استجابة غير صالحة: ' + text);
+        }
+
         if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.message || error.msg || 'فشل الإضافة');
+            throw new Error(data.message || data.msg || 'فشل الإضافة');
         }
 
         // تفريغ الحقول
@@ -3149,24 +3176,23 @@ async function loadParentChildren() {
         });
         if (!response.ok) throw new Error('فشل في جلب الأبناء');
         const students = await response.json();
+        console.log('👨‍👩‍👦 بيانات الأبناء:', students); // ✅ طباعة البيانات
 
         const container = document.getElementById('parentStudentsList');
         if (!container) return;
-        container.innerHTML = ''; // مسح المحتوى السابق
+        container.innerHTML = '';
 
         if (students.length === 0) {
             container.innerHTML = '<p style="text-align:center; color:#888;">لا يوجد أبناء مسجلين</p>';
             return;
         }
 
-        // تعبئة القائمة المنسدلة في نموذج الرسالة
         const select = document.getElementById('parentStudentSelect');
         if (select) {
             select.innerHTML = '<option value="">-- اختر الطالب --</option>';
         }
 
         students.forEach(student => {
-            // إضافة خيار للقائمة المنسدلة
             if (select) {
                 const option = document.createElement('option');
                 option.value = student._id;
@@ -3174,10 +3200,16 @@ async function loadParentChildren() {
                 select.appendChild(option);
             }
 
-            // إنشاء بطاقة الطالب (مع الصورة)
+            // ✅ استخدام الصورة المخزنة (base64) أو الصورة الافتراضية
+            let imageUrl = student.profileImage;
+            if (!imageUrl || imageUrl === '') {
+                imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
+            }
+            // إذا كانت الصورة base64، نستخدمها مباشرة في src
+            console.log(`🖼️ صورة ${student.name}:`, imageUrl ? (imageUrl.substring(0, 50) + '...') : 'لا توجد');
+
             const card = document.createElement('div');
             card.className = 'student-card';
-            const imageUrl = student.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
             card.innerHTML = `
                 <img src="${imageUrl}" alt="${student.name}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true'" />
                 <h4>${student.name}</h4>
