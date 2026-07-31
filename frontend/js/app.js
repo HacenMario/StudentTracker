@@ -1196,8 +1196,15 @@ async function toggleAllStudents(status) {
     if (!confirmed) return;
 
     if (socket) {
-        socket.emit('toggle-all-status', { newStatus: status });
-        // ✅ استخدام المفتاح
+        // ✅ حساب الوقت الحالي منقوص منه ساعة واحدة
+        const adjustedTime = new Date();
+        adjustedTime.setHours(adjustedTime.getHours() - 1);
+        
+        socket.emit('toggle-all-status', { 
+            newStatus: status,
+            adjustedTime: adjustedTime.toISOString() // إرسال الوقت المعدل
+        });
+        
         const key = status ? 'attendance.all_students_inside' : 'attendance.all_students_outside';
         addLog('', new Date(), 'adminLogContainer', key);
     } else {
