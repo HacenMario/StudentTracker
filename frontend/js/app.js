@@ -388,14 +388,20 @@ function showParentDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
+    
+    // ✅ عرض معلومات ولي الأمر من currentUser
+    if (currentUser) {
+        document.getElementById('parentNameDisplay').textContent = currentUser.name || 'غير معروف';
+        document.getElementById('parentEmailDisplay').textContent = currentUser.email || 'غير معروف';
+        document.getElementById('parentPhoneDisplay').textContent = currentUser.phone || 'غير معروف';
+    }
+    
     connectSocket();
-    loadParentStudents(); // تحميل الطلاب الأساسي
+    loadParentStudents();
     loadParentLogs();
     loadParentNotifications();
-    
-    // ✅ استدعاء الدوال الجديدة لولي الأمر
-    loadParentChildren();       // جلب الأبناء مع الصور وتعبئة القائمة المنسدلة
-    setupParentMessageForm();   // ربط نموذج إرسال الرسالة
+    loadParentChildren();      // جلب الأبناء مع الصور
+    setupParentMessageForm();  // ربط نموذج إرسال الرسالة
 }
 
 // ==========================================
@@ -466,10 +472,15 @@ socket.on('status-changed', (data) => {
             allNotifications.unshift(newNotification);
             renderNotifications(showOldNotifications);
             showBrowserNotification('📢 إشعار من المدرسة', data.message);
-        } else if (currentUser.role === 'admin') {
-            loadAdminLogs();
-        }
-    });
+    } else if (currentUser.role === 'admin') {
+        // ✅ إضافة الإشعار إلى سجل المدير
+        const msg = `📩 ${data.message}`;
+        addLog(msg, new Date(), 'adminLogContainer');
+        // تحديث الواجهة فوراً
+        renderAdminLogs(adminShowOldLogs);
+        loadAdminNotifications();
+    }
+});
 
     socket.on('notification-error', (data) => {
         alert(data.message);
