@@ -2375,8 +2375,9 @@ header h1 {
     border: 1px solid #f5c6cb;
     display: block;
 }
+
 /* ==========================================
-   الوضع الليلي (Dark Mode)
+   الوضع الليلي (Dark Mode) - نصوص بيضاء ناصعة
    ========================================== */
 
 /* زر تبديل الوضع الليلي */
@@ -2412,7 +2413,7 @@ header h1 {
 /* === الوضع المظلم === */
 body.dark-mode {
     background: #0f1724 !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 
 body.dark-mode .app-wrapper {
@@ -2436,7 +2437,7 @@ body.dark-mode #holidayForm,
 body.dark-mode #settingsForm {
     background: #1a2332 !important;
     border-color: #2a3a4f !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -2447,7 +2448,7 @@ body.dark-mode header {
 }
 
 body.dark-mode header h1 {
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 
 /* النصوص والعناوين */
@@ -2457,15 +2458,37 @@ body.dark-mode h3,
 body.dark-mode h4,
 body.dark-mode .student-name,
 body.dark-mode .parent-info-card h3,
-body.dark-mode .message-form-card h4 {
-    color: #e2e8f0 !important;
+body.dark-mode .message-form-card h4,
+body.dark-mode .leave-request-card .student-name,
+body.dark-mode .modal-box h3 {
+    color: #ffffff !important;
 }
 
+/* جميع النصوص */
 body.dark-mode p,
 body.dark-mode span,
 body.dark-mode .parent-detail,
-body.dark-mode .parent-info-card p {
-    color: #cbd5e1 !important;
+body.dark-mode .parent-info-card p,
+body.dark-mode .student-card .parent-detail,
+body.dark-mode .log-item,
+body.dark-mode .log-item span,
+body.dark-mode .leave-request-card p,
+body.dark-mode .modal-box p,
+body.dark-mode .smart-alerts-section .log-item span,
+body.dark-mode .student-card h4,
+body.dark-mode #settingsForm label,
+body.dark-mode #holidaysList .holiday-item .holiday-name {
+    color: #ffffff !important;
+}
+
+/* التواريخ والتفاصيل الصغيرة (رمادي فاتح جداً ليكون أقل وضوحاً لكن مقروء) */
+body.dark-mode .log-time,
+body.dark-mode .student-time,
+body.dark-mode .date-range,
+body.dark-mode .holiday-desc,
+body.dark-mode #holidaysList .holiday-item .date-range,
+body.dark-mode #holidaysList .holiday-item .holiday-desc {
+    color: #e2e8f0 !important;
 }
 
 /* الحقول والنماذج */
@@ -2474,7 +2497,7 @@ body.dark-mode select,
 body.dark-mode textarea {
     background: #0f1724 !important;
     border-color: #2a3a4f !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 
 body.dark-mode input:focus,
@@ -2487,13 +2510,22 @@ body.dark-mode textarea:focus {
 
 body.dark-mode input::placeholder,
 body.dark-mode textarea::placeholder {
-    color: #6a7a8e !important;
+    color: #a0aec0 !important;
 }
 
 /* الأزرار (مع الحفاظ على ألوانها الأساسية) */
+body.dark-mode .btn-primary,
+body.dark-mode .btn-success,
+body.dark-mode .btn-danger,
+body.dark-mode .btn-warning,
+body.dark-mode .btn-logout,
+body.dark-mode .btn-toggle-form,
+body.dark-mode .btn-secondary {
+    color: #ffffff !important;
+}
+
 body.dark-mode .btn-primary {
     background: #2b6cb0 !important;
-    color: #fff !important;
 }
 body.dark-mode .btn-primary:hover {
     background: #1a4f8a !important;
@@ -2501,7 +2533,6 @@ body.dark-mode .btn-primary:hover {
 
 body.dark-mode .btn-logout {
     background: #e53e3e !important;
-    color: #fff !important;
 }
 body.dark-mode .btn-logout:hover {
     background: #c53030 !important;
@@ -2509,7 +2540,6 @@ body.dark-mode .btn-logout:hover {
 
 body.dark-mode .btn-toggle-form {
     background: #2a3a4f !important;
-    color: #e2e8f0 !important;
 }
 body.dark-mode .btn-toggle-form:hover {
     background: #3a4a5f !important;
@@ -2517,7 +2547,6 @@ body.dark-mode .btn-toggle-form:hover {
 
 body.dark-mode .btn-warning {
     background: #d69e2e !important;
-    color: #fff !important;
 }
 body.dark-mode .btn-warning:hover {
     background: #b7791f !important;
@@ -2525,7 +2554,6 @@ body.dark-mode .btn-warning:hover {
 
 body.dark-mode .btn-success {
     background: #38a169 !important;
-    color: #fff !important;
 }
 body.dark-mode .btn-success:hover {
     background: #2f855a !important;
@@ -2533,7 +2561,6 @@ body.dark-mode .btn-success:hover {
 
 body.dark-mode .btn-danger {
     background: #e53e3e !important;
-    color: #fff !important;
 }
 body.dark-mode .btn-danger:hover {
     background: #c53030 !important;
@@ -2541,7 +2568,6 @@ body.dark-mode .btn-danger:hover {
 
 body.dark-mode .btn-secondary {
     background: #2a3a4f !important;
-    color: #e2e8f0 !important;
 }
 body.dark-mode .btn-secondary:hover {
     background: #3a4a5f !important;
@@ -2550,11 +2576,20 @@ body.dark-mode .btn-secondary:hover {
 /* بطاقات الحالة */
 body.dark-mode .status-badge.inside {
     background: #22543d !important;
-    color: #9ae6b4 !important;
+    color: #ffffff !important;
 }
 body.dark-mode .status-badge.outside {
     background: #742a2a !important;
-    color: #feb2b2 !important;
+    color: #ffffff !important;
+}
+body.dark-mode .leave-status.approved {
+    color: #ffffff !important;
+}
+body.dark-mode .leave-status.rejected {
+    color: #ffffff !important;
+}
+body.dark-mode .leave-status.pending {
+    color: #ffffff !important;
 }
 
 /* سجل النشاطات */
@@ -2572,11 +2607,12 @@ body.dark-mode .log-item:hover {
 /* الإشعارات */
 body.dark-mode #notificationList li {
     background: #1a2332 !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 body.dark-mode #notificationList li:not(.read) {
     background: #1f2a3d !important;
     border-right-color: #4a7cbf !important;
+    color: #ffffff !important;
 }
 
 /* التنبيهات الذكية */
@@ -2594,7 +2630,7 @@ body.dark-mode #holidaysList .holiday-item:hover {
 }
 body.dark-mode #holidaysList .holiday-item .date-range {
     background: #0f1724 !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 
 /* شريط التمرير في الوضع المظلم */
@@ -2630,16 +2666,16 @@ body.dark-mode .school-header {
     border-bottom: 2px solid #2a3a4f !important;
 }
 body.dark-mode .school-header h1 {
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 body.dark-mode .school-header p {
-    color: #cbd5e1 !important;
+    color: #ffffff !important;
 }
 
 body.dark-mode .search-section input {
     background: #0f1724 !important;
     border-color: #2a3a4f !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 body.dark-mode .search-section input:focus {
     border-color: #4a7cbf !important;
@@ -2648,14 +2684,14 @@ body.dark-mode .search-section input:focus {
 
 body.dark-mode .modal-box {
     background: #1a2332 !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
     border: 1px solid #2a3a4f !important;
 }
 body.dark-mode .modal-box h3 {
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 body.dark-mode .modal-box p {
-    color: #cbd5e1 !important;
+    color: #ffffff !important;
 }
 
 body.dark-mode .leave-request-card {
@@ -2663,8 +2699,16 @@ body.dark-mode .leave-request-card {
     border-color: #2a3a4f !important;
 }
 body.dark-mode .leave-request-card .student-name {
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 body.dark-mode .leave-request-card p {
-    color: #cbd5e1 !important;
+    color: #ffffff !important;
+}
+
+/* روابط */
+body.dark-mode a {
+    color: #63b3ed !important;
+}
+body.dark-mode a:hover {
+    color: #90cdf4 !important;
 }
