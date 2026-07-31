@@ -247,8 +247,8 @@ socket.on('toggle-status', async (studentId) => {
 
     // ✅ تغيير الحالة بدون طرح ساعة
     student.isInside = !student.isInside;
-    student.lastUpdate = new Date();
-    now.setHours(now.getHours() -1);
+    student.lastUpdate = now;
+
     await student.save();
 
     // ✅ تسجيل الحضور بدون طرح ساعة
