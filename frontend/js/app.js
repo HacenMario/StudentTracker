@@ -1680,16 +1680,17 @@ async function loadParentStudents() {
         if (!res.ok) throw new Error('فشل جلب بيانات أبنائك');
         const students = await res.json();
         renderStudents(students, 'parentStudentsList', false);
-        
-        // ✅ تخزين الطلاب في localStorage
+
         localStorage.setItem('parentStudents', JSON.stringify(students));
-        
-        // ✅ تعبئة قائمة الطلاب في نموذج الإجازات
         fillLeaveStudents();
-        
-        // ✅ تحميل سجل الحضور لجميع الأبناء
+
         if (students.length > 0) {
-            await loadAllAttendance(students);
+            // ✅ تحميل سجل الحضور لجميع الأبناء
+            parentLogs = []; // مسح السجلات القديمة
+            for (const student of students) {
+                await loadAttendanceForStudent(student._id);
+            }
+            renderParentLogs(parentShowOldLogs);
         } else {
             parentLogs = [];
             renderParentLogs(parentShowOldLogs);
@@ -1699,81 +1700,38 @@ async function loadParentStudents() {
     }
 }
 
-// ✅ دالة لجلب سجل الحضور لجميع الأبناء
-async function loadAllAttendance(students) {
-    try {
-        let allLogs = [];
-        
-        for (const student of students) {
-            const res = await fetchWithAuth('/api/students/' + student._id + '/attendance');
-            if (!res.ok) continue;
-            const records = await res.json();
-            
-            const logs = records.map(r => {
-                const isEntry = r.status === 'in';
-                const key = isEntry ? 'attendance.entry' : 'attendance.exit';
-                const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
-                
-                const timestampDate = new Date(r.timestamp);
-                timestampDate.setHours(timestampDate.getHours());
-                const timeStr = formatFullTime(timestampDate);
-                
-                return {
-                    message: `${student.name}: ${message}`,
-                    time: timeStr,
-                    date: new Date(r.timestamp),
-                    key: key,
-                    params: {},
-                    studentName: student.name
-                };
-            });
-            
-            allLogs = allLogs.concat(logs);
-        }
-        
-        allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        parentLogs = allLogs;
-        renderParentLogs(parentShowOldLogs);
-    } catch (err) {
-        console.error('❌ خطأ في جلب سجل الحضور لجميع الأبناء:', err);
-        parentLogs = [];
-        renderParentLogs(parentShowOldLogs);
-    }
-}
-
 // ✅ تم تعديل هذه الدالة لإضافة الترجمة (تبقى كما هي)
-async function loadAttendance(studentId) {
-    // هذه الدالة لم تعد تستخدم مباشرة، لكن نتركها للتوافق
+async function loadAttendanceForStudent(studentId) {
     try {
         const res = await fetchWithAuth('/api/students/' + studentId + '/attendance');
         if (!res.ok) throw new Error('فشل جلب سجل الحضور');
         const records = await res.json();
-        
-        parentLogs = records.map(r => {
+
+        // تحويل السجلات إلى صيغة parentLogs وإضافتها
+        records.forEach(r => {
             const isEntry = r.status === 'in';
             const key = isEntry ? 'attendance.entry' : 'attendance.exit';
             const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
-            
+
             const timestampDate = new Date(r.timestamp);
-            timestampDate.setHours(timestampDate.getHours());
+            timestampDate.setHours(timestampDate.getHours() + 1);
             const timeStr = formatFullTime(timestampDate);
-            
-            return {
+
+            parentLogs.push({
                 message: message,
                 time: timeStr,
                 date: new Date(r.timestamp),
                 key: key,
                 params: {},
                 studentName: r.studentName || ''
-            };
+            });
         });
-        
-        renderParentLogs(parentShowOldLogs);
+
+        // ترتيب السجلات تنازلياً (الأحدث أولاً)
+        parentLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
     } catch (err) {
-        console.error('❌ خطأ في جلب سجل الحضور:', err);
-        parentLogs = [];
-        renderParentLogs(parentShowOldLogs);
+        console.error('❌ خطأ في جلب سجل الحضور للطالب:', err);
     }
 }
 
