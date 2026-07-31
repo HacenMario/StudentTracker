@@ -1417,8 +1417,6 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     const parentPhone = document.getElementById('editParentPhone').value.trim();
     const parentEmail = document.getElementById('editParentEmail').value.trim();
     const address = document.getElementById('editAddress').value.trim();
-    const fileInput = document.getElementById('editStudentImage');
-    const file = fileInput ? fileInput.files[0] : null;
 
     if (!name || !parentName || !parentPhone || !parentEmail) {
         alert('الرجاء ملء جميع الحقول المطلوبة');
@@ -1432,46 +1430,16 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     if (!confirmed) return;
 
     try {
-        let profileImage = '';
-        if (file) {
-            if (file.size > 2 * 1024 * 1024) {
-                alert('حجم الصورة كبير جداً (الحد الأقصى 2 ميجابايت)');
-                return;
-            }
-            const reader = new FileReader();
-            profileImage = await new Promise((resolve) => {
-                reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(file);
-            });
-            console.log('📸 الصورة المحولة (تعديل):', profileImage.substring(0, 50) + '...');
-        }
-
-        const payload = {
-            name,
-            parentName,
-            parentPhone,
-            parentEmail,
-            address,
-            profileImage
-        };
+        const payload = { name, parentName, parentPhone, parentEmail, address };
 
         const res = await fetchWithAuth('/api/students/' + id, {
             method: 'PUT',
             body: JSON.stringify(payload)
         });
 
-        const text = await res.text();
-        console.log('📨 استجابة الخادم (تعديل):', text);
-
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('استجابة غير صالحة: ' + text);
-        }
-
         if (!res.ok) {
-            throw new Error(data.message || data.msg || 'فشل التعديل');
+            const error = await res.json();
+            throw new Error(error.message || error.msg || 'فشل التعديل');
         }
 
         alert('✅ تم تعديل معلومات الطالب بنجاح');
@@ -1535,8 +1503,6 @@ async function adminAddStudent() {
     const parentName = document.getElementById('adminParentName').value.trim();
     const parentPhone = document.getElementById('adminParentPhone').value.trim();
     const address = document.getElementById('adminAddress').value.trim();
-    const fileInput = document.getElementById('adminStudentImage');
-    const file = fileInput ? fileInput.files[0] : null;
 
     if (!name || !parentEmail || !parentName || !parentPhone) {
         alert('الرجاء ملء جميع الحقول المطلوبة');
@@ -1550,50 +1516,16 @@ async function adminAddStudent() {
     if (!confirmed) return;
 
     try {
-        // ✅ تحويل الصورة إلى base64 (تماماً كما في submitLeaveRequest)
-        let profileImage = '';
-        if (file) {
-            // تحقق من حجم الصورة (حد أقصى 2 ميجابايت)
-            if (file.size > 2 * 1024 * 1024) {
-                alert('حجم الصورة كبير جداً (الحد الأقصى 2 ميجابايت)');
-                return;
-            }
-            const reader = new FileReader();
-            profileImage = await new Promise((resolve) => {
-                reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(file);
-            });
-            console.log('📸 الصورة المحولة (base64):', profileImage.substring(0, 50) + '...');
-        }
+        const payload = { name, parentEmail, parentName, parentPhone, address };
 
-        // ✅ إرسال البيانات مع اسم الحقل الصحيح (profileImage)
-        const payload = {
-            name,
-            parentEmail,
-            parentName,
-            parentPhone,
-            address,
-            profileImage  // أو جرب "image" إذا كان الخادم يتوقع ذلك
-        };
-
-        // ✅ لا نرسل studentId، نترك الخادم يولدها تلقائياً
         const res = await fetchWithAuth('/api/students', {
             method: 'POST',
             body: JSON.stringify(payload)
         });
 
-        const text = await res.text();
-        console.log('📨 استجابة الخادم (إضافة):', text);
-
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('استجابة غير صالحة: ' + text);
-        }
-
         if (!res.ok) {
-            throw new Error(data.message || data.msg || 'فشل الإضافة');
+            const error = await res.json();
+            throw new Error(error.message || error.msg || 'فشل الإضافة');
         }
 
         // تفريغ الحقول
@@ -1602,7 +1534,6 @@ async function adminAddStudent() {
         document.getElementById('adminParentName').value = '';
         document.getElementById('adminParentPhone').value = '';
         document.getElementById('adminAddress').value = '';
-        if (fileInput) fileInput.value = '';
 
         loadAdminStudents();
         addLog('', new Date(), 'adminLogContainer', 'attendance.student_added', { name });
