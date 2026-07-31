@@ -415,7 +415,7 @@ socket.on('status-changed', (data) => {
             const now = new Date();
             const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
             if (diffHours > 0.5) {
-                correctedDate = new Date(correctedDate.getTime();
+                correctedDate = new Date(correctedDate.getTime());
             }
         }
         
@@ -1034,7 +1034,7 @@ async function loadAdminNotifications() {
                 const now = new Date();
                 const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
                 if (diffHours > 0.5) {
-                    correctedDate = new Date(correctedDate.getTime();
+                    correctedDate = new Date(correctedDate.getTime());
                 }
             }
             addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', correctedDate, 'adminLogContainer');
@@ -1184,7 +1184,7 @@ function addNotificationToUI(message, createdAt, isRead = false, id = null) {
     const now = new Date();
     const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
     if (diffHours > 0.5) {
-        correctedDate = new Date(correctedDate.getTime();
+        correctedDate = new Date(correctedDate.getTime());
     }
     
     const time = formatFullTime(correctedDate);
@@ -1586,7 +1586,7 @@ function addLog(message, date, containerId, key = null, params = {}) {
         const diffHours = (correctedDate.getTime() - now.getTime()) / (60 * 60 * 1000);
         // إذا كان الفرق أكبر من 30 دقيقة (أي متقدماً بساعة)، نطرح ساعة
         if (diffHours > 0.5) {
-            correctedDate = new Date(correctedDate.getTime();
+            correctedDate = new Date(correctedDate.getTime());
         }
     }
     
