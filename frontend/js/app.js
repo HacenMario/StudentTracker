@@ -389,9 +389,9 @@ function showParentDashboard() {
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
     connectSocket();
-    loadParentStudents(); // ✅ هذه الدالة غير متزامنة (async)
-    // ❌ لا تستدعي fillLeaveStudents() هنا مباشرةً
-    // بدلاً من ذلك، سيتم استدعاؤها تلقائياً بعد تحميل البيانات
+    loadParentStudents();
+    loadParentChildren();
+    setupParentMessageForm();
     loadParentLogs();
     loadParentNotifications();
 }
@@ -3061,6 +3061,111 @@ async function initNotifications() {
         btn.disabled = false;
         btn.innerText = '🔔 تفعيل الإشعارات';
     });
+}
+
+// ==========================================
+// دوال ولي الأمر الجديدة (إرسال رسائل) - إضافة مستقلة
+// ==========================================
+
+// 1. جلب قائمة الأبناء وتعبئة القائمة المنسدلة
+async function loadParentChildren() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch(API_BASE_URL + '/api/parent/my-children', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('فشل في جلب الأبناء');
+        const students = await response.json();
+
+        const select = document.getElementById('parentStudentSelect');
+        if (select) {
+            select.innerHTML = '<option value="">-- اختر الطالب --</option>';
+            students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student._id;
+                option.textContent = student.name;
+                select.appendChild(option);
+            });
+        }
+
+        // تخزين الطلاب في localStorage للاستخدامات الأخرى (مثل الإجازات)
+        localStorage.setItem('parentStudents', JSON.stringify(students));
+
+    } catch (error) {
+        console.error('خطأ في تحميل الأبناء:', error);
+    }
+}
+
+// 2. معالجة إرسال رسالة ولي الأمر
+function setupParentMessageForm() {
+    const form = document.getElementById('parentMessageForm');
+    const alertDiv = document.getElementById('parentMessageAlert');
+    if (!form || !alertDiv) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const studentId = document.getElementById('parentStudentSelect').value;
+        const subject = document.getElementById('parentSubjectInput').value.trim();
+        const message = document.getElementById('parentMessageInput').value.trim();
+        const token = localStorage.getItem('token');
+
+        if (!studentId) {
+            showParentAlert('الرجاء اختيار الطالب.', 'error');
+            return;
+        }
+        if (!message) {
+            showParentAlert('الرجاء كتابة نص الرسالة.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('parentSendMessageBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'جاري الإرسال...';
+        }
+
+        try {
+            const response = await fetch(API_BASE_URL + '/api/parent/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ studentId, subject, message })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                showParentAlert('✅ تم إرسال رسالتك بنجاح!', 'success');
+                form.reset();
+                document.getElementById('parentStudentSelect').value = '';
+            } else {
+                showParentAlert(`❌ فشل الإرسال: ${data.msg || 'خطأ غير معروف'}`, 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            showParentAlert('❌ حدث خطأ في الاتصال بالخادم.', 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'إرسال الرسالة';
+            }
+        }
+    });
+
+    function showParentAlert(text, type) {
+        alertDiv.textContent = text;
+        alertDiv.className = 'alert-msg-form';
+        alertDiv.classList.add(type === 'success' ? 'alert-success-form' : 'alert-error-form');
+        clearTimeout(window.parentAlertTimeout);
+        window.parentAlertTimeout = setTimeout(() => {
+            alertDiv.className = 'alert-msg-form';
+            alertDiv.textContent = '';
+        }, 6000);
+    }
 }
 
 // ==========================================
