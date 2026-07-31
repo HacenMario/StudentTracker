@@ -422,20 +422,15 @@ socket.on('status-changed', (data) => {
             status: statusText 
         });
         
-        // ✅ تصحيح الوقت (طرح ساعة إذا كان متقدماً)
-        let correctedDate = new Date();
-        if (!isNaN(correctedDate.getTime())) {
-            const now = new Date();
-        
-        // ✅ إضافة السجل إلى adminLogs
-        const logEntry = {
-            message: displayMessage,
-            time: formatFullTime(correctedDate),
-            date: correctedDate,
-            key: 'attendance.student_became',
-            params: { name: data.student.name, status: statusText }
-        };
-        adminLogs.unshift(logEntry);
+     const correctedDate = new Date();
+    const logEntry = {
+        message: displayMessage,
+        time: formatFullTime(correctedDate),
+        date: correctedDate,
+        key: 'attendance.student_became',
+        params: { name: data.student.name, status: statusText }
+    };
+    adminLogs.unshift(logEntry);
         
         // ✅ إعادة عرض سجل المدير
         renderAdminLogs(adminShowOldLogs);
@@ -1035,14 +1030,10 @@ async function loadAdminNotifications() {
         const res = await fetchWithAuth('/api/notifications');
         if (!res.ok) throw new Error('فشل جلب الإشعارات');
         const notifications = await res.json();
-        notifications.forEach(n => {
-            // ✅ تصحيح الوقت عند إضافة الإشعار
-            let correctedDate = new Date(n.createdAt);
-            if (!isNaN(correctedDate.getTime())) {
-                const now = new Date();
-
-            addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', correctedDate, 'adminLogContainer');
-        });
+notifications.forEach(n => {
+    const correctedDate = new Date(n.createdAt);
+    addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', correctedDate, 'adminLogContainer');
+});
     } catch (err) {
         console.error(err);
     }
