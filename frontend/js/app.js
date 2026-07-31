@@ -389,7 +389,7 @@ function showParentDashboard() {
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
     
-    // ✅ تحديث currentUser من localStorage
+    // ✅ جلب بيانات ولي الأمر من localStorage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
         try {
@@ -397,20 +397,16 @@ function showParentDashboard() {
         } catch(e) {}
     }
     
-    // ✅ عرض المعلومات مع احتياطي
-    const name = currentUser?.name || 'غير معروف';
-    const email = currentUser?.email || 'غير معروف';
-    // محاولة جلب رقم الهاتف: من currentUser أولاً، ثم من بيانات الـ localStorage، ثم من الطلاب المرتبطين (إذا وجد)
-    let phone = currentUser?.phone || 'غير معروف';
+    // ✅ عرض الاسم والبريد من currentUser
+    document.getElementById('parentNameDisplay').textContent = currentUser?.name || 'غير معروف';
+    document.getElementById('parentEmailDisplay').textContent = currentUser?.email || 'غير معروف';
     
-    // إذا كان الهاتف غير معروف، قد يكون مخزناً في حقل آخر أو يمكن جلبها من API
-    if (phone === 'غير معروف' && currentUser?.students && currentUser.students.length > 0) {
-        // محاولة جلب هاتف من أول طالب (قد يكون مخزناً في parentPhone)
-        // لكن الأفضل طلب تحديث من الخادم
+    // ✅ استخراج رقم الهاتف من الطلاب المرتبطين (إذا وجدوا)
+    const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
+    let phone = 'غير معروف';
+    if (students.length > 0 && students[0].parentPhone) {
+        phone = students[0].parentPhone;
     }
-    
-    document.getElementById('parentNameDisplay').textContent = name;
-    document.getElementById('parentEmailDisplay').textContent = email;
     document.getElementById('parentPhoneDisplay').textContent = phone;
     
     connectSocket();
@@ -523,22 +519,20 @@ socket.on('status-changed', (data) => {
 // 7. دوال API مع التوكن
 // ==========================================
 function fetchWithAuth(url, options = {}) {
-    // استخدام التوكن من localStorage إذا لم يكن موجوداً
     if (!token) {
         token = localStorage.getItem('token');
     }
     
-    const headers = {};
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
+    const headers = {
+        'Authorization': token ? 'Bearer ' + token : '',
+    };
     
-    // إذا كانت البيانات FormData، لا نضبط Content-Type ونترك المتصفح يضبطه
+    // ✅ إذا لم يكن هناك جسم أو كان FormData، نترك Content-Type للمتصفح
     if (!options.isFormData) {
         headers['Content-Type'] = 'application/json';
     }
     
-    // دمج الهيدرز الأخرى مع إزالة Content-Type إذا كان FormData
+    // إذا كان options.body من نوع FormData، نحذف Content-Type
     const finalHeaders = { ...headers, ...options.headers };
     if (options.isFormData) {
         delete finalHeaders['Content-Type'];
@@ -1430,34 +1424,32 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     if (!confirmed) return;
 
     try {
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('parentName', parentName);
-        formData.append('parentPhone', parentPhone);
-        formData.append('parentEmail', parentEmail);
-        formData.append('address', address);
+        // ✅ تحويل الصورة إلى base64 إذا وجدت
+        let profileImage = '';
         if (imageFile) {
-            formData.append('profileImage', imageFile);
+            const reader = new FileReader();
+            profileImage = await new Promise((resolve) => {
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(imageFile);
+            });
         }
 
+        // ✅ إرسال البيانات كـ JSON
         const res = await fetchWithAuth('/api/students/' + id, {
             method: 'PUT',
-            body: formData,
-            isFormData: true
+            body: JSON.stringify({
+                name,
+                parentName,
+                parentPhone,
+                parentEmail,
+                address,
+                profileImage // سلسلة base64 (إذا كانت فارغة، قد لا نرسلها)
+            })
         });
 
-        const text = await res.text();
-        console.log('استجابة التعديل:', text);
-        
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('استجابة غير صالحة: ' + text);
-        }
-
         if (!res.ok) {
-            throw new Error(data.message || data.msg || 'فشل التعديل');
+            const error = await res.json();
+            throw new Error(error.message || error.msg || 'فشل التعديل');
         }
 
         alert('✅ تم تعديل معلومات الطالب بنجاح');
@@ -1535,35 +1527,32 @@ async function adminAddStudent() {
     if (!confirmed) return;
 
     try {
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('parentEmail', parentEmail);
-        formData.append('parentName', parentName);
-        formData.append('parentPhone', parentPhone);
-        formData.append('address', address);
+        // ✅ تحويل الصورة إلى base64 إذا وجدت
+        let profileImage = '';
         if (imageFile) {
-            formData.append('profileImage', imageFile); // تأكد من أن الاسم يتطابق مع الخادم
+            const reader = new FileReader();
+            profileImage = await new Promise((resolve) => {
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(imageFile);
+            });
         }
 
+        // ✅ إرسال البيانات كـ JSON
         const res = await fetchWithAuth('/api/students', {
             method: 'POST',
-            body: formData,
-            isFormData: true
+            body: JSON.stringify({
+                name,
+                parentEmail,
+                parentName,
+                parentPhone,
+                address,
+                profileImage // سلسلة base64
+            })
         });
 
-        // قراءة الاستجابة كنص لتفادي مشاكل JSON
-        const text = await res.text();
-        console.log('استجابة الخادم:', text);
-        
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('استجابة غير صالحة من الخادم: ' + text);
-        }
-
         if (!res.ok) {
-            throw new Error(data.message || data.msg || 'فشل الإضافة');
+            const error = await res.json();
+            throw new Error(error.message || error.msg || 'فشل الإضافة');
         }
 
         // تفريغ الحقول
@@ -3188,9 +3177,7 @@ async function loadParentChildren() {
             // إنشاء بطاقة الطالب (مع الصورة)
             const card = document.createElement('div');
             card.className = 'student-card';
-const imageUrl = student.profileImage 
-    ? (student.profileImage.startsWith('http') ? student.profileImage : API_BASE_URL + student.profileImage)
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
+            const imageUrl = student.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
             card.innerHTML = `
                 <img src="${imageUrl}" alt="${student.name}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true'" />
                 <h4>${student.name}</h4>
