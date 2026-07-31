@@ -1298,13 +1298,15 @@ function renderStudents(students, containerId, showAdminControls) {
     }
     let html = '';
     students.forEach(s => {
-        // ✅ استخدام الصورة المخزنة أو الافتراضية
+        // ✅ عرض الصورة - استخدم الصورة المخزنة (base64) أو الصورة الافتراضية
         let imageUrl = s.profileImage && s.profileImage.trim() !== '' 
             ? s.profileImage 
             : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
 
-        // ✅ استخدام formatFullTime مع الإزاحة الثابتة
-        const lastUpdateStr = formatFullTime(s.lastUpdate);
+        // ✅ إصلاح الوقت: إضافة ساعة واحدة إلى lastUpdate
+        const lastUpdateDate = new Date(s.lastUpdate);
+        lastUpdateDate.setHours(lastUpdateDate.getHours() + 1);
+        const lastUpdateStr = formatFullTime(lastUpdateDate);
 
         const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
         const statusClass = s.isInside ? 'inside' : 'outside';
@@ -1432,6 +1434,10 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     try {
         let profileImage = '';
         if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                alert('حجم الصورة كبير جداً (الحد الأقصى 2 ميجابايت)');
+                return;
+            }
             const reader = new FileReader();
             profileImage = await new Promise((resolve) => {
                 reader.onload = (e) => resolve(e.target.result);
@@ -1544,8 +1550,14 @@ async function adminAddStudent() {
     if (!confirmed) return;
 
     try {
+        // ✅ تحويل الصورة إلى base64 (تماماً كما في submitLeaveRequest)
         let profileImage = '';
         if (file) {
+            // تحقق من حجم الصورة (حد أقصى 2 ميجابايت)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('حجم الصورة كبير جداً (الحد الأقصى 2 ميجابايت)');
+                return;
+            }
             const reader = new FileReader();
             profileImage = await new Promise((resolve) => {
                 reader.onload = (e) => resolve(e.target.result);
@@ -1554,15 +1566,17 @@ async function adminAddStudent() {
             console.log('📸 الصورة المحولة (base64):', profileImage.substring(0, 50) + '...');
         }
 
+        // ✅ إرسال البيانات مع اسم الحقل الصحيح (profileImage)
         const payload = {
             name,
             parentEmail,
             parentName,
             parentPhone,
             address,
-            profileImage
+            profileImage  // أو جرب "image" إذا كان الخادم يتوقع ذلك
         };
 
+        // ✅ لا نرسل studentId، نترك الخادم يولدها تلقائياً
         const res = await fetchWithAuth('/api/students', {
             method: 'POST',
             body: JSON.stringify(payload)
@@ -3176,6 +3190,7 @@ async function loadParentChildren() {
         });
         if (!response.ok) throw new Error('فشل في جلب الأبناء');
         const students = await response.json();
+        console.log('👨‍👩‍👦 بيانات الأبناء:', students);
 
         const container = document.getElementById('parentStudentsList');
         if (!container) return;
@@ -3199,6 +3214,7 @@ async function loadParentChildren() {
                 select.appendChild(option);
             }
 
+            // ✅ عرض الصورة
             let imageUrl = student.profileImage && student.profileImage.trim() !== '' 
                 ? student.profileImage 
                 : `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
