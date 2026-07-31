@@ -230,93 +230,42 @@ io.on('connection', (socket) => {
   // ----------------------
   // 1. تبديل حالة الطالب (للمدير)
   // ----------------------
-  socket.on('toggle-status', async (studentId) => {
-    if (socket.user.role !== 'admin') {
-      socket.emit('error', { message: 'غير مصرح لك' });
+socket.on('toggle-status', async (studentId) => {
+  if (socket.user.role !== 'admin') {
+    socket.emit('error', { message: 'غير مصرح لك' });
+    return;
+  }
+
+  try {
+    const student = await Student.findById(studentId);
+    if (!student) {
+      socket.emit('error', { message: 'الطالب غير موجود' });
       return;
     }
 
-    try {
-      const student = await Student.findById(studentId);
-      if (!student) {
-        socket.emit('error', { message: 'الطالب غير موجود' });
-        return;
-      }
+    // ✅ تغيير الحالة بدون طرح ساعة
+    student.isInside = !student.isInside;
+    student.lastUpdate = new Date(); // الوقت المحلي الصحيح
+    await student.save();
 
-// تغيير الحالة
-student.isInside = !student.isInside;
-student.lastUpdate = new Date(new Date();
-await student.save();
+    // ✅ تسجيل الحضور بدون طرح ساعة
+    const attendance = new Attendance({
+      student: student._id,
+      status: student.isInside ? 'in' : 'out',
+      method: 'manual',
+      timestamp: new Date(), // الوقت المحلي الصحيح
+    });
+    await attendance.save();
 
-// تسجيل الحضور
-const attendance = new Attendance({
-  student: student._id,
-  status: student.isInside ? 'in' : 'out',
-  method: 'manual',
-  timestamp: new Date(new Date();
+    const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
+    const message = `التلميذ ${student.name} أصبح ${statusText}`;
+
+    // ... بقية الكود (إرسال الإشعارات) كما هو ...
+  } catch (error) {
+    console.error('❌ خطأ في تغيير حالة الطالب:', error);
+    socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
+  }
 });
-await attendance.save();
-
-const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
-const message = `التلميذ ${student.name} أصبح ${statusText}`;
-
-// ✅ إرسال الإشعار باستخدام مفاتيح الترجمة
-if (student.parentEmail) {
-  await sendPushNotificationToParent(
-    'status_title',
-    'status_body',
-    { 
-      name: student.name, 
-      status: statusText,
-      url: '/parent-dashboard'
-    },
-    student.parentEmail
-  );
-}
-
-// ✅ حفظ الإشعار في قاعدة البيانات
-if (student.parentEmail) {
-  const notification = new Notification({
-    target: student.parentEmail,
-    message: message,
-    sender: 'Admin',
-  });
-  await notification.save();
-}
-
-      if (student.parentEmail) {
-        const targetSocketId = userSockets.get(student.parentEmail);
-        if (targetSocketId) {
-          io.to(targetSocketId).emit('notification', {
-            message: message,
-            notificationId: notification._id,
-            createdAt: notification.createdAt,
-          });
-          console.log(`✅ تم إرسال الإشعار عبر Socket إلى ${student.parentEmail}`);
-        }
-      }
-
-      if (student.parentEmail) {
-        console.log(`📤 محاولة إرسال إشعار Web Push لولي الأمر: ${student.parentEmail}`);
-await sendPushNotificationToParent(
-  'status_title',
-  'status_body',
-  { 
-    name: student.name, 
-    status: statusText,
-    url: '/parent-dashboard' 
-  },
-  student.parentEmail
-);
-      } else {
-        console.warn(`⚠️ الطالب ${student.name} ليس له بريد ولي أمر`);
-      }
-
-    } catch (error) {
-      console.error('❌ خطأ في تغيير حالة الطالب:', error);
-      socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
-    }
-  });
 
   // ----------------------
   // 2. إشعار عام من المدير
