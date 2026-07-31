@@ -1559,7 +1559,7 @@ function addLog(message, date, containerId, key = null, params = {}) {
 
     // ✅ فقط لسجل ولي الأمر نضيف ساعة للعرض
     if (containerId === 'parentLogContainer') {
-        displayDate.setHours(displayDate.getHours() + 1);
+        displayDate.setHours(displayDate.getHours());
     }
 
     const time = formatFullTime(displayDate);
