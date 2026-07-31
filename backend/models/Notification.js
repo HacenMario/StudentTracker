@@ -10,12 +10,27 @@ const NotificationSchema = new mongoose.Schema({
   target: {
     type: String,
     required: true,
-    index: true, // لتسريع البحث
+    index: true,
   },
   // محتوى الرسالة
   message: {
     type: String,
     required: true,
+  },
+  // ✅ الحقول الجديدة لدعم رسائل أولياء الأمور
+  subject: {
+    type: String,
+    default: '',
+  },
+  senderRole: {
+    type: String,
+    enum: ['admin', 'teacher', 'parent'],
+    default: 'admin',
+  },
+  parentStudentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student',
+    default: null,
   },
   // هل تمت قراءته؟
   isRead: {
