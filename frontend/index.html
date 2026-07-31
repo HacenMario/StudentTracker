@@ -278,15 +278,12 @@
     <button id="toggleAddStudentBtn" class="btn-toggle-form">
         <i class="fas fa-plus-circle"></i> <span data-i18n="student.add_new">إضافة طالب جديد</span>
     </button>
-<div id="addStudentForm" style="display:none;" class="add-student-form">
-    <div class="form-grid">
+"form-grid">
         <input type="text" id="adminStudentName" placeholder="اسم التلميذ" data-i18n="student.name">
         <input type="email" id="adminParentEmail" placeholder="بريد ولي الأمر" data-i18n="student.parent_email">
         <input type="text" id="adminParentName" placeholder="اسم ولي الأمر" data-i18n="student.parent_name">
         <input type="text" id="adminParentPhone" placeholder="هاتف ولي الأمر" data-i18n="student.parent_phone">
         <input type="text" id="adminAddress" placeholder="العنوان (اختياري)" data-i18n="student.address">
-        <!-- ✅ إضافة حقل تحميل الصورة -->
-        <input type="file" id="adminStudentImage" accept="image/*" style="grid-column:1/-1; padding:8px; border:2px solid #e2eaf2; border-radius:12px;">
         <button id="adminAddBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-i18n="student.save">حفظ</span></button>
     </div>
 </div>
@@ -639,8 +636,6 @@
             <input type="text" id="editParentPhone" placeholder="هاتف ولي الأمر" data-i18n="student.parent_phone">
             <input type="email" id="editParentEmail" placeholder="بريد ولي الأمر" data-i18n="student.parent_email">
             <input type="text" id="editAddress" placeholder="العنوان" style="grid-column: 1 / -1;" data-i18n="student.address">
-            <!-- ✅ إضافة حقل تحميل الصورة -->
-            <input type="file" id="editStudentImage" accept="image/*" style="grid-column:1/-1; padding:8px; border:2px solid #e2eaf2; border-radius:12px;">
         </div>
         <div style="text-align:center; margin-top:15px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
             <button id="saveEditStudentBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-i18n="student.save">حفظ التعديلات</span></button>
