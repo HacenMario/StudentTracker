@@ -410,26 +410,32 @@ socket.on('status-changed', (data) => {
 
     if (currentUser.role === 'admin') {
         loadAdminStudents();
-        const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
-        const displayMessage = translate('attendance.student_became', { 
-            name: data.student.name, 
-            status: statusText 
-        });
+        const statusText = data.student?.isInside ? translate('student.inside') : translate('student.outside');
+        const displayMessage = data.student 
+            ? translate('attendance.student_became', { name: data.student.name, status: statusText })
+            : data.message || translate('attendance.status_updated');
 
-        // ✅ إنشاء السجل بالوقت الحالي (بدون تصحيح)
         const correctedDate = new Date();
         const logEntry = {
             message: displayMessage,
             time: formatFullTime(correctedDate),
             date: correctedDate,
-            key: 'attendance.student_became',
-            params: { name: data.student.name, status: statusText }
+            key: data.student ? 'attendance.student_became' : null,
+            params: data.student ? { name: data.student.name, status: statusText } : {}
         };
         adminLogs.unshift(logEntry);
         renderAdminLogs(adminShowOldLogs);
         loadAdminLogs();
     } else {
-        // التحقق من أن الإشعار يخص ولي الأمر الحالي
+        // ✅ معالجة التغيير الجماعي (isBulk)
+        if (data.isBulk) {
+            // إعادة تحميل جميع بيانات الأبناء وسجل الحضور
+            loadParentStudents(); // هذه الدالة تقوم بتحديث parentLogs
+            showBrowserNotification(translate('notification.title'), data.message || 'تم تحديث حالة الطلاب');
+            return;
+        }
+
+        // التحقق من أن الإشعار يخص ولي الأمر الحالي (للتغييرات الفردية)
         if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
             loadParentStudents();
             const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
