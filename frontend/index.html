@@ -378,6 +378,41 @@
 
     <div id="parentStudentsList" class="students-grid"></div>
 
+    <!-- ========================================== -->
+<!-- بطاقة معلومات ولي الأمر (جديدة) -->
+<!-- ========================================== -->
+<div class="parent-info-card" id="parentInfoCard">
+    <h3>👋 مرحباً، <span id="parentNameDisplay">...</span></h3>
+    <p>📧 البريد الإلكتروني: <span id="parentEmailDisplay">...</span></p>
+    <p>📞 رقم الهاتف: <span id="parentPhoneDisplay">...</span></p>
+    <span class="badge-parent">👨‍👩‍👦 ولي أمر</span>
+</div>
+
+<!-- ========================================== -->
+<!-- نموذج إرسال رسالة للمدرسة (جديد) -->
+<!-- ========================================== -->
+<div class="message-form-card">
+    <h4>✉️ إرسال رسالة إلى المدرسة</h4>
+    <div id="parentMessageAlert" class="alert-msg-form"></div>
+    <form id="parentMessageForm">
+        <div class="form-group">
+            <label for="parentStudentSelect">الطالب المعني بالرسالة</label>
+            <select id="parentStudentSelect" required>
+                <option value="">-- اختر الطالب --</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="parentSubjectInput">الموضوع (اختياري)</label>
+            <input type="text" id="parentSubjectInput" placeholder="مثال: استفسار عن الحضور" />
+        </div>
+        <div class="form-group">
+            <label for="parentMessageInput">نص الرسالة</label>
+            <textarea id="parentMessageInput" placeholder="اكتب رسالتك هنا..." required></textarea>
+        </div>
+        <button type="submit" class="btn-submit-message" id="parentSendMessageBtn">إرسال الرسالة</button>
+    </form>
+</div>
+
     <!-- سجل دخول/خروج أبنائي -->
     <div class="log-section">
         <div class="log-header">
