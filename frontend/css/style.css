@@ -1610,8 +1610,9 @@ header h1 {
     font-weight: 600;
     color: #1a365d;
 }
+
 /* ==========================================
-   تحسينات إدارة العطل والإجازات
+   تحسينات إدارة العطل والإجازات (معزولة)
    ========================================== */
 
 .holidays-section {
@@ -1693,14 +1694,14 @@ header h1 {
     resize: vertical;
 }
 
-/* أزرار نموذج العطلة */
+/* أزرار نموذج العطلة - باستخدام بادئة holiday- */
 #holidayForm .form-actions {
     display: flex;
     gap: 12px;
     margin-top: 18px;
     flex-wrap: wrap;
 }
-#holidayForm .form-actions .btn-success {
+#holidayForm .form-actions .holiday-btn-save {
     background: linear-gradient(135deg, #27ae60, #1e8449);
     color: #fff;
     border: none;
@@ -1717,11 +1718,11 @@ header h1 {
     justify-content: center;
     min-width: 120px;
 }
-#holidayForm .form-actions .btn-success:hover {
+#holidayForm .form-actions .holiday-btn-save:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(39, 174, 96, 0.35);
 }
-#holidayForm .form-actions .btn-secondary {
+#holidayForm .form-actions .holiday-btn-cancel {
     background: #e2eaf2;
     color: #2d3748;
     border: none;
@@ -1738,7 +1739,7 @@ header h1 {
     justify-content: center;
     min-width: 100px;
 }
-#holidayForm .form-actions .btn-secondary:hover {
+#holidayForm .form-actions .holiday-btn-cancel:hover {
     background: #d0dae8;
     transform: translateY(-2px);
 }
@@ -1746,18 +1747,18 @@ header h1 {
 /* زر إضافة عطلة */
 #toggleHolidayFormBtn {
     background: linear-gradient(135deg, #e67e22, #d35400) !important;
-    color: #fff;
-    border: none;
-    padding: 10px 22px;
-    border-radius: 40px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+    color: #fff !important;
+    border: none !important;
+    padding: 10px 22px !important;
+    border-radius: 40px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: 0.3s !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3) !important;
 }
 #toggleHolidayFormBtn:hover {
     transform: translateY(-2px);
@@ -1774,7 +1775,7 @@ header h1 {
     margin-top: 10px;
     background: #ffffff;
 }
-#holidaysList .log-item {
+#holidaysList .holiday-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1784,19 +1785,19 @@ header h1 {
     border-bottom: 1px solid #f0f4fa;
     transition: 0.2s;
 }
-#holidaysList .log-item:last-child {
+#holidaysList .holiday-item:last-child {
     border-bottom: none;
 }
-#holidaysList .log-item:hover {
+#holidaysList .holiday-item:hover {
     background: #f8fcff;
 }
-#holidaysList .log-item .holiday-info {
+#holidaysList .holiday-item .holiday-info {
     display: flex;
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
 }
-#holidaysList .log-item .holiday-info .date-range {
+#holidaysList .holiday-item .holiday-info .date-range {
     font-weight: 500;
     color: #1a365d;
     background: #eef4fa;
@@ -1804,38 +1805,38 @@ header h1 {
     border-radius: 20px;
     font-size: 13px;
 }
-#holidaysList .log-item .holiday-info .holiday-name {
+#holidaysList .holiday-item .holiday-info .holiday-name {
     font-weight: 700;
     color: #1a365d;
     font-size: 15px;
 }
-#holidaysList .log-item .holiday-info .holiday-desc {
+#holidaysList .holiday-item .holiday-info .holiday-desc {
     color: #7b8b9e;
     font-size: 13px;
 }
-#holidaysList .log-item .holiday-status {
+#holidaysList .holiday-item .holiday-status {
     font-size: 13px;
     font-weight: 600;
     padding: 4px 14px;
     border-radius: 30px;
     display: inline-block;
 }
-#holidaysList .log-item .holiday-status.active {
+#holidaysList .holiday-item .holiday-status.active {
     background: #d4edda;
     color: #155724;
 }
-#holidaysList .log-item .holiday-status.inactive {
+#holidaysList .holiday-item .holiday-status.inactive {
     background: #f8d7da;
     color: #721c24;
 }
 
-/* أزرار التحكم في العطلة */
-#holidaysList .log-item .holiday-actions {
+/* أزرار التحكم في العطلة - باستخدام بادئة holiday- */
+#holidaysList .holiday-item .holiday-actions {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
 }
-#holidaysList .log-item .holiday-actions button {
+#holidaysList .holiday-item .holiday-actions button {
     border: none;
     padding: 6px 14px;
     border-radius: 30px;
@@ -1847,27 +1848,27 @@ header h1 {
     align-items: center;
     gap: 5px;
 }
-#holidaysList .log-item .holiday-actions .btn-toggle {
+#holidaysList .holiday-item .holiday-actions .holiday-btn-toggle {
     background: #f39c12;
     color: #fff;
 }
-#holidaysList .log-item .holiday-actions .btn-toggle:hover {
+#holidaysList .holiday-item .holiday-actions .holiday-btn-toggle:hover {
     background: #e08e0b;
     transform: scale(1.05);
 }
-#holidaysList .log-item .holiday-actions .btn-edit {
+#holidaysList .holiday-item .holiday-actions .holiday-btn-edit {
     background: #3498db;
     color: #fff;
 }
-#holidaysList .log-item .holiday-actions .btn-edit:hover {
+#holidaysList .holiday-item .holiday-actions .holiday-btn-edit:hover {
     background: #2e86c1;
     transform: scale(1.05);
 }
-#holidaysList .log-item .holiday-actions .btn-delete {
+#holidaysList .holiday-item .holiday-actions .holiday-btn-delete {
     background: #e74c3c;
     color: #fff;
 }
-#holidaysList .log-item .holiday-actions .btn-delete:hover {
+#holidaysList .holiday-item .holiday-actions .holiday-btn-delete:hover {
     background: #c0392b;
     transform: scale(1.05);
 }
@@ -1899,17 +1900,18 @@ header h1 {
     #holidayForm .form-actions {
         flex-direction: column;
     }
-    #holidayForm .form-actions .btn-success,
-    #holidayForm .form-actions .btn-secondary {
+    #holidayForm .form-actions .holiday-btn-save,
+    #holidayForm .form-actions .holiday-btn-cancel {
         flex: 1 1 auto;
         width: 100%;
     }
-    #holidaysList .log-item {
+    #holidaysList .holiday-item {
         flex-direction: column;
         align-items: stretch;
         gap: 10px;
     }
-    #holidaysList .log-item .holiday-actions {
+    #holidaysList .holiday-item .holiday-actions {
         justify-content: flex-start;
     }
 }
+
