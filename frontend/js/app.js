@@ -1256,7 +1256,7 @@ function renderStudents(students, containerId, showAdminControls) {
     students.forEach(s => {
         // ✅ إضافة ساعة واحدة إلى lastUpdate قبل التنسيق
         const lastUpdateDate = new Date(s.lastUpdate);
-        lastUpdateDate.setHours(lastUpdateDate.getHours());
+        lastUpdateDate.setHours(lastUpdateDate.getHours() +1);
         const lastUpdateStr = formatFullTime(lastUpdateDate);
 
         const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
