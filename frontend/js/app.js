@@ -1256,7 +1256,7 @@ function renderStudents(students, containerId, showAdminControls) {
     students.forEach(s => {
         // ✅ إضافة ساعة واحدة إلى lastUpdate قبل التنسيق
         const lastUpdateDate = new Date(s.lastUpdate);
-        lastUpdateDate.setHours(lastUpdateDate.getHours() + 1);
+        lastUpdateDate.setHours(lastUpdateDate.getHours());
         const lastUpdateStr = formatFullTime(lastUpdateDate);
 
         const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
@@ -1706,7 +1706,7 @@ async function loadAllAttendance(students) {
                 const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
                 
                 const timestampDate = new Date(r.timestamp);
-                timestampDate.setHours(timestampDate.getHours() + 1);
+                timestampDate.setHours(timestampDate.getHours());
                 const timeStr = formatFullTime(timestampDate);
                 
                 return {
@@ -1747,7 +1747,7 @@ async function loadAttendance(studentId) {
             const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
             
             const timestampDate = new Date(r.timestamp);
-            timestampDate.setHours(timestampDate.getHours() + 1);
+            timestampDate.setHours(timestampDate.getHours());
             const timeStr = formatFullTime(timestampDate);
             
             return {
