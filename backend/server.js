@@ -409,15 +409,16 @@ socket.on('toggle-all-status', async (data) => {
 
         for (const student of students) {
             student.isInside = newStatus;
-            // ✅ استخدام الوقت المعدل من العميل (منقوص منه ساعة)
-            student.lastUpdate = adjustedTime ? new Date(adjustedTime) : new Date();
+            // ✅ استخدام الوقت المرسل من العميل (بتوقيت UTC)
+            const now = adjustedTime ? new Date(adjustedTime) : new Date();
+            student.lastUpdate = now;
             await student.save();
 
             const attendance = new Attendance({
                 student: student._id,
                 status: newStatus ? 'in' : 'out',
                 method: 'manual',
-                timestamp: adjustedTime ? new Date(adjustedTime) : new Date(),
+                timestamp: now,
             });
             await attendance.save();
 
@@ -452,7 +453,7 @@ socket.on('toggle-all-status', async (data) => {
         socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
     }
 });
-
+  
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
     console.log(`🔴 عميل غير متصل: ${userEmail}`);
