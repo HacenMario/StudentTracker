@@ -37,10 +37,13 @@ const StudentSchema = new mongoose.Schema({
     trim: true,
     default: '',
   },
-  // ✅ الحقل الجديد: صورة التلميذ
+  // ✅ تم تعديل القيمة الافتراضية لتستخدم رابط ويب يعمل دائماً
   profileImage: {
     type: String,
-    default: '/uploads/students/default-avatar.png', // صورة افتراضية
+    default: function() {
+      // توليد رابط صورة رمزية تعتمد على اسم الطالب
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.name)}&background=4A90D9&color=fff&size=128&rounded=true`;
+    }
   },
   isInside: {
     type: Boolean,
