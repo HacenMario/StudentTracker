@@ -5,6 +5,8 @@ const API_BASE_URL = 'https://studenttracker-ib8y.onrender.com';
 const SOCKET_URL = API_BASE_URL;
 const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
 
+app.use('/uploads', express.static('public/uploads'));
+
 // ==========================================
 // 2. إدارة التوكن والمستخدم والمتغيرات العامة
 // ==========================================
