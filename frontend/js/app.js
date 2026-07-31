@@ -239,7 +239,7 @@ function formatFullTime(dateString) {
         return dateString;
     }
 
-    // ✅ عرض الوقت بتوقيت الجزائر (UTC+1)
+    // عرض الوقت بتوقيت الجزائر (UTC+1) بغض النظر عن توقيت المتصفح
     const options = {
         timeZone: 'Africa/Algiers',
         year: 'numeric',
@@ -407,52 +407,37 @@ function connectSocket() {
 
 socket.on('status-changed', (data) => {
     console.log('📢 استقبال حدث status-changed:', data);
-    console.log('👤 المستخدم الحالي:', currentUser);
-    console.log('📧 بريد ولي الأمر:', data.parentEmail);
-    console.log('📧 بريدي:', currentUser ? currentUser.email : 'غير متاح');
 
     if (currentUser.role === 'admin') {
-        // ✅ تحديث قائمة الطلاب
         loadAdminStudents();
-        
-        // ✅ إضافة السجل الجديد إلى adminLogs
         const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
         const displayMessage = translate('attendance.student_became', { 
             name: data.student.name, 
             status: statusText 
         });
-        
-     const correctedDate = new Date();
-    const logEntry = {
-        message: displayMessage,
-        time: formatFullTime(correctedDate),
-        date: correctedDate,
-        key: 'attendance.student_became',
-        params: { name: data.student.name, status: statusText }
-    };
-    adminLogs.unshift(logEntry);
-        
-        // ✅ إعادة عرض سجل المدير
+
+        // ✅ إنشاء السجل بالوقت الحالي (بدون تصحيح)
+        const correctedDate = new Date();
+        const logEntry = {
+            message: displayMessage,
+            time: formatFullTime(correctedDate),
+            date: correctedDate,
+            key: 'attendance.student_became',
+            params: { name: data.student.name, status: statusText }
+        };
+        adminLogs.unshift(logEntry);
         renderAdminLogs(adminShowOldLogs);
-        
-        // ✅ تحديث سجل الإشعارات (للإشعارات المخزنة)
         loadAdminLogs();
     } else {
-        // ✅ التحقق من أن الإشعار يخص ولي الأمر هذا
+        // التحقق من أن الإشعار يخص ولي الأمر الحالي
         if (data.parentEmail === currentUser.email || data.parentId === currentUser.id) {
-            console.log('✅ هذا الإشعار يخص ولي الأمر الحالي');
-            
-            // ✅ تحديث قائمة الطلاب
             loadParentStudents();
-            
-            // ✅ إضافة السجل الجديد مباشرة إلى parentLogs
             const statusText = data.student.isInside ? translate('student.inside') : translate('student.outside');
             const displayMessage = translate('attendance.student_became', { 
                 name: data.student.name, 
                 status: statusText 
             });
-            
-            // ✅ إضافة السجل الجديد (مع المفتاح للمستقبل)
+
             const logEntry = {
                 message: displayMessage,
                 time: formatFullTime(new Date()),
@@ -461,19 +446,13 @@ socket.on('status-changed', (data) => {
                 params: { name: data.student.name, status: statusText },
                 studentName: data.student.name
             };
-            
-            // ✅ إضافة إلى بداية المصفوفة (الأحدث أولاً)
             parentLogs.unshift(logEntry);
-            
-            // ✅ إعادة عرض السجلات
             renderParentLogs(parentShowOldLogs);
-            
-            // ✅ إظهار إشعار للمستخدم
             showBrowserNotification(translate('notification.title'), displayMessage);
         }
     }
 });
-
+    
     socket.on('notification', (data) => {
         if (currentUser.role === 'parent') {
             const newNotification = {
@@ -1030,10 +1009,11 @@ async function loadAdminNotifications() {
         const res = await fetchWithAuth('/api/notifications');
         if (!res.ok) throw new Error('فشل جلب الإشعارات');
         const notifications = await res.json();
-notifications.forEach(n => {
-    const correctedDate = new Date(n.createdAt);
-    addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', correctedDate, 'adminLogContainer');
-});
+        notifications.forEach(n => {
+            // ✅ استخدام التاريخ مباشرة بدون تصحيح
+            const correctedDate = new Date(n.createdAt);
+            addLog('📩 ' + n.message + ' (إلى: ' + n.target + ')', correctedDate, 'adminLogContainer');
+        });
     } catch (err) {
         console.error(err);
     }
@@ -1174,10 +1154,8 @@ function addNotificationToUI(message, createdAt, isRead = false, id = null) {
     const list = document.getElementById('notificationList');
     const li = document.createElement('li');
     
-    // ✅ تصحيح الوقت إذا كان متقدماً بساعة
-    let correctedDate = new Date(createdAt);
-    const now = new Date();
-    
+    // ✅ استخدام التاريخ مباشرة وعرضه عبر formatFullTime
+    const correctedDate = new Date(createdAt);
     const time = formatFullTime(correctedDate);
     li.textContent = message + ' (وقت: ' + time + ')';
     li.style.cssText = 'padding:10px 16px; margin:4px 0; border-radius:12px; transition:0.3s;';
@@ -1570,9 +1548,9 @@ function addLog(message, date, containerId, key = null, params = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // ✅ استخدم التاريخ كما هو (بدون تصحيح)
+    // استخدم التاريخ كما هو، معتمداً على formatFullTime للعرض الصحيح
     const logDate = date || new Date();
-    const time = formatFullTime(logDate); // ستستخدم التوقيت المحلي للجزائر
+    const time = formatFullTime(logDate);
 
     const logEntry = {
         message,
