@@ -278,17 +278,19 @@
     <button id="toggleAddStudentBtn" class="btn-toggle-form">
         <i class="fas fa-plus-circle"></i> <span data-i18n="student.add_new">إضافة طالب جديد</span>
     </button>
-    <div id="addStudentForm" style="display:none;" class="add-student-form">
-        <div class="form-grid">
-            <input type="text" id="adminStudentName" placeholder="اسم التلميذ" data-i18n="student.name">
-            <input type="email" id="adminParentEmail" placeholder="بريد ولي الأمر" data-i18n="student.parent_email">
-            <input type="text" id="adminParentName" placeholder="اسم ولي الأمر" data-i18n="student.parent_name">
-            <input type="text" id="adminParentPhone" placeholder="هاتف ولي الأمر" data-i18n="student.parent_phone">
-            <input type="text" id="adminAddress" placeholder="العنوان (اختياري)" data-i18n="student.address">
-            <button id="adminAddBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-i18n="student.save">حفظ</span></button>
-        </div>
+<div id="addStudentForm" style="display:none;" class="add-student-form">
+    <div class="form-grid">
+        <input type="text" id="adminStudentName" placeholder="اسم التلميذ" data-i18n="student.name">
+        <input type="email" id="adminParentEmail" placeholder="بريد ولي الأمر" data-i18n="student.parent_email">
+        <input type="text" id="adminParentName" placeholder="اسم ولي الأمر" data-i18n="student.parent_name">
+        <input type="text" id="adminParentPhone" placeholder="هاتف ولي الأمر" data-i18n="student.parent_phone">
+        <input type="text" id="adminAddress" placeholder="العنوان (اختياري)" data-i18n="student.address">
+        <!-- ✅ إضافة حقل تحميل الصورة -->
+        <input type="file" id="adminStudentImage" accept="image/*" style="grid-column:1/-1; padding:8px; border:2px solid #e2eaf2; border-radius:12px;">
+        <button id="adminAddBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-i18n="student.save">حفظ</span></button>
     </div>
-
+</div>
+    
     <!-- أزرار التغيير الجماعي -->
     <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap;">
         <button id="toggleAllInsideBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #27ae60, #1e8449);">
@@ -627,23 +629,25 @@
     </div>
 
     <!-- نافذة تعديل معلومات الطالب -->
-    <div id="editStudentModal" class="modal-overlay" style="display:none; z-index: 1000;">
-        <div class="modal-box" style="max-width: 600px; padding: 20px;">
-            <h3 style="text-align:center; margin-bottom:15px;" data-i18n="student.edit_title">✏️ تعديل معلومات الطالب</h3>
-            <input type="hidden" id="editStudentId">
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-                <input type="text" id="editName" placeholder="اسم التلميذ" data-i18n="student.name">
-                <input type="text" id="editParentName" placeholder="اسم ولي الأمر" data-i18n="student.parent_name">
-                <input type="text" id="editParentPhone" placeholder="هاتف ولي الأمر" data-i18n="student.parent_phone">
-                <input type="email" id="editParentEmail" placeholder="بريد ولي الأمر" data-i18n="student.parent_email">
-                <input type="text" id="editAddress" placeholder="العنوان" style="grid-column: 1 / -1;" data-i18n="student.address">
-            </div>
-            <div style="text-align:center; margin-top:15px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-                <button id="saveEditStudentBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-i18n="student.save">حفظ التعديلات</span></button>
-                <button id="closeEditStudentBtn" class="btn-secondary"><i class="fas fa-times"></i> <span data-i18n="student.cancel">إلغاء</span></button>
-            </div>
+<div id="editStudentModal" class="modal-overlay" style="display:none; z-index: 1000;">
+    <div class="modal-box" style="max-width: 600px; padding: 20px;">
+        <h3 style="text-align:center; margin-bottom:15px;" data-i18n="student.edit_title">✏️ تعديل معلومات الطالب</h3>
+        <input type="hidden" id="editStudentId">
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+            <input type="text" id="editName" placeholder="اسم التلميذ" data-i18n="student.name">
+            <input type="text" id="editParentName" placeholder="اسم ولي الأمر" data-i18n="student.parent_name">
+            <input type="text" id="editParentPhone" placeholder="هاتف ولي الأمر" data-i18n="student.parent_phone">
+            <input type="email" id="editParentEmail" placeholder="بريد ولي الأمر" data-i18n="student.parent_email">
+            <input type="text" id="editAddress" placeholder="العنوان" style="grid-column: 1 / -1;" data-i18n="student.address">
+            <!-- ✅ إضافة حقل تحميل الصورة -->
+            <input type="file" id="editStudentImage" accept="image/*" style="grid-column:1/-1; padding:8px; border:2px solid #e2eaf2; border-radius:12px;">
+        </div>
+        <div style="text-align:center; margin-top:15px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button id="saveEditStudentBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-i18n="student.save">حفظ التعديلات</span></button>
+            <button id="closeEditStudentBtn" class="btn-secondary"><i class="fas fa-times"></i> <span data-i18n="student.cancel">إلغاء</span></button>
         </div>
     </div>
+</div>
 
     <!-- نافذة التأكيد -->
     <div id="confirmModal" class="modal-overlay" style="display:none;">
