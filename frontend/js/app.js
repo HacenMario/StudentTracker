@@ -505,20 +505,23 @@ socket.on('status-changed', (data) => {
 // 7. دوال API مع التوكن
 // ==========================================
 function fetchWithAuth(url, options = {}) {
-    const headers = {
-        'Content-Type': 'application/json',
-    };
+    const headers = {};
     if (token) {
         headers['Authorization'] = 'Bearer ' + token;
-    } else {
-        console.warn('⚠️ fetchWithAuth: لا يوجد توكن');
-        return Promise.reject(new Error('لا يوجد توكن للمصادقة'));
     }
-
-    return fetch(API_BASE_URL + url, {
+    
+    // ✅ إذا كانت البيانات FormData، لا نضبط Content-Type
+    if (!options.isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+    
+    const fetchOptions = {
         ...options,
         headers: { ...headers, ...options.headers }
-    });
+    };
+    delete fetchOptions.isFormData; // إزالة الخاصية الإضافية
+    
+    return fetch(API_BASE_URL + url, fetchOptions);
 }
 
 // ==========================================
@@ -1387,6 +1390,7 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     const parentPhone = document.getElementById('editParentPhone').value.trim();
     const parentEmail = document.getElementById('editParentEmail').value.trim();
     const address = document.getElementById('editAddress').value.trim();
+    const imageFile = document.getElementById('editStudentImage').files[0];
 
     if (!name || !parentName || !parentPhone || !parentEmail) {
         alert(translate('common.error'));
@@ -1400,14 +1404,28 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     if (!confirmed) return;
 
     try {
+        // ✅ إنشاء FormData
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('parentName', parentName);
+        formData.append('parentPhone', parentPhone);
+        formData.append('parentEmail', parentEmail);
+        formData.append('address', address);
+        if (imageFile) {
+            formData.append('profileImage', imageFile);
+        }
+
         const res = await fetchWithAuth('/api/students/' + id, {
             method: 'PUT',
-            body: JSON.stringify({ name, parentName, parentPhone, parentEmail, address })
+            body: formData,
+            isFormData: true
         });
+        
         if (!res.ok) {
             const error = await res.json();
             throw new Error(error.message || 'فشل التعديل');
         }
+        
         alert('✅ تم تعديل معلومات الطالب بنجاح');
         document.getElementById('editStudentModal').style.display = 'none';
         loadAdminStudents();
@@ -1469,6 +1487,7 @@ async function adminAddStudent() {
     const parentName = document.getElementById('adminParentName').value.trim();
     const parentPhone = document.getElementById('adminParentPhone').value.trim();
     const address = document.getElementById('adminAddress').value.trim();
+    const imageFile = document.getElementById('adminStudentImage').files[0];
     
     if (!name || !parentEmail || !parentName || !parentPhone) {
         alert(translate('common.error') + ': ' + translate('student.add'));
@@ -1482,9 +1501,21 @@ async function adminAddStudent() {
     if (!confirmed) return;
 
     try {
+        // ✅ إنشاء FormData لإرسال البيانات والملف معاً
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('parentEmail', parentEmail);
+        formData.append('parentName', parentName);
+        formData.append('parentPhone', parentPhone);
+        formData.append('address', address);
+        if (imageFile) {
+            formData.append('profileImage', imageFile);
+        }
+
         const res = await fetchWithAuth('/api/students', {
             method: 'POST',
-            body: JSON.stringify({ name, parentEmail, parentName, parentPhone, address })
+            body: formData,
+            isFormData: true // ✅ إعلام الدالة بأنها FormData
         });
 
         if (res.ok) {
@@ -1494,14 +1525,11 @@ async function adminAddStudent() {
             document.getElementById('adminParentName').value = '';
             document.getElementById('adminParentPhone').value = '';
             document.getElementById('adminAddress').value = '';
+            document.getElementById('adminStudentImage').value = '';
             
-            // ✅ تحديث القائمة
             loadAdminStudents();
-            
-            // ✅ إضافة السجل باستخدام المفتاح (بدلاً من النص المترجم)
             addLog('', new Date(), 'adminLogContainer', 'attendance.student_added', { name });
             
-            // إخفاء النموذج
             document.getElementById('addStudentForm').style.display = 'none';
             document.getElementById('toggleAddStudentBtn').innerHTML = `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
         } else {
