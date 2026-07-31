@@ -388,12 +388,50 @@ function showParentDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
+
+    // ✅ جلب بيانات ولي الأمر من API مباشرة (من الطلاب المرتبطين به)
+    fetchParentInfo();
+
     connectSocket();
-    loadParentStudents();
-    loadParentChildren();
-    setupParentMessageForm();
+    loadParentStudents(); // تحميل قائمة الطلاب
     loadParentLogs();
     loadParentNotifications();
+    loadParentChildren(); // تعبئة القائمة المنسدلة
+    setupParentMessageForm();
+}
+
+// دالة جديدة لجلب معلومات ولي الأمر وعرضها
+async function fetchParentInfo() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        // جلب قائمة الطلاب من API (لأنها تحتوي على معلومات ولي الأمر)
+        const response = await fetch(API_BASE_URL + '/api/students', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('فشل في جلب بيانات الطلاب');
+        const students = await response.json();
+
+        // إذا كان هناك طلاب، نأخذ معلومات أول طالب (جميعهم لديهم نفس بيانات ولي الأمر)
+        if (students.length > 0) {
+            const firstStudent = students[0];
+            document.getElementById('parentNameDisplay').textContent = firstStudent.parentName || 'غير معروف';
+            document.getElementById('parentEmailDisplay').textContent = firstStudent.parentEmail || 'غير معروف';
+            document.getElementById('parentPhoneDisplay').textContent = firstStudent.parentPhone || 'غير معروف';
+        } else {
+            // إذا لم يكن هناك طلاب، نعرض رسالة
+            document.getElementById('parentNameDisplay').textContent = 'لا يوجد أبناء مسجلين';
+            document.getElementById('parentEmailDisplay').textContent = '---';
+            document.getElementById('parentPhoneDisplay').textContent = '---';
+        }
+    } catch (error) {
+        console.error('خطأ في جلب معلومات ولي الأمر:', error);
+        // عرض رسائل افتراضية في حال حدوث خطأ
+        document.getElementById('parentNameDisplay').textContent = 'حدث خطأ في التحميل';
+        document.getElementById('parentEmailDisplay').textContent = '---';
+        document.getElementById('parentPhoneDisplay').textContent = '---';
+    }
 }
 
 // ==========================================
