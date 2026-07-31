@@ -37,6 +37,11 @@ const StudentSchema = new mongoose.Schema({
     trim: true,
     default: '',
   },
+  // ✅ الحقل الجديد: صورة التلميذ
+  profileImage: {
+    type: String,
+    default: '/uploads/students/default-avatar.png', // صورة افتراضية
+  },
   isInside: {
     type: Boolean,
     default: false,
