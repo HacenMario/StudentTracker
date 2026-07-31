@@ -5,8 +5,6 @@ const API_BASE_URL = 'https://studenttracker-ib8y.onrender.com';
 const SOCKET_URL = API_BASE_URL;
 const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
 
-app.use('/uploads', express.static('public/uploads'));
-
 // ==========================================
 // 2. إدارة التوكن والمستخدم والمتغيرات العامة
 // ==========================================
@@ -391,11 +389,13 @@ function showParentDashboard() {
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
     connectSocket();
-    loadParentStudents(); // ✅ هذه الدالة غير متزامنة (async)
-    // ❌ لا تستدعي fillLeaveStudents() هنا مباشرةً
-    // بدلاً من ذلك، سيتم استدعاؤها تلقائياً بعد تحميل البيانات
+    loadParentStudents(); // تحميل الطلاب الأساسي
     loadParentLogs();
     loadParentNotifications();
+    
+    // ✅ استدعاء الدوال الجديدة لولي الأمر
+    loadParentChildren();       // جلب الأبناء مع الصور وتعبئة القائمة المنسدلة
+    setupParentMessageForm();   // ربط نموذج إرسال الرسالة
 }
 
 // ==========================================
@@ -3066,13 +3066,14 @@ async function loadParentChildren() {
     if (!token) return;
 
     try {
-        const response = await fetch('/api/parent/my-children', {
+        const response = await fetch(API_BASE_URL + '/api/parent/my-children', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('فشل في جلب الأبناء');
         const students = await response.json();
 
         const container = document.getElementById('parentStudentsList');
+        if (!container) return;
         container.innerHTML = ''; // مسح المحتوى السابق
 
         if (students.length === 0) {
@@ -3082,14 +3083,18 @@ async function loadParentChildren() {
 
         // تعبئة القائمة المنسدلة في نموذج الرسالة
         const select = document.getElementById('parentStudentSelect');
-        select.innerHTML = '<option value="">-- اختر الطالب --</option>';
+        if (select) {
+            select.innerHTML = '<option value="">-- اختر الطالب --</option>';
+        }
 
         students.forEach(student => {
             // إضافة خيار للقائمة المنسدلة
-            const option = document.createElement('option');
-            option.value = student._id;
-            option.textContent = student.name;
-            select.appendChild(option);
+            if (select) {
+                const option = document.createElement('option');
+                option.value = student._id;
+                option.textContent = student.name;
+                select.appendChild(option);
+            }
 
             // إنشاء بطاقة الطالب (مع الصورة)
             const card = document.createElement('div');
@@ -3106,7 +3111,10 @@ async function loadParentChildren() {
         });
     } catch (error) {
         console.error('خطأ في تحميل الأبناء:', error);
-        document.getElementById('parentStudentsList').innerHTML = `<p style="color:red;">حدث خطأ: ${error.message}</p>`;
+        const container = document.getElementById('parentStudentsList');
+        if (container) {
+            container.innerHTML = `<p style="color:red;">حدث خطأ: ${error.message}</p>`;
+        }
     }
 }
 
@@ -3114,6 +3122,7 @@ async function loadParentChildren() {
 function setupParentMessageForm() {
     const form = document.getElementById('parentMessageForm');
     const alertDiv = document.getElementById('parentMessageAlert');
+    if (!form || !alertDiv) return;
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -3133,11 +3142,13 @@ function setupParentMessageForm() {
         }
 
         const btn = document.getElementById('parentSendMessageBtn');
-        btn.disabled = true;
-        btn.textContent = 'جاري الإرسال...';
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'جاري الإرسال...';
+        }
 
         try {
-            const response = await fetch('/api/parent/send-message', {
+            const response = await fetch(API_BASE_URL + '/api/parent/send-message', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3158,8 +3169,10 @@ function setupParentMessageForm() {
             console.error(error);
             showParentAlert('❌ حدث خطأ في الاتصال بالخادم.', 'error');
         } finally {
-            btn.disabled = false;
-            btn.textContent = 'إرسال الرسالة';
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'إرسال الرسالة';
+            }
         }
     });
 
@@ -3173,15 +3186,6 @@ function setupParentMessageForm() {
             alertDiv.textContent = '';
         }, 6000);
     }
-}
-
-// 3. استدعاء الدوال عند ظهور لوحة ولي الأمر
-// (في مكان ما في app.js حيث يتم إظهار parentDashboard)
-// مثال: بعد تسجيل الدخول وعند عرض القسم:
-if (user.role === 'parent') {
-    document.getElementById('parentDashboard').style.display = 'block';
-    loadParentChildren();
-    setupParentMessageForm();
 }
 
 // ==========================================
