@@ -1268,9 +1268,7 @@ function renderStudents(students, containerId, showAdminControls) {
     let html = '';
     students.forEach(s => {
         // ✅ إضافة ساعة واحدة إلى lastUpdate قبل التنسيق
-        const lastUpdateDate = new Date(s.lastUpdate);
-        lastUpdateDate.setHours(lastUpdateDate.getHours() + 1);
-        const lastUpdateStr = formatFullTime(lastUpdateDate);
+       const lastUpdateStr = formatFullTime(s.lastUpdate);
 
         const statusText = translate(s.isInside ? 'student.inside' : 'student.outside');
         const statusClass = s.isInside ? 'inside' : 'outside';
@@ -1570,11 +1568,6 @@ function addLog(message, date, containerId, key = null, params = {}) {
     const originalDate = date || new Date();
     let displayDate = new Date(originalDate);
 
-    // ✅ فقط لسجل ولي الأمر نضيف ساعة للعرض
-    if (containerId === 'parentLogContainer') {
-        displayDate.setHours(displayDate.getHours() + 1);
-    }
-
     const time = formatFullTime(displayDate);
 
     const logEntry = {
@@ -1715,10 +1708,7 @@ async function loadAttendance(studentId) {
             const key = isEntry ? 'attendance.entry' : 'attendance.exit';
             const message = isEntry ? translate('attendance.entry') : translate('attendance.exit');
             
-            // إضافة ساعة إلى timestamp
-            const timestampDate = new Date(r.timestamp);
-            timestampDate.setHours(timestampDate.getHours() + 1);
-            const timeStr = formatFullTime(timestampDate);
+            const timeStr = formatFullTime(r.timestamp);
             
             return {
                 message: message,
