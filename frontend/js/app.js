@@ -451,10 +451,13 @@ async function fetchParentInfo() {
 
 // ✅ دالة جديدة لتحميل التنبيهات الذكية الخاصة بولي الأمر
 async function loadParentSmartAlerts(showOld = false) {
+    console.log('🔍 جاري تحميل التنبيهات الذكية لولي الأمر...');
     try {
         const res = await fetchWithAuth('/api/smart-alerts');
+        console.log('📨 استجابة الخادم:', res.status);
         if (!res.ok) throw new Error('فشل جلب التنبيهات');
         const alerts = await res.json();
+        console.log('📊 عدد التنبيهات:', alerts.length);
         renderSmartAlerts(alerts, 'parentSmartAlertsList', showOld);
     } catch (err) {
         console.warn('⚠️ لا توجد تنبيهات ذكية لعرضها:', err.message);
