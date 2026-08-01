@@ -18,6 +18,7 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
+let showOldSmartAlerts = false;
 
 // متغيرات الماسح الضوئي
 let html5QrCode = null;
@@ -370,6 +371,9 @@ function showAdminDashboard() {
     loadAdminStudents();
     loadAdminLogs();
     loadAdminNotifications();
+    loadSmartAlerts().then(alerts => {
+    renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+    });
     
     // ✅ ربط أحداث Socket للإجازات
     setupLeaveSocketEvents();
@@ -398,7 +402,7 @@ function showParentDashboard() {
     loadParentNotifications();
     loadParentChildren(); // تعبئة القائمة المنسدلة
     setupParentMessageForm();
-    loadParentSmartAlerts();
+    loadParentSmartAlerts(showOldSmartAlerts);
 }
 
 // دالة جديدة لجلب معلومات ولي الأمر وعرضها
@@ -436,12 +440,12 @@ async function fetchParentInfo() {
 }
 
 // ✅ دالة جديدة لتحميل التنبيهات الذكية الخاصة بولي الأمر
-async function loadParentSmartAlerts() {
+async function loadParentSmartAlerts(showOld = false) {
     try {
         const res = await fetchWithAuth('/api/smart-alerts');
         if (!res.ok) throw new Error('فشل جلب التنبيهات');
         const alerts = await res.json();
-        renderSmartAlerts(alerts, 'parentSmartAlertsList');
+        renderSmartAlerts(alerts, 'parentSmartAlertsList', showOld);
     } catch (err) {
         console.error('❌ خطأ في تحميل التنبيهات الذكية لولي الأمر:', err);
         const container = document.getElementById('parentSmartAlertsList');
@@ -2180,21 +2184,51 @@ async function runSmartAlerts() {
 }
 
 // عرض التنبيهات الذكية (للمدير)
-function renderSmartAlerts(alerts, containerId) {
+function renderSmartAlerts(alerts, containerId, showOld) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    // أزرار العرض/الإخفاء
+    const showBtn = document.getElementById(containerId === 'smartAlertsList' ? 'showOldSmartAlertsBtn' : 'parentShowOldSmartAlertsBtn');
+    const hideBtn = document.getElementById(containerId === 'smartAlertsList' ? 'hideOldSmartAlertsBtn' : 'parentHideOldSmartAlertsBtn');
+
     if (!alerts || alerts.length === 0) {
         container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
+        if (showBtn) showBtn.style.display = 'none';
+        if (hideBtn) hideBtn.style.display = 'none';
         return;
     }
 
+    // ترتيب تنازلي (الأحدث أولاً)
+    const sortedAlerts = [...alerts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    let alertsToShow = [];
+    let oldAlerts = [];
+
+    if (showOld) {
+        alertsToShow = sortedAlerts;
+        if (showBtn) showBtn.style.display = 'none';
+        if (hideBtn) hideBtn.style.display = 'inline-flex';
+    } else {
+        const recentCount = 5; // عدد التنبيهات الظاهرة
+        alertsToShow = sortedAlerts.slice(0, recentCount);
+        oldAlerts = sortedAlerts.slice(recentCount);
+
+        if (oldAlerts.length > 0) {
+            if (showBtn) showBtn.style.display = 'inline-flex';
+            if (hideBtn) hideBtn.style.display = 'none';
+        } else {
+            if (showBtn) showBtn.style.display = 'none';
+            if (hideBtn) hideBtn.style.display = 'none';
+        }
+    }
+
     let html = '';
-    alerts.forEach(alert => {
+    alertsToShow.forEach(alert => {
         const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
         const isRead = alert.isRead ? '✅' : '🆕';
         const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
-        
+
         html += `
             <div class="log-item" style="${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;">
                 <span>${typeIcon} ${alert.message}</span>
@@ -2202,7 +2236,45 @@ function renderSmartAlerts(alerts, containerId) {
             </div>
         `;
     });
+
     container.innerHTML = html;
+
+    // إذا كان showOld وعنده تنبيهات قديمة، أضف فاصل
+    if (showOld && oldAlerts.length > 0) {
+        const divider = document.createElement('div');
+        divider.className = 'log-item';
+        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
+        divider.textContent = translate('attendance.old_logs') || 'تنبيهات قديمة';
+        container.appendChild(divider);
+
+        oldAlerts.forEach(alert => {
+            const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
+            const isRead = alert.isRead ? '✅' : '🆕';
+            const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
+
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.style.cssText = `${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;`;
+            item.innerHTML = `
+                <span>${typeIcon} ${alert.message}</span>
+                <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
+            `;
+            container.appendChild(item);
+        });
+    }
+}
+
+function toggleOldSmartAlerts(show) {
+    showOldSmartAlerts = show;
+    // إعادة تحميل التنبيهات في كل من لوحة المدير وولي الأمر
+    if (document.getElementById('smartAlertsList')) {
+        loadSmartAlerts().then(alerts => {
+            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+        });
+    }
+    if (document.getElementById('parentSmartAlertsList')) {
+        loadParentSmartAlerts(showOldSmartAlerts);
+    }
 }
 
 // ==========================================
@@ -2226,7 +2298,7 @@ function setupSmartAlertEvents() {
             if (result.success) {
                 alert(translate('smart_alerts.run_success'));
                 const alerts = await loadSmartAlerts();
-                renderSmartAlerts(alerts, 'smartAlertsList');
+            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
             } else {
                 alert(result.message || translate('common.error'));
             }
@@ -2287,6 +2359,22 @@ function setupSmartAlertEvents() {
     } else {
         console.warn('⚠️ زر saveAlertRulesBtn غير موجود');
     }
+
+    // أزرار التنبيهات الذكية القديمة (للمدير)
+document.getElementById('showOldSmartAlertsBtn')?.addEventListener('click', function() {
+    toggleOldSmartAlerts(true);
+});
+document.getElementById('hideOldSmartAlertsBtn')?.addEventListener('click', function() {
+    toggleOldSmartAlerts(false);
+});
+
+// أزرار التنبيهات الذكية القديمة (لولي الأمر)
+document.getElementById('parentShowOldSmartAlertsBtn')?.addEventListener('click', function() {
+    toggleOldSmartAlerts(true);
+});
+document.getElementById('parentHideOldSmartAlertsBtn')?.addEventListener('click', function() {
+    toggleOldSmartAlerts(false);
+});
 
     // تحميل القواعد الحالية عند ظهور الصفحة
     loadAlertRules().then(rules => {
