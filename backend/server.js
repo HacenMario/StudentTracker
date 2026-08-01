@@ -14,7 +14,6 @@ const leaveRoutes = require('./routes/leaveRoutes');
 const { startSmartAlertScheduler } = require('./services/smartAlertScheduler');
 const holidayRoutes = require('./routes/holidayRoutes');
 const parentRoutes = require('./routes/parent');
-const SmartAlert = require('./models/SmartAlert');
 
 // استيراد النماذج
 const Student = require('./models/Student');
@@ -73,28 +72,6 @@ app.use('/api/leave-requests', leaveRoutes);
 app.use('/api/smart-alerts', smartAlertRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/parent', parentRoutes);
-
-// ==========================================
-// مسح جميع التنبيهات الذكية (للمدير فقط)
-// ==========================================
-app.delete('/api/smart-alerts/clear', auth, async (req, res) => {
-    try {
-        // تحقق من أن المستخدم مدير
-        if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
-            return res.status(403).json({ message: 'غير مصرح لك' });
-        }
-        // حذف جميع التنبيهات الذكية
-        const SmartAlert = require('./models/SmartAlert'); // تأكد من اسم النموذج
-        const result = await SmartAlert.deleteMany({});
-        res.json({
-            success: true,
-            message: `✅ تم حذف ${result.deletedCount} تنبيه ذكي بنجاح`
-        });
-    } catch (err) {
-        console.error('❌ خطأ في مسح التنبيهات الذكية:', err);
-        res.status(500).json({ message: 'حدث خطأ أثناء مسح التنبيهات' });
-    }
-});
 
 // ==========================================
 // ✅ نقاط نهاية ولي الأمر (للرسائل) - إضافة مستقلة
@@ -695,27 +672,6 @@ app.get('/api/test-holidays', auth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-});
-
-// ==========================================
-// مسح جميع التنبيهات الذكية (للمدير فقط)
-// ==========================================
-app.delete('/api/smart-alerts/clear', auth, async (req, res) => {
-    try {
-        // تحقق من أن المستخدم مدير
-        if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
-            return res.status(403).json({ message: 'غير مصرح لك' });
-        }
-        // حذف جميع التنبيهات الذكية (أو يمكنك حذف فقط التنبيهات غير المقروءة حسب رغبتك)
-        const result = await SmartAlert.deleteMany({});
-        res.json({ 
-            success: true, 
-            message: `✅ تم حذف ${result.deletedCount} تنبيه ذكي بنجاح` 
-        });
-    } catch (err) {
-        console.error('❌ خطأ في مسح التنبيهات الذكية:', err);
-        res.status(500).json({ message: 'حدث خطأ أثناء مسح التنبيهات' });
-    }
 });
 
 // ==========================================
