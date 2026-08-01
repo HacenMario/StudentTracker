@@ -18,6 +18,7 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
+let showOldSmartAlerts = false;
 
 // متغيرات الماسح الضوئي
 let html5QrCode = null;
@@ -3286,7 +3287,7 @@ async function clearAllSmartAlerts() {
         if (!res.ok) throw new Error('فشل مسح التنبيهات');
         const data = await res.json();
         alert(data.message || '✅ تم مسح جميع التنبيهات الذكية بنجاح');
-        // إعادة تحميل القائمة
+        // إعادة تحميل القائمة مع الحفاظ على حالة العرض الحالية
         const alerts = await loadSmartAlerts();
         renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
     } catch (err) {
