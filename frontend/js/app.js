@@ -389,17 +389,28 @@ function showParentDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
-
-    // ✅ جلب بيانات ولي الأمر من API مباشرة (من الطلاب المرتبطين به)
-    fetchParentInfo();
-
+    
+    // ✅ عرض معلومات ولي الأمر من localStorage
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    document.getElementById('parentNameDisplay').textContent = userData.name || 'غير معروف';
+    document.getElementById('parentEmailDisplay').textContent = userData.email || 'غير معروف';
+    
+    const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
+    let phone = 'غير معروف';
+    if (students.length > 0 && students[0].parentPhone) {
+        phone = students[0].parentPhone;
+    }
+    document.getElementById('parentPhoneDisplay').textContent = phone;
+    
     connectSocket();
-    loadParentStudents(); // تحميل قائمة الطلاب
+    loadParentStudents();      // تحميل الأبناء وسجل الحضور
     loadParentLogs();
     loadParentNotifications();
-    loadParentChildren(); // تعبئة القائمة المنسدلة
-    setupParentMessageForm();
-    loadParentSmartAlerts();
+    loadParentChildren();      // تعبئة قائمة الأبناء في نموذج الرسالة
+    setupParentMessageForm();  // ربط نموذج إرسال الرسالة
+    
+    // ✅ تحميل التنبيهات الذكية لولي الأمر
+    loadParentSmartAlerts(false);
 }
 
 // دالة جديدة لجلب معلومات ولي الأمر وعرضها
@@ -437,17 +448,21 @@ async function fetchParentInfo() {
 }
 
 // ✅ دالة جديدة لتحميل التنبيهات الذكية الخاصة بولي الأمر
-async function loadParentSmartAlerts() {
+async function loadParentSmartAlerts(showOld = false) {
     try {
         const res = await fetchWithAuth('/api/smart-alerts');
-        if (!res.ok) throw new Error('فشل جلب التنبيهات');
+        if (!res.ok) {
+            console.warn('⚠️ لا توجد تنبيهات ذكية لولي الأمر (status:', res.status, ')');
+            renderSmartAlerts([], 'parentSmartAlertsList', showOld);
+            return;
+        }
         const alerts = await res.json();
-        renderSmartAlerts(alerts, 'parentSmartAlertsList');
+        renderSmartAlerts(alerts, 'parentSmartAlertsList', showOld);
     } catch (err) {
-        console.error('❌ خطأ في تحميل التنبيهات الذكية لولي الأمر:', err);
+        console.warn('⚠️ لا توجد تنبيهات ذكية لعرضها:', err.message);
         const container = document.getElementById('parentSmartAlertsList');
         if (container) {
-            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
+            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">لا توجد تنبيهات ذكية</div>`;
         }
     }
 }
@@ -2181,21 +2196,60 @@ async function runSmartAlerts() {
 }
 
 // عرض التنبيهات الذكية (للمدير)
-function renderSmartAlerts(alerts, containerId) {
+function renderSmartAlerts(alerts, containerId, showOld) {
     const container = document.getElementById(containerId);
-    if (!container) return;
-
-    if (!alerts || alerts.length === 0) {
-        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
+    if (!container) {
+        console.warn('⚠️ الحاوية غير موجودة:', containerId);
         return;
     }
 
+    // تحديد الأزرار الخاصة بالحاوية
+    const showBtnId = containerId === 'smartAlertsList' ? 'showOldSmartAlertsBtn' : 'parentShowOldSmartAlertsBtn';
+    const hideBtnId = containerId === 'smartAlertsList' ? 'hideOldSmartAlertsBtn' : 'parentHideOldSmartAlertsBtn';
+    const showBtn = document.getElementById(showBtnId);
+    const hideBtn = document.getElementById(hideBtnId);
+
+    // إذا لم توجد تنبيهات
+    if (!alerts || alerts.length === 0) {
+        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
+        if (showBtn) showBtn.style.display = 'none';
+        if (hideBtn) hideBtn.style.display = 'none';
+        return;
+    }
+
+    // ترتيب تنازلي (الأحدث أولاً)
+    const sortedAlerts = [...alerts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    let alertsToShow = [];
+    let oldAlerts = [];
+
+    if (showOld) {
+        // عرض الكل
+        alertsToShow = sortedAlerts;
+        if (showBtn) showBtn.style.display = 'none';
+        if (hideBtn) hideBtn.style.display = 'inline-flex';
+    } else {
+        // عرض آخر 5 فقط
+        const recentCount = 5;
+        alertsToShow = sortedAlerts.slice(0, recentCount);
+        oldAlerts = sortedAlerts.slice(recentCount);
+
+        if (oldAlerts.length > 0) {
+            if (showBtn) showBtn.style.display = 'inline-flex';
+            if (hideBtn) hideBtn.style.display = 'none';
+        } else {
+            if (showBtn) showBtn.style.display = 'none';
+            if (hideBtn) hideBtn.style.display = 'none';
+        }
+    }
+
+    // بناء HTML للتنبيهات المعروضة
     let html = '';
-    alerts.forEach(alert => {
+    alertsToShow.forEach(alert => {
         const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
         const isRead = alert.isRead ? '✅' : '🆕';
         const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
-        
+
         html += `
             <div class="log-item" style="${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;">
                 <span>${typeIcon} ${alert.message}</span>
@@ -2203,7 +2257,32 @@ function renderSmartAlerts(alerts, containerId) {
             </div>
         `;
     });
+
     container.innerHTML = html;
+
+    // إذا كان وضع "showOld" وعنده تنبيهات قديمة، أضف فاصل ثم اعرضها
+    if (showOld && oldAlerts.length > 0) {
+        const divider = document.createElement('div');
+        divider.className = 'log-item';
+        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
+        divider.textContent = translate('attendance.old_logs') || 'تنبيهات قديمة';
+        container.appendChild(divider);
+
+        oldAlerts.forEach(alert => {
+            const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
+            const isRead = alert.isRead ? '✅' : '🆕';
+            const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
+
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.style.cssText = `${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;`;
+            item.innerHTML = `
+                <span>${typeIcon} ${alert.message}</span>
+                <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
+            `;
+            container.appendChild(item);
+        });
+    }
 }
 
 // ==========================================
