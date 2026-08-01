@@ -18,7 +18,6 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
-let showOldSmartAlerts = false;
 
 // متغيرات الماسح الضوئي
 let html5QrCode = null;
@@ -372,48 +371,34 @@ function showAdminDashboard() {
     loadAdminLogs();
     loadAdminNotifications();
     
+    // ✅ ربط أحداث Socket للإجازات
     setupLeaveSocketEvents();
     
+    // ✅ تحميل طلبات الإجازات
     loadLeaveRequests().then(requests => {
         renderLeaveRequests(requests, 'leaveRequestsList');
     });
     
+    // ✅ إضافة أحداث العطل عند عرض لوحة المدير
     setupHolidayEvents();
-    
-    // ✅ تحميل التنبيهات الذكية للمدير
-    loadSmartAlerts().then(alerts => {
-        renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
-    });
 }
 
 function showParentDashboard() {
-    console.log('🔍 showParentDashboard - بدء عرض لوحة ولي الأمر');
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
-    
-    // ✅ عرض معلومات ولي الأمر من localStorage
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    document.getElementById('parentNameDisplay').textContent = userData.name || 'غير معروف';
-    document.getElementById('parentEmailDisplay').textContent = userData.email || 'غير معروف';
-    
-    const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
-    let phone = 'غير معروف';
-    if (students.length > 0 && students[0].parentPhone) {
-        phone = students[0].parentPhone;
-    }
-    document.getElementById('parentPhoneDisplay').textContent = phone;
-    
+
+    // ✅ جلب بيانات ولي الأمر من API مباشرة (من الطلاب المرتبطين به)
+    fetchParentInfo();
+
     connectSocket();
-    loadParentStudents();
+    loadParentStudents(); // تحميل قائمة الطلاب
     loadParentLogs();
     loadParentNotifications();
-    loadParentChildren();
+    loadParentChildren(); // تعبئة القائمة المنسدلة
     setupParentMessageForm();
-    
-    // ✅ تحميل التنبيهات الذكية لولي الأمر
-    loadParentSmartAlerts(showOldSmartAlerts);
+    loadParentSmartAlerts();
 }
 
 // دالة جديدة لجلب معلومات ولي الأمر وعرضها
@@ -451,20 +436,17 @@ async function fetchParentInfo() {
 }
 
 // ✅ دالة جديدة لتحميل التنبيهات الذكية الخاصة بولي الأمر
-async function loadParentSmartAlerts(showOld = false) {
-    console.log('🔍 جاري تحميل التنبيهات الذكية لولي الأمر...');
+async function loadParentSmartAlerts() {
     try {
         const res = await fetchWithAuth('/api/smart-alerts');
-        console.log('📨 استجابة الخادم:', res.status);
         if (!res.ok) throw new Error('فشل جلب التنبيهات');
         const alerts = await res.json();
-        console.log('📊 عدد التنبيهات:', alerts.length);
-        renderSmartAlerts(alerts, 'parentSmartAlertsList', showOld);
+        renderSmartAlerts(alerts, 'parentSmartAlertsList');
     } catch (err) {
-        console.warn('⚠️ لا توجد تنبيهات ذكية لعرضها:', err.message);
+        console.error('❌ خطأ في تحميل التنبيهات الذكية لولي الأمر:', err);
         const container = document.getElementById('parentSmartAlertsList');
         if (container) {
-            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
+            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
         }
     }
 }
@@ -1328,8 +1310,6 @@ function renderFilteredStudents() {
 }
 
 function renderStudents(students, containerId, showAdminControls) {
-    console.log('🔍 renderStudents - containerId:', containerId);
-    console.log('🔍 renderStudents - عدد الطلاب:', students ? students.length : 0);
     const container = document.getElementById(containerId);
     if (!container) return;
     if (!students || students.length === 0) {
@@ -1750,10 +1730,8 @@ function toggleAdminOldLogs(show) {
 // 18. دوال ولي الأمر
 // ==========================================
 async function loadParentStudents() {
-    console.log('🔍 loadParentStudents - بدء التحميل');
     try {
         const res = await fetchWithAuth('/api/students');
-        console.log('🔍 loadParentStudents - استجابة الخادم:', res.status);
         if (!res.ok) throw new Error('فشل جلب بيانات أبنائك');
         const students = await res.json();
         renderStudents(students, 'parentStudentsList', false);
@@ -1773,7 +1751,7 @@ async function loadParentStudents() {
             renderParentLogs(parentShowOldLogs);
         }
     } catch (err) {
-        console.error('❌ loadParentStudents - خطأ:', err);
+        console.error(err);
     }
 }
 
@@ -2145,30 +2123,26 @@ function setupLeaveSocketEvents() {
 
 // جلب التنبيهات
 async function loadSmartAlerts() {
-    try {
-        const res = await fetchWithAuth('/api/smart-alerts');
-        if (!res.ok) throw new Error('فشل جلب التنبيهات');
-        return await res.json();
-    } catch (err) {
-        console.error('❌ خطأ في جلب التنبيهات الذكية:', err);
-        return [];
-    }
+  try {
+    const res = await fetchWithAuth('/api/smart-alerts');
+    if (!res.ok) throw new Error('فشل جلب التنبيهات');
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
 }
 
 // جلب قواعد التنبيهات
 async function loadAlertRules() {
-    try {
-        const res = await fetchWithAuth('/api/smart-alerts/rules');
-        if (res.status === 403) {
-            console.warn('⚠️ غير مصرح بجلب قواعد التنبيهات (403) - سيتم استخدام القيم الافتراضية');
-            return []; // إرجاع مصفوفة فارغة بدلاً من رمي خطأ
-        }
-        if (!res.ok) throw new Error('فشل جلب القواعد');
-        return await res.json();
-    } catch (err) {
-        console.warn('⚠️ فشل جلب قواعد التنبيهات، استخدام القيم الافتراضية:', err.message);
-        return [];
-    }
+  try {
+    const res = await fetchWithAuth('/api/smart-alerts/rules');
+    if (!res.ok) throw new Error('فشل جلب القواعد');
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
 }
 
 // حفظ قواعد التنبيهات
@@ -2206,51 +2180,21 @@ async function runSmartAlerts() {
 }
 
 // عرض التنبيهات الذكية (للمدير)
-function renderSmartAlerts(alerts, containerId, showOld) {
+function renderSmartAlerts(alerts, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // تحديد أزرار العرض/الإخفاء حسب الحاوية
-    const showBtn = document.getElementById(containerId === 'smartAlertsList' ? 'showOldSmartAlertsBtn' : 'parentShowOldSmartAlertsBtn');
-    const hideBtn = document.getElementById(containerId === 'smartAlertsList' ? 'hideOldSmartAlertsBtn' : 'parentHideOldSmartAlertsBtn');
-
     if (!alerts || alerts.length === 0) {
         container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'none';
         return;
     }
 
-    // ترتيب تنازلي (الأحدث أولاً)
-    const sortedAlerts = [...alerts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    let alertsToShow = [];
-    let oldAlerts = [];
-
-    if (showOld) {
-        alertsToShow = sortedAlerts;
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'inline-flex';
-    } else {
-        const recentCount = 5; // عدد التنبيهات الظاهرة
-        alertsToShow = sortedAlerts.slice(0, recentCount);
-        oldAlerts = sortedAlerts.slice(recentCount);
-
-        if (oldAlerts.length > 0) {
-            if (showBtn) showBtn.style.display = 'inline-flex';
-            if (hideBtn) hideBtn.style.display = 'none';
-        } else {
-            if (showBtn) showBtn.style.display = 'none';
-            if (hideBtn) hideBtn.style.display = 'none';
-        }
-    }
-
     let html = '';
-    alertsToShow.forEach(alert => {
+    alerts.forEach(alert => {
         const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
         const isRead = alert.isRead ? '✅' : '🆕';
         const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
-
+        
         html += `
             <div class="log-item" style="${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;">
                 <span>${typeIcon} ${alert.message}</span>
@@ -2258,45 +2202,7 @@ function renderSmartAlerts(alerts, containerId, showOld) {
             </div>
         `;
     });
-
     container.innerHTML = html;
-
-    // إذا كان showOld وعنده تنبيهات قديمة، أضف فاصل
-    if (showOld && oldAlerts.length > 0) {
-        const divider = document.createElement('div');
-        divider.className = 'log-item';
-        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-        divider.textContent = translate('attendance.old_logs') || 'تنبيهات قديمة';
-        container.appendChild(divider);
-
-        oldAlerts.forEach(alert => {
-            const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
-            const isRead = alert.isRead ? '✅' : '🆕';
-            const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
-
-            const item = document.createElement('div');
-            item.className = 'log-item';
-            item.style.cssText = `${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;`;
-            item.innerHTML = `
-                <span>${typeIcon} ${alert.message}</span>
-                <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
-            `;
-            container.appendChild(item);
-        });
-    }
-}
-
-function toggleOldSmartAlerts(show) {
-    showOldSmartAlerts = show;
-    // إعادة تحميل التنبيهات في كل من لوحة المدير وولي الأمر
-    if (document.getElementById('smartAlertsList')) {
-        loadSmartAlerts().then(alerts => {
-            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
-        });
-    }
-    if (document.getElementById('parentSmartAlertsList')) {
-        loadParentSmartAlerts(showOldSmartAlerts);
-    }
 }
 
 // ==========================================
@@ -2320,7 +2226,7 @@ function setupSmartAlertEvents() {
             if (result.success) {
                 alert(translate('smart_alerts.run_success'));
                 const alerts = await loadSmartAlerts();
-                renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+                renderSmartAlerts(alerts, 'smartAlertsList');
             } else {
                 alert(result.message || translate('common.error'));
             }
@@ -2382,7 +2288,7 @@ function setupSmartAlertEvents() {
         console.warn('⚠️ زر saveAlertRulesBtn غير موجود');
     }
 
-    // ✅ تحميل القواعد الحالية (مع تجاهل الأخطاء)
+    // تحميل القواعد الحالية عند ظهور الصفحة
     loadAlertRules().then(rules => {
         if (rules && rules.length > 0) {
             const absence = rules.find(r => r.type === 'absence');
@@ -2404,13 +2310,13 @@ function setupSmartAlertEvents() {
                 document.getElementById('achievementEnabled').checked = achievement.enabled !== false;
             }
         }
-    }).catch(() => {}); // تجاهل أي خطأ غير متوقع
+    });
 
-    // ✅ تحميل التنبيهات المرسلة
+    // تحميل التنبيهات المرسلة
     if (document.getElementById('smartAlertsList')) {
         loadSmartAlerts().then(alerts => {
-            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
-        }).catch(() => {});
+            renderSmartAlerts(alerts, 'smartAlertsList');
+        });
     }
 }
 
