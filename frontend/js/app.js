@@ -18,7 +18,6 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
-let showOldSmartAlerts = false;
 
 // متغيرات الماسح الضوئي
 let html5QrCode = null;
@@ -389,28 +388,17 @@ function showParentDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
-    
-    // ✅ عرض معلومات ولي الأمر من localStorage
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    document.getElementById('parentNameDisplay').textContent = userData.name || 'غير معروف';
-    document.getElementById('parentEmailDisplay').textContent = userData.email || 'غير معروف';
-    
-    const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
-    let phone = 'غير معروف';
-    if (students.length > 0 && students[0].parentPhone) {
-        phone = students[0].parentPhone;
-    }
-    document.getElementById('parentPhoneDisplay').textContent = phone;
-    
+
+    // ✅ جلب بيانات ولي الأمر من API مباشرة (من الطلاب المرتبطين به)
+    fetchParentInfo();
+
     connectSocket();
-    loadParentStudents();
+    loadParentStudents(); // تحميل قائمة الطلاب
     loadParentLogs();
     loadParentNotifications();
-    loadParentChildren();
+    loadParentChildren(); // تعبئة القائمة المنسدلة
     setupParentMessageForm();
-    
-    // ✅ تحميل التنبيهات الذكية لولي الأمر
-    loadParentSmartAlerts(showOldSmartAlerts);
+    loadParentSmartAlerts();
 }
 
 // دالة جديدة لجلب معلومات ولي الأمر وعرضها
@@ -448,21 +436,17 @@ async function fetchParentInfo() {
 }
 
 // ✅ دالة جديدة لتحميل التنبيهات الذكية الخاصة بولي الأمر
-async function loadParentSmartAlerts(showOld = false) {
-    console.log('🔍 جاري تحميل التنبيهات الذكية لولي الأمر...');
+async function loadParentSmartAlerts() {
     try {
         const res = await fetchWithAuth('/api/smart-alerts');
-        console.log('📨 استجابة الخادم (ولي الأمر):', res.status);
         if (!res.ok) throw new Error('فشل جلب التنبيهات');
         const alerts = await res.json();
-        console.log('📊 عدد التنبيهات (ولي الأمر):', alerts.length);
-        console.log('🔍 سيتم استدعاء renderSmartAlerts مع containerId: parentSmartAlertsList');
-        renderSmartAlerts(alerts, 'parentSmartAlertsList', showOld);
+        renderSmartAlerts(alerts, 'parentSmartAlertsList');
     } catch (err) {
-        console.warn('⚠️ لا توجد تنبيهات ذكية لعرضها:', err.message);
+        console.error('❌ خطأ في تحميل التنبيهات الذكية لولي الأمر:', err);
         const container = document.getElementById('parentSmartAlertsList');
         if (container) {
-            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
+            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
         }
     }
 }
@@ -2196,107 +2180,36 @@ async function runSmartAlerts() {
 }
 
 // عرض التنبيهات الذكية (للمدير)
-function renderSmartAlerts(alerts, containerId, showOld = false) {
-    console.log(`🔍 renderSmartAlerts - containerId: ${containerId}, showOld: ${showOld}, عدد التنبيهات: ${alerts ? alerts.length : 0}`);
+function renderSmartAlerts(alerts, containerId) {
     const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`❌ الحاوية غير موجودة: ${containerId}`);
+    if (!container) return;
+
+    if (!alerts || alerts.length === 0) {
+        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
         return;
     }
 
-    try {
-        // تعريف الأزرار (بدون أخطاء)
-        let showBtn, hideBtn;
-        if (containerId === 'smartAlertsList') {
-            showBtn = document.getElementById('showOldSmartAlertsBtn');
-            hideBtn = document.getElementById('hideOldSmartAlertsBtn');
-        } else if (containerId === 'parentSmartAlertsList') {
-            showBtn = document.getElementById('parentShowOldSmartAlertsBtn');
-            hideBtn = document.getElementById('parentHideOldSmartAlertsBtn');
-        }
-
-        if (!alerts || alerts.length === 0) {
-            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
-            if (showBtn) showBtn.style.display = 'none';
-            if (hideBtn) hideBtn.style.display = 'none';
-            return;
-        }
-
-        // ترتيب تنازلي
-        const sortedAlerts = [...alerts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-        let alertsToShow = [];
-        let oldAlerts = [];
-
-        if (showOld) {
-            alertsToShow = sortedAlerts;
-            if (showBtn) showBtn.style.display = 'none';
-            if (hideBtn) hideBtn.style.display = 'inline-flex';
-        } else {
-            const recentCount = 5;
-            alertsToShow = sortedAlerts.slice(0, recentCount);
-            oldAlerts = sortedAlerts.slice(recentCount);
-
-            if (oldAlerts.length > 0) {
-                if (showBtn) showBtn.style.display = 'inline-flex';
-                if (hideBtn) hideBtn.style.display = 'none';
-            } else {
-                if (showBtn) showBtn.style.display = 'none';
-                if (hideBtn) hideBtn.style.display = 'none';
-            }
-        }
-
-        let html = '';
-        alertsToShow.forEach(alert => {
-            const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
-            const isRead = alert.isRead ? '✅' : '🆕';
-            const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
-
-            html += `
-                <div class="log-item" style="${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;">
-                    <span>${typeIcon} ${alert.message}</span>
-                    <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-
-        if (showOld && oldAlerts.length > 0) {
-            const divider = document.createElement('div');
-            divider.className = 'log-item';
-            divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-            divider.textContent = translate('attendance.old_logs') || 'تنبيهات قديمة';
-            container.appendChild(divider);
-
-            oldAlerts.forEach(alert => {
-                const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
-                const isRead = alert.isRead ? '✅' : '🆕';
-                const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
-
-                const item = document.createElement('div');
-                item.className = 'log-item';
-                item.style.cssText = `${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;`;
-                item.innerHTML = `
-                    <span>${typeIcon} ${alert.message}</span>
-                    <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
-                `;
-                container.appendChild(item);
-            });
-        }
-    } catch (err) {
-        console.error('❌ خطأ في renderSmartAlerts:', err);
-        container.innerHTML = `<div style="color:red; padding:10px;">حدث خطأ أثناء عرض التنبيهات: ${err.message}</div>`;
-    }
+    let html = '';
+    alerts.forEach(alert => {
+        const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
+        const isRead = alert.isRead ? '✅' : '🆕';
+        const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
+        
+        html += `
+            <div class="log-item" style="${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;">
+                <span>${typeIcon} ${alert.message}</span>
+                <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
 }
 
 // ==========================================
 // ربط أحداث التنبيهات الذكية
 // ==========================================
 function setupSmartAlertEvents() {
-    // ==========================================
-    // 1. زر تشغيل التنبيهات يدوياً
-    // ==========================================
+    // زر تشغيل التنبيهات يدوياً
     const runBtn = document.getElementById('runSmartAlertsBtn');
     if (runBtn) {
         runBtn.addEventListener('click', async function() {
@@ -2313,7 +2226,7 @@ function setupSmartAlertEvents() {
             if (result.success) {
                 alert(translate('smart_alerts.run_success'));
                 const alerts = await loadSmartAlerts();
-                renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+                renderSmartAlerts(alerts, 'smartAlertsList');
             } else {
                 alert(result.message || translate('common.error'));
             }
@@ -2326,9 +2239,7 @@ function setupSmartAlertEvents() {
         console.warn('⚠️ زر runSmartAlertsBtn غير موجود');
     }
 
-    // ==========================================
-    // 2. زر حفظ قواعد التنبيهات
-    // ==========================================
+    // زر حفظ القواعد
     const saveBtn = document.getElementById('saveAlertRulesBtn');
     if (saveBtn) {
         saveBtn.addEventListener('click', async function() {
@@ -2377,9 +2288,7 @@ function setupSmartAlertEvents() {
         console.warn('⚠️ زر saveAlertRulesBtn غير موجود');
     }
 
-    // ==========================================
-    // 3. تحميل القواعد الحالية (مع تجاهل الأخطاء)
-    // ==========================================
+    // تحميل القواعد الحالية عند ظهور الصفحة
     loadAlertRules().then(rules => {
         if (rules && rules.length > 0) {
             const absence = rules.find(r => r.type === 'absence');
@@ -2401,73 +2310,13 @@ function setupSmartAlertEvents() {
                 document.getElementById('achievementEnabled').checked = achievement.enabled !== false;
             }
         }
-    }).catch(() => {});
+    });
 
-    // ==========================================
-    // 4. تحميل التنبيهات المرسلة مع showOldSmartAlerts
-    // ==========================================
+    // تحميل التنبيهات المرسلة
     if (document.getElementById('smartAlertsList')) {
         loadSmartAlerts().then(alerts => {
-            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
-        }).catch(() => {});
-    }
-
-    // ==========================================
-    // 5. ربط أزرار عرض/إخفاء التنبيهات القديمة (للمدير)
-    // ==========================================
-    const showBtn = document.getElementById('showOldSmartAlertsBtn');
-    const hideBtn = document.getElementById('hideOldSmartAlertsBtn');
-    if (showBtn) {
-        showBtn.addEventListener('click', function() {
-            toggleOldSmartAlerts(true);
+            renderSmartAlerts(alerts, 'smartAlertsList');
         });
-        console.log('✅ ربط زر عرض التنبيهات القديمة (مدير)');
-    }
-    if (hideBtn) {
-        hideBtn.addEventListener('click', function() {
-            toggleOldSmartAlerts(false);
-        });
-        console.log('✅ ربط زر إخفاء التنبيهات القديمة (مدير)');
-    }
-
-    // ==========================================
-    // 6. ربط أزرار عرض/إخفاء التنبيهات القديمة (لولي الأمر)
-    // ==========================================
-    const parentShowBtn = document.getElementById('parentShowOldSmartAlertsBtn');
-    const parentHideBtn = document.getElementById('parentHideOldSmartAlertsBtn');
-    if (parentShowBtn) {
-        parentShowBtn.addEventListener('click', function() {
-            toggleOldSmartAlerts(true);
-        });
-        console.log('✅ ربط زر عرض التنبيهات القديمة (ولي أمر)');
-    }
-    if (parentHideBtn) {
-        parentHideBtn.addEventListener('click', function() {
-            toggleOldSmartAlerts(false);
-        });
-        console.log('✅ ربط زر إخفاء التنبيهات القديمة (ولي أمر)');
-    }
-
-    // ==========================================
-    // 7. زر مسح الكل (للمدير فقط)
-    // ==========================================
-    const clearBtn = document.getElementById('clearAllSmartAlertsBtn');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', clearAllSmartAlerts);
-        console.log('✅ ربط زر مسح التنبيهات الذكية');
-    }
-}
-
-function toggleOldSmartAlerts(show) {
-    showOldSmartAlerts = show;
-    // إعادة تحميل التنبيهات في كل من لوحة المدير وولي الأمر
-    if (document.getElementById('smartAlertsList')) {
-        loadSmartAlerts().then(alerts => {
-            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
-        });
-    }
-    if (document.getElementById('parentSmartAlertsList')) {
-        loadParentSmartAlerts(showOldSmartAlerts);
     }
 }
 
@@ -2972,7 +2821,6 @@ function setupAuthEvents() {
     document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
     document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
     document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
-    document.getElementById('clearAllSmartAlertsBtn')?.addEventListener('click', clearAllSmartAlerts);
     
     document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
         toggleAllStudents(true);
@@ -3419,32 +3267,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 updateDarkModeIcon();
-
-// ==========================================
-// مسح جميع التنبيهات الذكية (للمدير فقط)
-// ==========================================
-async function clearAllSmartAlerts() {
-    const confirmed = await showConfirmModal(
-        'مسح التنبيهات الذكية',
-        'هل أنت متأكد من حذف جميع التنبيهات الذكية المرسلة؟ هذا الإجراء لا يمكن التراجع عنه.'
-    );
-    if (!confirmed) return;
-
-    try {
-        const res = await fetchWithAuth('/api/smart-alerts/clear', {
-            method: 'DELETE'
-        });
-        if (!res.ok) throw new Error('فشل مسح التنبيهات');
-        const data = await res.json();
-        alert(data.message || '✅ تم مسح جميع التنبيهات الذكية بنجاح');
-        // إعادة تحميل القائمة مع الحفاظ على حالة العرض الحالية
-        const alerts = await loadSmartAlerts();
-        renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
-    } catch (err) {
-        console.error('❌ فشل مسح التنبيهات:', err);
-        alert('❌ فشل مسح التنبيهات: ' + err.message);
-    }
-}
 
 // ==========================================
 // 20. بدء التطبيق
