@@ -1,6 +1,6 @@
-// ==================================
+// ========================================
 // 1. رابط الخادم
-// ==================================
+// ========================================
 const API_BASE_URL = 'https://studenttracker-ib8y.onrender.com';
 const SOCKET_URL = API_BASE_URL;
 const vapidPublicKey = 'BF7IlardTlVn6X4dNtcTad2ixM09jH87Q-vKyo5ScWY9uzLw3y-goXcgPmC8gxBpFWIGVgFWKxwC2pTDXNYnlD4';
@@ -18,7 +18,6 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
-let showOldSmartAlerts = false;
 
 // متغيرات الماسح الضوئي
 let html5QrCode = null;
@@ -228,7 +227,7 @@ function translate(key, params = {}) {
 // 3. دوال مساعدة
 // ==========================================
 function getStatusText(isInside) {
-    return isInside ? 'المدرسة داخل المدرسة 🏫' : 'خارج 🚪';
+    return isInside ? 'داخل 🏫' : 'خارج 🚪';
 }
 function getStatusClass(isInside) {
     return isInside ? 'inside' : 'outside';
@@ -384,31 +383,22 @@ function showAdminDashboard() {
     setupHolidayEvents();
 }
 
-async function showParentDashboard() {
-    console.log("① showParentDashboard");
+function showParentDashboard() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
 
     // ✅ جلب بيانات ولي الأمر من API مباشرة (من الطلاب المرتبطين به)
-    console.log("② fetchParentInfo");
     fetchParentInfo();
 
     connectSocket();
-    
-    console.log("③ loadParentStudents");
     loadParentStudents(); // تحميل قائمة الطلاب
-    console.log("④ loadParentLogs");
     loadParentLogs();
-    console.log("⑤ loadParentNotifications");
     loadParentNotifications();
-    console.log("⑥ loadParentChildren");
     loadParentChildren(); // تعبئة القائمة المنسدلة
-    console.log("⑦ setupParentMessageForm");
     setupParentMessageForm();
-    console.log("⑦ loadParentSmartAlerts");
-    loadParentSmartAlerts(false);
+    loadParentSmartAlerts();
 }
 
 // دالة جديدة لجلب معلومات ولي الأمر وعرضها
@@ -446,17 +436,17 @@ async function fetchParentInfo() {
 }
 
 // ✅ دالة جديدة لتحميل التنبيهات الذكية الخاصة بولي الأمر
-async function loadParentSmartAlerts(showOld = false) {
+async function loadParentSmartAlerts() {
     try {
         const res = await fetchWithAuth('/api/smart-alerts');
         if (!res.ok) throw new Error('فشل جلب التنبيهات');
         const alerts = await res.json();
-        renderSmartAlerts(alerts, 'parentSmartAlertsList', showOld);
+        renderSmartAlerts(alerts, 'parentSmartAlertsList');
     } catch (err) {
-        console.warn('⚠️ لا توجد تنبيهات ذكية لعرضها:', err.message);
+        console.error('❌ خطأ في تحميل التنبيهات الذكية لولي الأمر:', err);
         const container = document.getElementById('parentSmartAlertsList');
         if (container) {
-            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
+            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
         }
     }
 }
@@ -2190,60 +2180,21 @@ async function runSmartAlerts() {
 }
 
 // عرض التنبيهات الذكية (للمدير)
-function renderSmartAlerts(alerts, containerId, showOld = false) {
+function renderSmartAlerts(alerts, containerId) {
     const container = document.getElementById(containerId);
-    if (!container) {
-        console.warn('⚠️ الحاوية غير موجودة:', containerId);
-        return;
-    }
-
-    // تحديد أزرار العرض/الإخفاء حسب الحاوية
-    let showBtn, hideBtn;
-    if (containerId === 'smartAlertsList') {
-        showBtn = document.getElementById('showOldSmartAlertsBtn');
-        hideBtn = document.getElementById('hideOldSmartAlertsBtn');
-    } else if (containerId === 'parentSmartAlertsList') {
-        showBtn = document.getElementById('parentShowOldSmartAlertsBtn');
-        hideBtn = document.getElementById('parentHideOldSmartAlertsBtn');
-    }
+    if (!container) return;
 
     if (!alerts || alerts.length === 0) {
-        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'none';
+        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
         return;
-    }
-
-    // ترتيب تنازلي (الأحدث أولاً)
-    const sortedAlerts = [...alerts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    let alertsToShow = [];
-    let oldAlerts = [];
-
-    if (showOld) {
-        alertsToShow = sortedAlerts;
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'inline-flex';
-    } else {
-        const recentCount = 5;
-        alertsToShow = sortedAlerts.slice(0, recentCount);
-        oldAlerts = sortedAlerts.slice(recentCount);
-
-        if (oldAlerts.length > 0) {
-            if (showBtn) showBtn.style.display = 'inline-flex';
-            if (hideBtn) hideBtn.style.display = 'none';
-        } else {
-            if (showBtn) showBtn.style.display = 'none';
-            if (hideBtn) hideBtn.style.display = 'none';
-        }
     }
 
     let html = '';
-    alertsToShow.forEach(alert => {
+    alerts.forEach(alert => {
         const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
         const isRead = alert.isRead ? '✅' : '🆕';
         const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
-
+        
         html += `
             <div class="log-item" style="${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;">
                 <span>${typeIcon} ${alert.message}</span>
@@ -2251,31 +2202,7 @@ function renderSmartAlerts(alerts, containerId, showOld = false) {
             </div>
         `;
     });
-
     container.innerHTML = html;
-
-    if (showOld && oldAlerts.length > 0) {
-        const divider = document.createElement('div');
-        divider.className = 'log-item';
-        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-        divider.textContent = translate('attendance.old_logs') || 'تنبيهات قديمة';
-        container.appendChild(divider);
-
-        oldAlerts.forEach(alert => {
-            const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
-            const isRead = alert.isRead ? '✅' : '🆕';
-            const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
-
-            const item = document.createElement('div');
-            item.className = 'log-item';
-            item.style.cssText = `${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;`;
-            item.innerHTML = `
-                <span>${typeIcon} ${alert.message}</span>
-                <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
-            `;
-            container.appendChild(item);
-        });
-    }
 }
 
 // ==========================================
@@ -2299,7 +2226,7 @@ function setupSmartAlertEvents() {
             if (result.success) {
                 alert(translate('smart_alerts.run_success'));
                 const alerts = await loadSmartAlerts();
-                renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+                renderSmartAlerts(alerts, 'smartAlertsList');
             } else {
                 alert(result.message || translate('common.error'));
             }
@@ -2361,163 +2288,36 @@ function setupSmartAlertEvents() {
         console.warn('⚠️ زر saveAlertRulesBtn غير موجود');
     }
 
-// ==========================================
-// زر مسح الكل
-// ==========================================
-     const clearBtn = document.getElementById('clearAllSmartAlertsBtn');
-    if (clearBtn) {
-    clearBtn.addEventListener('click', clearAllSmartAlerts);
-    console.log('✅ ربط زر مسح التنبيهات الذكية');
-    }
-}
-
-    // أزرار العرض/الإخفاء للمدير
-const showBtn = document.getElementById('showOldSmartAlertsBtn');
-const hideBtn = document.getElementById('hideOldSmartAlertsBtn');
-if (showBtn) {
-    showBtn.addEventListener('click', function() {
-        showOldSmartAlerts = true;
-        loadSmartAlerts().then(alerts => {
-            renderSmartAlerts(alerts, 'smartAlertsList', true);
-        });
-    });
-}
-if (hideBtn) {
-    hideBtn.addEventListener('click', function() {
-        showOldSmartAlerts = false;
-        loadSmartAlerts().then(alerts => {
-            renderSmartAlerts(alerts, 'smartAlertsList', false);
-        });
-    });
-}
-
-// أزرار العرض/الإخفاء لولي الأمر
-const parentShowBtn = document.getElementById('parentShowOldSmartAlertsBtn');
-const parentHideBtn = document.getElementById('parentHideOldSmartAlertsBtn');
-if (parentShowBtn) {
-    parentShowBtn.addEventListener('click', function() {
-        loadParentSmartAlerts(true);
-    });
-}
-if (parentHideBtn) {
-    parentHideBtn.addEventListener('click', function() {
-        loadParentSmartAlerts(false);
-    });
-}
-
-// ==========================================
-// تحميل القواعد (للمدير فقط)
-// ==========================================
-const rulesPanel =
-    document.getElementById('absenceConsecutive') ||
-    document.getElementById('saveAlertRulesBtn');
-
-if (rulesPanel) {
-
+    // تحميل القواعد الحالية عند ظهور الصفحة
     loadAlertRules().then(rules => {
-
-        if (!rules || rules.length === 0) return;
-
-        const absence = rules.find(r => r.type === 'absence');
-        const tardiness = rules.find(r => r.type === 'tardiness');
-        const achievement = rules.find(r => r.type === 'achievement');
-
-        if (absence) {
-            document.getElementById('absenceConsecutive').value =
-                absence.conditions?.absenceConsecutiveDays || 3;
-
-            document.getElementById('absenceMonthly').value =
-                absence.conditions?.absenceMonthlyDays || 5;
-
-            document.getElementById('absenceEnabled').checked =
-                absence.enabled !== false;
+        if (rules && rules.length > 0) {
+            const absence = rules.find(r => r.type === 'absence');
+            const tardiness = rules.find(r => r.type === 'tardiness');
+            const achievement = rules.find(r => r.type === 'achievement');
+            
+            if (absence) {
+                document.getElementById('absenceConsecutive').value = absence.conditions?.absenceConsecutiveDays || 3;
+                document.getElementById('absenceMonthly').value = absence.conditions?.absenceMonthlyDays || 5;
+                document.getElementById('absenceEnabled').checked = absence.enabled !== false;
+            }
+            if (tardiness) {
+                document.getElementById('tardinessPerWeek').value = tardiness.conditions?.tardinessPerWeek || 3;
+                document.getElementById('tardinessEnabled').checked = tardiness.enabled !== false;
+            }
+            if (achievement) {
+                document.getElementById('achievementConsecutive').value = achievement.conditions?.achievementConsecutiveDays || 10;
+                document.getElementById('achievementMonthly').value = achievement.conditions?.achievementMonthlyDays || 20;
+                document.getElementById('achievementEnabled').checked = achievement.enabled !== false;
+            }
         }
-
-        if (tardiness) {
-            document.getElementById('tardinessPerWeek').value =
-                tardiness.conditions?.tardinessPerWeek || 3;
-
-            document.getElementById('tardinessEnabled').checked =
-                tardiness.enabled !== false;
-        }
-
-        if (achievement) {
-            document.getElementById('achievementConsecutive').value =
-                achievement.conditions?.achievementConsecutiveDays || 10;
-
-            document.getElementById('achievementMonthly').value =
-                achievement.conditions?.achievementMonthlyDays || 20;
-
-            document.getElementById('achievementEnabled').checked =
-                achievement.enabled !== false;
-        }
-
-    }).catch(console.error);
-
-}
-
-// ==========================================
-// تحميل التنبيهات
-// ==========================================
-if (document.getElementById('smartAlertsList')) {
-
-    loadSmartAlerts().then(alerts => {
-
-        renderSmartAlerts(
-            alerts,
-            'smartAlertsList',
-            showOldSmartAlerts
-        );
-
     });
 
-}
-
-
-// ==========================================
-// مسح جميع التنبيهات الذكية (للمدير)
-// ==========================================
-async function clearAllSmartAlerts() {
-
-    const confirmed = await showConfirmModal(
-        'مسح التنبيهات الذكية',
-        'هل تريد حذف جميع التنبيهات الذكية؟'
-    );
-
-    if (!confirmed) return;
-
-    try {
-
-        const res = await fetchWithAuth('/api/smart-alerts/clear', {
-            method: 'DELETE'
+    // تحميل التنبيهات المرسلة
+    if (document.getElementById('smartAlertsList')) {
+        loadSmartAlerts().then(alerts => {
+            renderSmartAlerts(alerts, 'smartAlertsList');
         });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            throw new Error(data.message);
-        }
-
-        alert(data.message);
-
-        showOldSmartAlerts = false;
-
-        const alerts = await loadSmartAlerts();
-
-        renderSmartAlerts(
-            alerts,
-            'smartAlertsList',
-            false
-        );
-
-    } catch (err) {
-
-        console.error(err);
-
-        alert(err.message);
-
     }
-
 }
 
 // ==========================================
