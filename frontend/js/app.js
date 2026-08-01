@@ -18,6 +18,7 @@ let adminShowOldLogs = false;
 let parentShowOldLogs = false;
 let adminLogs = [];
 let parentLogs = [];
+let showOldSmartAlerts = false;
 
 // متغيرات الماسح الضوئي
 let html5QrCode = null;
@@ -2385,36 +2386,72 @@ if (parentHideBtn) {
     });
 }
 
-    // تحميل القواعد الحالية عند ظهور الصفحة
+// ==========================================
+// تحميل القواعد (للمدير فقط)
+// ==========================================
+const rulesPanel =
+    document.getElementById('absenceConsecutive') ||
+    document.getElementById('saveAlertRulesBtn');
+
+if (rulesPanel) {
+
     loadAlertRules().then(rules => {
-        if (rules && rules.length > 0) {
-            const absence = rules.find(r => r.type === 'absence');
-            const tardiness = rules.find(r => r.type === 'tardiness');
-            const achievement = rules.find(r => r.type === 'achievement');
-            
-            if (absence) {
-                document.getElementById('absenceConsecutive').value = absence.conditions?.absenceConsecutiveDays || 3;
-                document.getElementById('absenceMonthly').value = absence.conditions?.absenceMonthlyDays || 5;
-                document.getElementById('absenceEnabled').checked = absence.enabled !== false;
-            }
-            if (tardiness) {
-                document.getElementById('tardinessPerWeek').value = tardiness.conditions?.tardinessPerWeek || 3;
-                document.getElementById('tardinessEnabled').checked = tardiness.enabled !== false;
-            }
-            if (achievement) {
-                document.getElementById('achievementConsecutive').value = achievement.conditions?.achievementConsecutiveDays || 10;
-                document.getElementById('achievementMonthly').value = achievement.conditions?.achievementMonthlyDays || 20;
-                document.getElementById('achievementEnabled').checked = achievement.enabled !== false;
-            }
+
+        if (!rules || rules.length === 0) return;
+
+        const absence = rules.find(r => r.type === 'absence');
+        const tardiness = rules.find(r => r.type === 'tardiness');
+        const achievement = rules.find(r => r.type === 'achievement');
+
+        if (absence) {
+            document.getElementById('absenceConsecutive').value =
+                absence.conditions?.absenceConsecutiveDays || 3;
+
+            document.getElementById('absenceMonthly').value =
+                absence.conditions?.absenceMonthlyDays || 5;
+
+            document.getElementById('absenceEnabled').checked =
+                absence.enabled !== false;
         }
+
+        if (tardiness) {
+            document.getElementById('tardinessPerWeek').value =
+                tardiness.conditions?.tardinessPerWeek || 3;
+
+            document.getElementById('tardinessEnabled').checked =
+                tardiness.enabled !== false;
+        }
+
+        if (achievement) {
+            document.getElementById('achievementConsecutive').value =
+                achievement.conditions?.achievementConsecutiveDays || 10;
+
+            document.getElementById('achievementMonthly').value =
+                achievement.conditions?.achievementMonthlyDays || 20;
+
+            document.getElementById('achievementEnabled').checked =
+                achievement.enabled !== false;
+        }
+
+    }).catch(console.error);
+
+}
+
+// ==========================================
+// تحميل التنبيهات
+// ==========================================
+if (document.getElementById('smartAlertsList')) {
+
+    loadSmartAlerts().then(alerts => {
+
+        renderSmartAlerts(
+            alerts,
+            'smartAlertsList',
+            showOldSmartAlerts
+        );
+
     });
 
-    // تحميل التنبيهات المرسلة
-    if (document.getElementById('smartAlertsList')) {
-        loadSmartAlerts().then(alerts => {
-        renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
-        });
-    }
 }
 
 // ==========================================
@@ -2430,31 +2467,46 @@ if (clearBtn) {
 // مسح جميع التنبيهات الذكية (للمدير)
 // ==========================================
 async function clearAllSmartAlerts() {
-    // التأكيد قبل المسح
+
     const confirmed = await showConfirmModal(
         'مسح التنبيهات الذكية',
-        'هل أنت متأكد من حذف جميع التنبيهات الذكية المرسلة؟ هذا الإجراء لا يمكن التراجع عنه.'
+        'هل تريد حذف جميع التنبيهات الذكية؟'
     );
+
     if (!confirmed) return;
 
     try {
+
         const res = await fetchWithAuth('/api/smart-alerts/clear', {
             method: 'DELETE'
         });
-        if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.message || 'فشل مسح التنبيهات');
-        }
+
         const data = await res.json();
-        alert(data.message || '✅ تم مسح جميع التنبيهات الذكية بنجاح');
-        
-        // إعادة تحميل القائمة بعد المسح
+
+        if (!res.ok) {
+            throw new Error(data.message);
+        }
+
+        alert(data.message);
+
+        showOldSmartAlerts = false;
+
         const alerts = await loadSmartAlerts();
-        renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+
+        renderSmartAlerts(
+            alerts,
+            'smartAlertsList',
+            false
+        );
+
     } catch (err) {
-        console.error('❌ فشل مسح التنبيهات:', err);
-        alert('❌ فشل مسح التنبيهات: ' + err.message);
+
+        console.error(err);
+
+        alert(err.message);
+
     }
+
 }
 
 // ==========================================
