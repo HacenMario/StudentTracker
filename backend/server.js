@@ -14,6 +14,7 @@ const leaveRoutes = require('./routes/leaveRoutes');
 const { startSmartAlertScheduler } = require('./services/smartAlertScheduler');
 const holidayRoutes = require('./routes/holidayRoutes');
 const parentRoutes = require('./routes/parent');
+const SmartAlert = require('./models/SmartAlert');
 
 // استيراد النماذج
 const Student = require('./models/Student');
@@ -672,6 +673,24 @@ app.get('/api/test-holidays', auth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+});
+
+// مسح جميع التنبيهات الذكية (للمدير فقط)
+app.delete('/api/smart-alerts/clear-all', auth, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+            return res.status(403).json({ message: 'غير مصرح لك بهذا الإجراء' });
+        }
+
+        const result = await SmartAlert.deleteMany({});
+        res.json({
+            success: true,
+            message: `تم حذف ${result.deletedCount} تنبيه ذكي بنجاح`
+        });
+    } catch (err) {
+        console.error('❌ خطأ في مسح التنبيهات الذكية:', err);
+        res.status(500).json({ message: err.message });
+    }
 });
 
 // ==========================================
