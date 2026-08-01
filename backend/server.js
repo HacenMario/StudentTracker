@@ -675,21 +675,24 @@ app.get('/api/test-holidays', auth, async (req, res) => {
   }
 });
 
+// ==========================================
 // مسح جميع التنبيهات الذكية (للمدير فقط)
-app.delete('/api/smart-alerts/clear-all', auth, async (req, res) => {
+// ==========================================
+app.delete('/api/smart-alerts/clear', auth, async (req, res) => {
     try {
+        // تحقق من أن المستخدم مدير
         if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
-            return res.status(403).json({ message: 'غير مصرح لك بهذا الإجراء' });
+            return res.status(403).json({ message: 'غير مصرح لك' });
         }
-
+        // حذف جميع التنبيهات الذكية (أو يمكنك حذف فقط التنبيهات غير المقروءة حسب رغبتك)
         const result = await SmartAlert.deleteMany({});
-        res.json({
-            success: true,
-            message: `تم حذف ${result.deletedCount} تنبيه ذكي بنجاح`
+        res.json({ 
+            success: true, 
+            message: `✅ تم حذف ${result.deletedCount} تنبيه ذكي بنجاح` 
         });
     } catch (err) {
         console.error('❌ خطأ في مسح التنبيهات الذكية:', err);
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message: 'حدث خطأ أثناء مسح التنبيهات' });
     }
 });
 
