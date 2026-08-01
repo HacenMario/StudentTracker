@@ -2821,6 +2821,7 @@ function setupAuthEvents() {
     document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
     document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
     document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
+    document.getElementById('clearAllSmartAlertsBtn')?.addEventListener('click', clearAllSmartAlerts);
     
     document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
         toggleAllStudents(true);
@@ -3273,27 +3274,23 @@ updateDarkModeIcon();
 // ==========================================
 async function clearAllSmartAlerts() {
     const confirmed = await showConfirmModal(
-        'مسح جميع التنبيهات الذكية',
-        'هل أنت متأكد من رغبتك في حذف جميع التنبيهات الذكية المرسلة؟ هذا الإجراء لا يمكن التراجع عنه.'
+        'مسح التنبيهات الذكية',
+        'هل أنت متأكد من حذف جميع التنبيهات الذكية المرسلة؟ هذا الإجراء لا يمكن التراجع عنه.'
     );
     if (!confirmed) return;
 
     try {
-        const res = await fetchWithAuth('/api/smart-alerts/clear-all', {
-            method: 'DELETE',
+        const res = await fetchWithAuth('/api/smart-alerts/clear', {
+            method: 'DELETE'
         });
-
-        if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.message || 'فشل مسح التنبيهات');
-        }
-
-        alert('✅ تم مسح جميع التنبيهات الذكية بنجاح');
-        // إعادة تحميل قائمة التنبيهات
+        if (!res.ok) throw new Error('فشل مسح التنبيهات');
+        const data = await res.json();
+        alert(data.message || '✅ تم مسح جميع التنبيهات الذكية بنجاح');
+        // إعادة تحميل القائمة
         const alerts = await loadSmartAlerts();
         renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
     } catch (err) {
-        console.error('❌ خطأ في مسح التنبيهات الذكية:', err);
+        console.error('❌ فشل مسح التنبيهات:', err);
         alert('❌ فشل مسح التنبيهات: ' + err.message);
     }
 }
