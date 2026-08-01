@@ -228,7 +228,7 @@ function translate(key, params = {}) {
 // 3. دوال مساعدة
 // ==========================================
 function getStatusText(isInside) {
-    return isInside ? 'داخل 🏫' : 'خارج 🚪';
+    return isInside ? 'المدرسة داخل المدرسة 🏫' : 'خارج 🚪';
 }
 function getStatusClass(isInside) {
     return isInside ? 'inside' : 'outside';
