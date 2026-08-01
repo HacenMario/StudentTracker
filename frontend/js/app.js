@@ -2352,6 +2352,16 @@ function setupSmartAlertEvents() {
         console.warn('⚠️ زر saveAlertRulesBtn غير موجود');
     }
 
+// ==========================================
+// زر مسح الكل
+// ==========================================
+     const clearBtn = document.getElementById('clearAllSmartAlertsBtn');
+    if (clearBtn) {
+    clearBtn.addEventListener('click', clearAllSmartAlerts);
+    console.log('✅ ربط زر مسح التنبيهات الذكية');
+    }
+}
+
     // أزرار العرض/الإخفاء للمدير
 const showBtn = document.getElementById('showOldSmartAlertsBtn');
 const hideBtn = document.getElementById('hideOldSmartAlertsBtn');
@@ -2454,14 +2464,6 @@ if (document.getElementById('smartAlertsList')) {
 
 }
 
-// ==========================================
-// زر مسح الكل
-// ==========================================
-const clearBtn = document.getElementById('clearAllSmartAlertsBtn');
-if (clearBtn) {
-    clearBtn.addEventListener('click', clearAllSmartAlerts);
-    console.log('✅ ربط زر مسح التنبيهات الذكية');
-}
 
 // ==========================================
 // مسح جميع التنبيهات الذكية (للمدير)
