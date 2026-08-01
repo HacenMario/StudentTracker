@@ -456,6 +456,7 @@ async function loadParentSmartAlerts(showOld = false) {
         if (!res.ok) throw new Error('فشل جلب التنبيهات');
         const alerts = await res.json();
         console.log('📊 عدد التنبيهات (ولي الأمر):', alerts.length);
+        console.log('🔍 سيتم استدعاء renderSmartAlerts مع containerId: parentSmartAlertsList');
         renderSmartAlerts(alerts, 'parentSmartAlertsList', showOld);
     } catch (err) {
         console.warn('⚠️ لا توجد تنبيهات ذكية لعرضها:', err.message);
@@ -2195,92 +2196,97 @@ async function runSmartAlerts() {
 }
 
 // عرض التنبيهات الذكية (للمدير)
-function renderSmartAlerts(alerts, containerId, showOld) {
+function renderSmartAlerts(alerts, containerId, showOld = false) {
+    console.log(`🔍 renderSmartAlerts - containerId: ${containerId}, showOld: ${showOld}, عدد التنبيهات: ${alerts ? alerts.length : 0}`);
     const container = document.getElementById(containerId);
     if (!container) {
-        console.warn('⚠️ الحاوية غير موجودة:', containerId);
+        console.error(`❌ الحاوية غير موجودة: ${containerId}`);
         return;
     }
 
-    // تحديد الأزرار الخاصة بالحاوية
-    const showBtnId = containerId === 'smartAlertsList' ? 'showOldSmartAlertsBtn' : 'parentShowOldSmartAlertsBtn';
-    const hideBtnId = containerId === 'smartAlertsList' ? 'hideOldSmartAlertsBtn' : 'parentHideOldSmartAlertsBtn';
-    const showBtn = document.getElementById(showBtnId);
-    const hideBtn = document.getElementById(hideBtnId);
+    try {
+        // تعريف الأزرار (بدون أخطاء)
+        let showBtn, hideBtn;
+        if (containerId === 'smartAlertsList') {
+            showBtn = document.getElementById('showOldSmartAlertsBtn');
+            hideBtn = document.getElementById('hideOldSmartAlertsBtn');
+        } else if (containerId === 'parentSmartAlertsList') {
+            showBtn = document.getElementById('parentShowOldSmartAlertsBtn');
+            hideBtn = document.getElementById('parentHideOldSmartAlertsBtn');
+        }
 
-    // إذا لم توجد تنبيهات
-    if (!alerts || alerts.length === 0) {
-        container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'none';
-        return;
-    }
-
-    // ترتيب تنازلي (الأحدث أولاً)
-    const sortedAlerts = [...alerts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    let alertsToShow = [];
-    let oldAlerts = [];
-
-    if (showOld) {
-        // عرض الكل
-        alertsToShow = sortedAlerts;
-        if (showBtn) showBtn.style.display = 'none';
-        if (hideBtn) hideBtn.style.display = 'inline-flex';
-    } else {
-        // عرض آخر 5 فقط
-        const recentCount = 5;
-        alertsToShow = sortedAlerts.slice(0, recentCount);
-        oldAlerts = sortedAlerts.slice(recentCount);
-
-        if (oldAlerts.length > 0) {
-            if (showBtn) showBtn.style.display = 'inline-flex';
-            if (hideBtn) hideBtn.style.display = 'none';
-        } else {
+        if (!alerts || alerts.length === 0) {
+            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
             if (showBtn) showBtn.style.display = 'none';
             if (hideBtn) hideBtn.style.display = 'none';
+            return;
         }
-    }
 
-    // بناء HTML للتنبيهات المعروضة
-    let html = '';
-    alertsToShow.forEach(alert => {
-        const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
-        const isRead = alert.isRead ? '✅' : '🆕';
-        const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
+        // ترتيب تنازلي
+        const sortedAlerts = [...alerts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-        html += `
-            <div class="log-item" style="${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;">
-                <span>${typeIcon} ${alert.message}</span>
-                <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
-            </div>
-        `;
-    });
+        let alertsToShow = [];
+        let oldAlerts = [];
 
-    container.innerHTML = html;
+        if (showOld) {
+            alertsToShow = sortedAlerts;
+            if (showBtn) showBtn.style.display = 'none';
+            if (hideBtn) hideBtn.style.display = 'inline-flex';
+        } else {
+            const recentCount = 5;
+            alertsToShow = sortedAlerts.slice(0, recentCount);
+            oldAlerts = sortedAlerts.slice(recentCount);
 
-    // إذا كان وضع "showOld" وعنده تنبيهات قديمة، أضف فاصل ثم اعرضها
-    if (showOld && oldAlerts.length > 0) {
-        const divider = document.createElement('div');
-        divider.className = 'log-item';
-        divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
-        divider.textContent = translate('attendance.old_logs') || 'تنبيهات قديمة';
-        container.appendChild(divider);
+            if (oldAlerts.length > 0) {
+                if (showBtn) showBtn.style.display = 'inline-flex';
+                if (hideBtn) hideBtn.style.display = 'none';
+            } else {
+                if (showBtn) showBtn.style.display = 'none';
+                if (hideBtn) hideBtn.style.display = 'none';
+            }
+        }
 
-        oldAlerts.forEach(alert => {
+        let html = '';
+        alertsToShow.forEach(alert => {
             const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
             const isRead = alert.isRead ? '✅' : '🆕';
             const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
 
-            const item = document.createElement('div');
-            item.className = 'log-item';
-            item.style.cssText = `${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;`;
-            item.innerHTML = `
-                <span>${typeIcon} ${alert.message}</span>
-                <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
+            html += `
+                <div class="log-item" style="${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;">
+                    <span>${typeIcon} ${alert.message}</span>
+                    <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
+                </div>
             `;
-            container.appendChild(item);
         });
+
+        container.innerHTML = html;
+
+        if (showOld && oldAlerts.length > 0) {
+            const divider = document.createElement('div');
+            divider.className = 'log-item';
+            divider.style.cssText = 'border-top:2px dashed #ccc; margin:10px 0; padding:5px; text-align:center; color:#8a9aaa; font-size:13px;';
+            divider.textContent = translate('attendance.old_logs') || 'تنبيهات قديمة';
+            container.appendChild(divider);
+
+            oldAlerts.forEach(alert => {
+                const typeIcon = alert.type === 'absence' ? '🚨' : alert.type === 'tardiness' ? '⏰' : '🎉';
+                const isRead = alert.isRead ? '✅' : '🆕';
+                const bgColor = !alert.isRead ? 'background:#f0f8ff; border-right:4px solid #1c7ed6;' : '';
+
+                const item = document.createElement('div');
+                item.className = 'log-item';
+                item.style.cssText = `${bgColor} padding:8px 12px; border-bottom:1px solid #eef4fa;`;
+                item.innerHTML = `
+                    <span>${typeIcon} ${alert.message}</span>
+                    <span class="log-time">${formatFullTime(alert.createdAt)} ${isRead}</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+    } catch (err) {
+        console.error('❌ خطأ في renderSmartAlerts:', err);
+        container.innerHTML = `<div style="color:red; padding:10px;">حدث خطأ أثناء عرض التنبيهات: ${err.message}</div>`;
     }
 }
 
