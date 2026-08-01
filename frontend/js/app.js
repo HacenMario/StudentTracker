@@ -371,20 +371,19 @@ function showAdminDashboard() {
     loadAdminStudents();
     loadAdminLogs();
     loadAdminNotifications();
-    loadSmartAlerts().then(alerts => {
-    renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
-    });
     
-    // ✅ ربط أحداث Socket للإجازات
     setupLeaveSocketEvents();
     
-    // ✅ تحميل طلبات الإجازات
     loadLeaveRequests().then(requests => {
         renderLeaveRequests(requests, 'leaveRequestsList');
     });
     
-    // ✅ إضافة أحداث العطل عند عرض لوحة المدير
     setupHolidayEvents();
+    
+    // ✅ تحميل التنبيهات الذكية للمدير
+    loadSmartAlerts().then(alerts => {
+        renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+    });
 }
 
 function showParentDashboard() {
@@ -392,16 +391,27 @@ function showParentDashboard() {
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
-
-    // ✅ جلب بيانات ولي الأمر من API مباشرة (من الطلاب المرتبطين به)
-    fetchParentInfo();
-
+    
+    // ✅ عرض معلومات ولي الأمر من localStorage
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    document.getElementById('parentNameDisplay').textContent = userData.name || 'غير معروف';
+    document.getElementById('parentEmailDisplay').textContent = userData.email || 'غير معروف';
+    
+    const students = JSON.parse(localStorage.getItem('parentStudents') || '[]');
+    let phone = 'غير معروف';
+    if (students.length > 0 && students[0].parentPhone) {
+        phone = students[0].parentPhone;
+    }
+    document.getElementById('parentPhoneDisplay').textContent = phone;
+    
     connectSocket();
-    loadParentStudents(); // تحميل قائمة الطلاب
+    loadParentStudents();
     loadParentLogs();
     loadParentNotifications();
-    loadParentChildren(); // تعبئة القائمة المنسدلة
+    loadParentChildren();
     setupParentMessageForm();
+    
+    // ✅ تحميل التنبيهات الذكية لولي الأمر
     loadParentSmartAlerts(showOldSmartAlerts);
 }
 
@@ -447,10 +457,10 @@ async function loadParentSmartAlerts(showOld = false) {
         const alerts = await res.json();
         renderSmartAlerts(alerts, 'parentSmartAlertsList', showOld);
     } catch (err) {
-        console.error('❌ خطأ في تحميل التنبيهات الذكية لولي الأمر:', err);
+        console.warn('⚠️ لا توجد تنبيهات ذكية لعرضها:', err.message);
         const container = document.getElementById('parentSmartAlertsList');
         if (container) {
-            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts')}</div>`;
+            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
         }
     }
 }
@@ -2127,26 +2137,30 @@ function setupLeaveSocketEvents() {
 
 // جلب التنبيهات
 async function loadSmartAlerts() {
-  try {
-    const res = await fetchWithAuth('/api/smart-alerts');
-    if (!res.ok) throw new Error('فشل جلب التنبيهات');
-    return await res.json();
-  } catch (err) {
-    console.error(err);
-    return [];
-  }
+    try {
+        const res = await fetchWithAuth('/api/smart-alerts');
+        if (!res.ok) throw new Error('فشل جلب التنبيهات');
+        return await res.json();
+    } catch (err) {
+        console.error('❌ خطأ في جلب التنبيهات الذكية:', err);
+        return [];
+    }
 }
 
 // جلب قواعد التنبيهات
 async function loadAlertRules() {
-  try {
-    const res = await fetchWithAuth('/api/smart-alerts/rules');
-    if (!res.ok) throw new Error('فشل جلب القواعد');
-    return await res.json();
-  } catch (err) {
-    console.error(err);
-    return [];
-  }
+    try {
+        const res = await fetchWithAuth('/api/smart-alerts/rules');
+        if (res.status === 403) {
+            console.warn('⚠️ غير مصرح بجلب قواعد التنبيهات (403) - سيتم استخدام القيم الافتراضية');
+            return []; // إرجاع مصفوفة فارغة بدلاً من رمي خطأ
+        }
+        if (!res.ok) throw new Error('فشل جلب القواعد');
+        return await res.json();
+    } catch (err) {
+        console.warn('⚠️ فشل جلب قواعد التنبيهات، استخدام القيم الافتراضية:', err.message);
+        return [];
+    }
 }
 
 // حفظ قواعد التنبيهات
@@ -2188,7 +2202,7 @@ function renderSmartAlerts(alerts, containerId, showOld) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // أزرار العرض/الإخفاء
+    // تحديد أزرار العرض/الإخفاء حسب الحاوية
     const showBtn = document.getElementById(containerId === 'smartAlertsList' ? 'showOldSmartAlertsBtn' : 'parentShowOldSmartAlertsBtn');
     const hideBtn = document.getElementById(containerId === 'smartAlertsList' ? 'hideOldSmartAlertsBtn' : 'parentHideOldSmartAlertsBtn');
 
@@ -2298,7 +2312,7 @@ function setupSmartAlertEvents() {
             if (result.success) {
                 alert(translate('smart_alerts.run_success'));
                 const alerts = await loadSmartAlerts();
-            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+                renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
             } else {
                 alert(result.message || translate('common.error'));
             }
@@ -2360,23 +2374,7 @@ function setupSmartAlertEvents() {
         console.warn('⚠️ زر saveAlertRulesBtn غير موجود');
     }
 
-    // أزرار التنبيهات الذكية القديمة (للمدير)
-document.getElementById('showOldSmartAlertsBtn')?.addEventListener('click', function() {
-    toggleOldSmartAlerts(true);
-});
-document.getElementById('hideOldSmartAlertsBtn')?.addEventListener('click', function() {
-    toggleOldSmartAlerts(false);
-});
-
-// أزرار التنبيهات الذكية القديمة (لولي الأمر)
-document.getElementById('parentShowOldSmartAlertsBtn')?.addEventListener('click', function() {
-    toggleOldSmartAlerts(true);
-});
-document.getElementById('parentHideOldSmartAlertsBtn')?.addEventListener('click', function() {
-    toggleOldSmartAlerts(false);
-});
-
-    // تحميل القواعد الحالية عند ظهور الصفحة
+    // ✅ تحميل القواعد الحالية (مع تجاهل الأخطاء)
     loadAlertRules().then(rules => {
         if (rules && rules.length > 0) {
             const absence = rules.find(r => r.type === 'absence');
@@ -2398,13 +2396,13 @@ document.getElementById('parentHideOldSmartAlertsBtn')?.addEventListener('click'
                 document.getElementById('achievementEnabled').checked = achievement.enabled !== false;
             }
         }
-    });
+    }).catch(() => {}); // تجاهل أي خطأ غير متوقع
 
-    // تحميل التنبيهات المرسلة
+    // ✅ تحميل التنبيهات المرسلة
     if (document.getElementById('smartAlertsList')) {
         loadSmartAlerts().then(alerts => {
-            renderSmartAlerts(alerts, 'smartAlertsList');
-        });
+            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+        }).catch(() => {});
     }
 }
 
