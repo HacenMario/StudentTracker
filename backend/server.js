@@ -75,6 +75,28 @@ app.use('/api/holidays', holidayRoutes);
 app.use('/api/parent', parentRoutes);
 
 // ==========================================
+// مسح جميع التنبيهات الذكية (للمدير فقط)
+// ==========================================
+app.delete('/api/smart-alerts/clear', auth, async (req, res) => {
+    try {
+        // تحقق من أن المستخدم مدير
+        if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+            return res.status(403).json({ message: 'غير مصرح لك' });
+        }
+        // حذف جميع التنبيهات الذكية
+        const SmartAlert = require('./models/SmartAlert'); // تأكد من اسم النموذج
+        const result = await SmartAlert.deleteMany({});
+        res.json({
+            success: true,
+            message: `✅ تم حذف ${result.deletedCount} تنبيه ذكي بنجاح`
+        });
+    } catch (err) {
+        console.error('❌ خطأ في مسح التنبيهات الذكية:', err);
+        res.status(500).json({ message: 'حدث خطأ أثناء مسح التنبيهات' });
+    }
+});
+
+// ==========================================
 // ✅ نقاط نهاية ولي الأمر (للرسائل) - إضافة مستقلة
 // ==========================================
 
