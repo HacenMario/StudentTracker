@@ -2321,6 +2321,46 @@ function setupSmartAlertEvents() {
 }
 
 // ==========================================
+// زر مسح الكل
+// ==========================================
+const clearBtn = document.getElementById('clearAllSmartAlertsBtn');
+if (clearBtn) {
+    clearBtn.addEventListener('click', clearAllSmartAlerts);
+    console.log('✅ ربط زر مسح التنبيهات الذكية');
+}
+
+// ==========================================
+// مسح جميع التنبيهات الذكية (للمدير)
+// ==========================================
+async function clearAllSmartAlerts() {
+    // التأكيد قبل المسح
+    const confirmed = await showConfirmModal(
+        'مسح التنبيهات الذكية',
+        'هل أنت متأكد من حذف جميع التنبيهات الذكية المرسلة؟ هذا الإجراء لا يمكن التراجع عنه.'
+    );
+    if (!confirmed) return;
+
+    try {
+        const res = await fetchWithAuth('/api/smart-alerts/clear', {
+            method: 'DELETE'
+        });
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل مسح التنبيهات');
+        }
+        const data = await res.json();
+        alert(data.message || '✅ تم مسح جميع التنبيهات الذكية بنجاح');
+        
+        // إعادة تحميل القائمة بعد المسح
+        const alerts = await loadSmartAlerts();
+        renderSmartAlerts(alerts, 'smartAlertsList');
+    } catch (err) {
+        console.error('❌ فشل مسح التنبيهات:', err);
+        alert('❌ فشل مسح التنبيهات: ' + err.message);
+    }
+}
+
+// ==========================================
 // دوال إدارة العطل والإجازات (معدلة)
 // ==========================================
 
