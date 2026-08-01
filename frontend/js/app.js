@@ -403,14 +403,14 @@ function showParentDashboard() {
     document.getElementById('parentPhoneDisplay').textContent = phone;
     
     connectSocket();
-    loadParentStudents();      // تحميل الأبناء وسجل الحضور
+    loadParentStudents();
     loadParentLogs();
     loadParentNotifications();
-    loadParentChildren();      // تعبئة قائمة الأبناء في نموذج الرسالة
-    setupParentMessageForm();  // ربط نموذج إرسال الرسالة
+    loadParentChildren();
+    setupParentMessageForm();
     
     // ✅ تحميل التنبيهات الذكية لولي الأمر
-    loadParentSmartAlerts(false);
+    loadParentSmartAlerts(showOldSmartAlerts);
 }
 
 // دالة جديدة لجلب معلومات ولي الأمر وعرضها
@@ -449,20 +449,19 @@ async function fetchParentInfo() {
 
 // ✅ دالة جديدة لتحميل التنبيهات الذكية الخاصة بولي الأمر
 async function loadParentSmartAlerts(showOld = false) {
+    console.log('🔍 جاري تحميل التنبيهات الذكية لولي الأمر...');
     try {
         const res = await fetchWithAuth('/api/smart-alerts');
-        if (!res.ok) {
-            console.warn('⚠️ لا توجد تنبيهات ذكية لولي الأمر (status:', res.status, ')');
-            renderSmartAlerts([], 'parentSmartAlertsList', showOld);
-            return;
-        }
+        console.log('📨 استجابة الخادم (ولي الأمر):', res.status);
+        if (!res.ok) throw new Error('فشل جلب التنبيهات');
         const alerts = await res.json();
+        console.log('📊 عدد التنبيهات (ولي الأمر):', alerts.length);
         renderSmartAlerts(alerts, 'parentSmartAlertsList', showOld);
     } catch (err) {
         console.warn('⚠️ لا توجد تنبيهات ذكية لعرضها:', err.message);
         const container = document.getElementById('parentSmartAlertsList');
         if (container) {
-            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">لا توجد تنبيهات ذكية</div>`;
+            container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center; padding:12px;">${translate('smart_alerts.no_alerts') || 'لا توجد تنبيهات ذكية'}</div>`;
         }
     }
 }
