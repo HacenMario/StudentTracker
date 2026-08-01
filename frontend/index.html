@@ -334,27 +334,14 @@
             <i class="fas fa-save"></i> <span data-i18n="smart_alerts.save_rules">حفظ القواعد</span>
         </button>
 
-<!-- قائمة التنبيهات الذكية المرسلة -->
-<div style="margin-top:15px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-        <h4 style="color:#1a365d; font-size:15px; margin:0;">
-            <i class="fas fa-list"></i> <span data-i18n="smart_alerts.sent_alerts">التنبيهات الذكية المرسلة</span>
-        </h4>
-        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-            <button id="showOldSmartAlertsBtn" class="btn-show-old" style="display:none;">
-                <i class="fas fa-chevron-down"></i> <span data-i18n="smart_alerts.show_old">عرض التنبيهات الذكية القديمة</span>
-            </button>
-            <button id="hideOldSmartAlertsBtn" class="btn-hide-old" style="display:none;">
-                <i class="fas fa-chevron-up"></i> <span data-i18n="smart_alerts.hide_old">إخفاء التنبيهات الذكية القديمة</span>
-            </button>
-            <!-- ✅ الزر الجديد لمسح جميع التنبيهات الذكية -->
-            <button id="clearAllSmartAlertsBtn" class="btn-danger" style="padding:6px 16px; font-size:13px; border-radius:30px; background:#e53e3e; color:white; border:none; cursor:pointer; display:flex; align-items:center; gap:4px;">
-                <i class="fas fa-trash-alt"></i> <span>مسح الكل</span>
-            </button>
+        <!-- قائمة التنبيهات المرسلة -->
+        <div style="margin-top:15px;">
+            <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">
+                <i class="fas fa-list"></i> <span data-i18n="smart_alerts.sent_alerts">التنبيهات المرسلة</span>
+            </h4>
+            <div id="smartAlertsList" style="max-height:300px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
         </div>
     </div>
-    <div id="smartAlertsList" style="max-height:300px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
-</div>
 
     <!-- إرسال الإشعارات -->
     <div class="notification-forms">
@@ -474,27 +461,16 @@
         </button>
     </div>
 
-<!-- ========================================== -->
-<!-- التنبيهات الذكية (ولي الأمر) -->
-<!-- ========================================== -->
-<div class="smart-alerts-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
-        <h3 style="color:#1a365d; font-size:18px; display:flex; align-items:center; gap:10px; margin:0;">
+    <!-- ========================================== -->
+    <!-- التنبيهات الذكية (ولي الأمر) -->
+    <!-- ========================================== -->
+    <div class="smart-alerts-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+        <h3 style="color:#1a365d; font-size:18px; display:flex; align-items:center; gap:10px; margin-bottom:10px;">
             <i class="fas fa-brain" style="color:#8e44ad;"></i>
-            <span data-i18n="smart_alerts.title">قائمة التنبيهات الذكية</span>
+            <span data-i18n="smart_alerts.title">التنبيهات الذكية</span>
         </h3>
-        <div style="display:flex; gap:6px;">
-            <!-- ✅ زر عرض التنبيهات القديمة -->
-            <button id="parentShowOldSmartAlertsBtn" class="btn-show-old" style="display:none;">
-                <i class="fas fa-chevron-down"></i> <span data-i18n="smart_alerts.show_old">عرض التنبيهات الذكية القديمة</span>
-            </button>
-            <!-- ✅ زر إخفاء التنبيهات القديمة -->
-            <button id="parentHideOldSmartAlertsBtn" class="btn-hide-old" style="display:none;">
-                <i class="fas fa-chevron-up"></i> <span data-i18n="smart_alerts.hide_old">إخفاء التنبيهات الذكية القديمة</span>
-            </button>
-        </div>
+        <div id="parentSmartAlertsList" style="max-height:300px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
     </div>
-    <div id="parentSmartAlertsList" style="max-height:300px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
 </div>
    
     <!-- ========================================== -->
