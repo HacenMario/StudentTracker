@@ -109,4 +109,32 @@ router.post('/run', auth, isAdmin, async (req, res) => {
   }
 });
 
+// ==========================================
+// مسح جميع التنبيهات الذكية (للمدير فقط)
+// ==========================================
+router.delete('/clear', auth, isAdmin, async (req, res) => {
+
+    try {
+
+        const result = await SmartAlert.deleteMany({});
+
+        res.json({
+            success: true,
+            deletedCount: result.deletedCount,
+            message: `تم حذف ${result.deletedCount} تنبيه ذكي بنجاح`
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ أثناء حذف التنبيهات الذكية'
+        });
+
+    }
+
+});
+
 module.exports = router;
