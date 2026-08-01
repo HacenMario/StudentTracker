@@ -387,6 +387,7 @@ function showAdminDashboard() {
 }
 
 function showParentDashboard() {
+    console.log('🔍 showParentDashboard - بدء عرض لوحة ولي الأمر');
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
@@ -1327,6 +1328,8 @@ function renderFilteredStudents() {
 }
 
 function renderStudents(students, containerId, showAdminControls) {
+    console.log('🔍 renderStudents - containerId:', containerId);
+    console.log('🔍 renderStudents - عدد الطلاب:', students ? students.length : 0);
     const container = document.getElementById(containerId);
     if (!container) return;
     if (!students || students.length === 0) {
@@ -1747,8 +1750,10 @@ function toggleAdminOldLogs(show) {
 // 18. دوال ولي الأمر
 // ==========================================
 async function loadParentStudents() {
+    console.log('🔍 loadParentStudents - بدء التحميل');
     try {
         const res = await fetchWithAuth('/api/students');
+        console.log('🔍 loadParentStudents - استجابة الخادم:', res.status);
         if (!res.ok) throw new Error('فشل جلب بيانات أبنائك');
         const students = await res.json();
         renderStudents(students, 'parentStudentsList', false);
@@ -1768,7 +1773,7 @@ async function loadParentStudents() {
             renderParentLogs(parentShowOldLogs);
         }
     } catch (err) {
-        console.error(err);
+        console.error('❌ loadParentStudents - خطأ:', err);
     }
 }
 
