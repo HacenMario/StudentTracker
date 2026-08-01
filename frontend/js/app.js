@@ -2289,7 +2289,9 @@ function renderSmartAlerts(alerts, containerId, showOld) {
 // ربط أحداث التنبيهات الذكية
 // ==========================================
 function setupSmartAlertEvents() {
-    // زر تشغيل التنبيهات يدوياً
+    // ==========================================
+    // 1. زر تشغيل التنبيهات يدوياً
+    // ==========================================
     const runBtn = document.getElementById('runSmartAlertsBtn');
     if (runBtn) {
         runBtn.addEventListener('click', async function() {
@@ -2306,7 +2308,7 @@ function setupSmartAlertEvents() {
             if (result.success) {
                 alert(translate('smart_alerts.run_success'));
                 const alerts = await loadSmartAlerts();
-                renderSmartAlerts(alerts, 'smartAlertsList');
+                renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
             } else {
                 alert(result.message || translate('common.error'));
             }
@@ -2319,7 +2321,9 @@ function setupSmartAlertEvents() {
         console.warn('⚠️ زر runSmartAlertsBtn غير موجود');
     }
 
-    // زر حفظ القواعد
+    // ==========================================
+    // 2. زر حفظ قواعد التنبيهات
+    // ==========================================
     const saveBtn = document.getElementById('saveAlertRulesBtn');
     if (saveBtn) {
         saveBtn.addEventListener('click', async function() {
@@ -2368,7 +2372,9 @@ function setupSmartAlertEvents() {
         console.warn('⚠️ زر saveAlertRulesBtn غير موجود');
     }
 
-    // تحميل القواعد الحالية عند ظهور الصفحة
+    // ==========================================
+    // 3. تحميل القواعد الحالية (مع تجاهل الأخطاء)
+    // ==========================================
     loadAlertRules().then(rules => {
         if (rules && rules.length > 0) {
             const absence = rules.find(r => r.type === 'absence');
@@ -2390,13 +2396,73 @@ function setupSmartAlertEvents() {
                 document.getElementById('achievementEnabled').checked = achievement.enabled !== false;
             }
         }
-    });
+    }).catch(() => {});
 
-    // تحميل التنبيهات المرسلة
+    // ==========================================
+    // 4. تحميل التنبيهات المرسلة مع showOldSmartAlerts
+    // ==========================================
     if (document.getElementById('smartAlertsList')) {
         loadSmartAlerts().then(alerts => {
-            renderSmartAlerts(alerts, 'smartAlertsList');
+            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+        }).catch(() => {});
+    }
+
+    // ==========================================
+    // 5. ربط أزرار عرض/إخفاء التنبيهات القديمة (للمدير)
+    // ==========================================
+    const showBtn = document.getElementById('showOldSmartAlertsBtn');
+    const hideBtn = document.getElementById('hideOldSmartAlertsBtn');
+    if (showBtn) {
+        showBtn.addEventListener('click', function() {
+            toggleOldSmartAlerts(true);
         });
+        console.log('✅ ربط زر عرض التنبيهات القديمة (مدير)');
+    }
+    if (hideBtn) {
+        hideBtn.addEventListener('click', function() {
+            toggleOldSmartAlerts(false);
+        });
+        console.log('✅ ربط زر إخفاء التنبيهات القديمة (مدير)');
+    }
+
+    // ==========================================
+    // 6. ربط أزرار عرض/إخفاء التنبيهات القديمة (لولي الأمر)
+    // ==========================================
+    const parentShowBtn = document.getElementById('parentShowOldSmartAlertsBtn');
+    const parentHideBtn = document.getElementById('parentHideOldSmartAlertsBtn');
+    if (parentShowBtn) {
+        parentShowBtn.addEventListener('click', function() {
+            toggleOldSmartAlerts(true);
+        });
+        console.log('✅ ربط زر عرض التنبيهات القديمة (ولي أمر)');
+    }
+    if (parentHideBtn) {
+        parentHideBtn.addEventListener('click', function() {
+            toggleOldSmartAlerts(false);
+        });
+        console.log('✅ ربط زر إخفاء التنبيهات القديمة (ولي أمر)');
+    }
+
+    // ==========================================
+    // 7. زر مسح الكل (للمدير فقط)
+    // ==========================================
+    const clearBtn = document.getElementById('clearAllSmartAlertsBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearAllSmartAlerts);
+        console.log('✅ ربط زر مسح التنبيهات الذكية');
+    }
+}
+
+function toggleOldSmartAlerts(show) {
+    showOldSmartAlerts = show;
+    // إعادة تحميل التنبيهات في كل من لوحة المدير وولي الأمر
+    if (document.getElementById('smartAlertsList')) {
+        loadSmartAlerts().then(alerts => {
+            renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+        });
+    }
+    if (document.getElementById('parentSmartAlertsList')) {
+        loadParentSmartAlerts(showOldSmartAlerts);
     }
 }
 
@@ -3374,14 +3440,6 @@ async function clearAllSmartAlerts() {
         alert('❌ فشل مسح التنبيهات: ' + err.message);
     }
 }
-
-// ربط الزر بالدالة
-document.addEventListener('DOMContentLoaded', function() {
-    const clearBtn = document.getElementById('clearAllSmartAlertsBtn');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', clearAllSmartAlerts);
-    }
-});
 
 // ==========================================
 // 20. بدء التطبيق
