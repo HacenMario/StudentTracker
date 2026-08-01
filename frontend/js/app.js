@@ -384,21 +384,30 @@ function showAdminDashboard() {
     setupHolidayEvents();
 }
 
-function showParentDashboard() {
+async function showParentDashboard() {
+    console.log("① showParentDashboard");
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'none';
     document.getElementById('parentDashboard').style.display = 'block';
 
     // ✅ جلب بيانات ولي الأمر من API مباشرة (من الطلاب المرتبطين به)
+    console.log("② fetchParentInfo");
     fetchParentInfo();
 
     connectSocket();
+    
+    console.log("③ loadParentStudents");
     loadParentStudents(); // تحميل قائمة الطلاب
+    console.log("④ loadParentLogs");
     loadParentLogs();
+    console.log("⑤ loadParentNotifications");
     loadParentNotifications();
+    console.log("⑥ loadParentChildren");
     loadParentChildren(); // تعبئة القائمة المنسدلة
+    console.log("⑦ setupParentMessageForm");
     setupParentMessageForm();
+    console.log("⑦ loadParentSmartAlerts");
     loadParentSmartAlerts(false);
 }
 
