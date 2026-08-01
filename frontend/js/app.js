@@ -3269,6 +3269,44 @@ document.addEventListener('DOMContentLoaded', function() {
 updateDarkModeIcon();
 
 // ==========================================
+// مسح جميع التنبيهات الذكية (للمدير فقط)
+// ==========================================
+async function clearAllSmartAlerts() {
+    const confirmed = await showConfirmModal(
+        'مسح جميع التنبيهات الذكية',
+        'هل أنت متأكد من رغبتك في حذف جميع التنبيهات الذكية المرسلة؟ هذا الإجراء لا يمكن التراجع عنه.'
+    );
+    if (!confirmed) return;
+
+    try {
+        const res = await fetchWithAuth('/api/smart-alerts/clear-all', {
+            method: 'DELETE',
+        });
+
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'فشل مسح التنبيهات');
+        }
+
+        alert('✅ تم مسح جميع التنبيهات الذكية بنجاح');
+        // إعادة تحميل قائمة التنبيهات
+        const alerts = await loadSmartAlerts();
+        renderSmartAlerts(alerts, 'smartAlertsList', showOldSmartAlerts);
+    } catch (err) {
+        console.error('❌ خطأ في مسح التنبيهات الذكية:', err);
+        alert('❌ فشل مسح التنبيهات: ' + err.message);
+    }
+}
+
+// ربط الزر بالدالة
+document.addEventListener('DOMContentLoaded', function() {
+    const clearBtn = document.getElementById('clearAllSmartAlertsBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearAllSmartAlerts);
+    }
+});
+
+// ==========================================
 // 20. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', async function() {
