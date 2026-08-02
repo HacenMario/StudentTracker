@@ -60,7 +60,10 @@
     "edit_title": "✏️ Edit Student Information",
     "for_parent": "for the parent",
     "confirm_add": "Confirm adding student",
-    "not_found": "Student not found"
+    "not_found": "Student not found",
+    "added": "Student added",
+    "toggled": "Student status changed",
+    "deleted": "Student deleted"
   },
   "notification": {
     "title": "Notifications",
@@ -75,6 +78,7 @@
     "old": "📜 Old Notifications",
     "hide_old": "Hide Old Notifications",
     "show_old": "Show Old Notifications",
+    "new": "New Notification",
     "sent_general": "General notification sent successfully",
     "sent_private": "Private notification sent successfully",
     "confirm_general": "Are you sure you want to send this notification to all parents?",
@@ -99,6 +103,7 @@
     "exit": "Check Out",
     "all_students_inside": "All students are inside 🏫",
     "all_students_outside": "All students are outside 🚪",
+    "student_became": "Student {name} is {status}",
     "student_became_inside": "Student {name} is inside 🏫",
     "student_became_outside": "Student {name} is outside 🚪",
     "student_deleted": "Student deleted",
