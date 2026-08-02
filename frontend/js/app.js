@@ -45,38 +45,6 @@ function updateLanguageButtons(lang) {
     });
 }
 
-// تحديث دالة switchLanguage
-function switchLanguage(lang) {
-    if (lang === currentLanguage) return;
-    currentLanguage = lang;
-    localStorage.setItem('language', lang);
-    
-    // تحديث الاتجاه
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
-    
-    // ✅ تحديث حالة جميع الأزرار
-    updateLanguageButtons(lang);
-    
-    // تطبيق الترجمات
-    applyTranslationsToAll();
-    
-    // إعادة تحميل المحتوى الديناميكي
-    if (currentUser) {
-        if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
-            loadAdminStudents();
-            loadAdminLogs();
-            loadAdminNotifications();
-        } else {
-            loadParentStudents();
-            loadParentLogs();
-            loadParentNotifications();
-        }
-    }
-    
-    console.log(`🌍 تم تغيير اللغة إلى: ${lang}`);
-}
-
 // ==========================================
 // نظام الترجمة (i18n)
 // ==========================================
