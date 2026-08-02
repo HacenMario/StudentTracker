@@ -83,7 +83,8 @@
     "confirm_general": "هل أنت متأكد من إرسال هذا الإشعار لجميع أولياء الأمور؟",
     "confirm_private": "هل أنت متأكد من إرسال هذا الإشعار لولي الأمر ({email})؟",
     "message_required": "اكتب رسالة الإشعار",
-    "new": "إشعار جديد"
+    "new": "إشعار جديد",
+    "received": "📩 الإشعارات الواردة"
   },
   "attendance": {
     "log": "سجل النشاطات",
@@ -97,7 +98,7 @@
     "hide_old_logs": "إخفاء السجل السابق",
     "show_old_logs": "عرض السجل السابق",
     "show_all": "عرض جميع التفاصيل",
-    "my_children": "سجل دخول/خروج أبنائي",
+    "my_children": "📋 سجل دخول/خروج أبنائي",
     "last_entry_exit": "آخر دخول/خروج",
     "entry": "دخول",
     "exit": "خروج",
@@ -109,7 +110,8 @@
     "student_deleted": "تم حذف تلميذ",
     "student_added": "تم إضافة الطالب {name}",
     "student_updated": "تم تعديل معلومات الطالب {name}",
-    "student_toggled": "تم تغيير حالة الطالب"
+    "student_toggled": "تم تغيير حالة الطالب",
+    "status_updated": "تم تحديث حالة الطلاب"
   },
   "settings": {
     "school": "إعدادات المؤسسة",
@@ -149,7 +151,20 @@
   "qr": {
     "accessing_camera": "جاري الوصول للكاميرا...",
     "starting_camera": "جاري تشغيل الكاميرا...",
-    "camera_working": "الكاميرا تعمل، ضع الكود أمامها"
+    "camera_working": "الكاميرا تعمل، ضع الكود أمامها",
+    "download": "تحميل QR",
+    "download_failed": "فشل تحميل QR"
+  },
+  "scanner": {
+    "accessing": "جاري الوصول للكاميرا...",
+    "processing": "✅ جاري معالجة الكود...",
+    "found": "✅ تم العثور على التلميذ: {name}",
+    "not_found": "❌ لم يتم العثور على تلميذ بهذا الكود",
+    "error": "❌ خطأ في الاتصال بالخادم",
+    "camera_selected": "تم اختيار الكاميرا",
+    "no_camera": "لا توجد كاميرات متاحة",
+    "permission_denied": "تم رفض إذن الكاميرا",
+    "start_failed": "فشل تشغيل الكاميرا"
   },
   "common": {
     "time": "وقت:",
@@ -176,7 +191,8 @@
     "all_details": "جميع التفاصيل",
     "confirm_add": "تأكيد الإضافة",
     "enable_notifications": "تفعيل الإشعارات",
-    "parent": "ولي الأمر"
+    "parent": "ولي الأمر",
+    "of": "من"
   },
   "search": {
     "placeholder": "ابحث عن تلميذ بالاسم...",
@@ -185,7 +201,7 @@
     "scan_qr": "مسح QR",
     "scan_qr_found": "✅ تم العثور على التلميذ: {name}",
     "scan_qr_not_found": "❌ لم يتم العثور على تلميذ بهذا الكود"
-},
+  },
   "smart_alerts": {
     "title": "التنبيهات الذكية",
     "run_now": "تشغيل الآن",
@@ -202,7 +218,7 @@
     "confirm_run": "هل أنت متأكد من تشغيل جميع التنبيهات الذكية يدوياً؟",
     "run_success": "✅ تم تشغيل جميع التنبيهات الذكية بنجاح",
     "rules_saved": "✅ تم حفظ قواعد التنبيهات بنجاح"
-},
+  },
   "leave": {
     "title": "تقديم عذر غياب",
     "select_student": "اختر التلميذ",
@@ -223,39 +239,61 @@
     "admin_note": "ملاحظة المدير",
     "fill_all": "الرجاء ملء جميع الحقول المطلوبة",
     "download_file": "تحميل الملف"
-},
+  },
   "leaving_notification": {
     "title": "⏰ تنبيه الخروج",
     "body": "⏰ تنبيه: باقي {minutes} دقيقة على خروج {studentName} من المدرسة"
   },
-"holidays": {
-  "title": "إدارة العطل والإجازات",
-  "add": "إضافة عطلة",
-  "date": "التاريخ",
-  "name": "اسم العطلة",
-  "description": "وصف (اختياري)",
-  "save": "حفظ",
-  "delete": "حذف عطلة",
-  "confirm_delete": "هل أنت متأكد من حذف هذه العطلة؟",
-  "close_form": "إغلاق النموذج",
-  "fill_all": "الرجاء إدخال التاريخ واسم العطلة",
-  "no_holidays": "📭 لا توجد عطل مسجلة",
-  "edit": "تعديل العطلة",
-  "toggle": "تعطيل",
-  "activate": "تفعيل",
-  "active": "مفعلة",
-  "inactive": "معطلة",
-  "status": "الحالة",
-  "confirm_toggle": "هل أنت متأكد من {action} عطلة \"{name}\"؟",
-  "edit_title": "✏️ تعديل العطلة",
-  "save_edit": "حفظ التعديلات",
-  "cancel_edit": "إلغاء التعديل",
-  "edit_success": "✅ تم تعديل العطلة بنجاح",
-  "toggle_success": "✅ تم {action} العطلة بنجاح",
-  "not_found": "❌ العطلة غير موجودة",
-  "duplicate": "⚠️ يوجد عطلة في هذا التاريخ بالفعل"
-},
+  "holidays": {
+    "title": "إدارة العطل والإجازات",
+    "add": "إضافة عطلة",
+    "date": "التاريخ",
+    "name": "اسم العطلة",
+    "description": "وصف (اختياري)",
+    "save": "حفظ",
+    "delete": "حذف عطلة",
+    "confirm_delete": "هل أنت متأكد من حذف هذه العطلة؟",
+    "close_form": "إغلاق النموذج",
+    "fill_all": "الرجاء إدخال التاريخ واسم العطلة",
+    "no_holidays": "📭 لا توجد عطل مسجلة",
+    "edit": "تعديل العطلة",
+    "toggle": "تعطيل",
+    "activate": "تفعيل",
+    "active": "مفعلة",
+    "inactive": "معطلة",
+    "status": "الحالة",
+    "confirm_toggle": "هل أنت متأكد من {action} عطلة \"{name}\"؟",
+    "edit_title": "✏️ تعديل العطلة",
+    "save_edit": "حفظ التعديلات",
+    "cancel_edit": "إلغاء التعديل",
+    "edit_success": "✅ تم تعديل العطلة بنجاح",
+    "toggle_success": "✅ تم {action} العطلة بنجاح",
+    "not_found": "❌ العطلة غير موجودة",
+    "duplicate": "⚠️ يوجد عطلة في هذا التاريخ بالفعل"
+  },
+  "parent": {
+    "info_card_title": "👋 مرحباً",
+    "badge": "👨‍👩‍👦 ولي أمر",
+    "message_form_title": "✉️ إرسال رسالة إلى المدرسة",
+    "student_label": "الطالب المعني بالرسالة",
+    "subject_label": "الموضوع (اختياري)",
+    "subject_placeholder": "مثال: استفسار عن الحضور",
+    "message_label": "نص الرسالة",
+    "message_placeholder": "اكتب رسالتك هنا...",
+    "send_btn": "إرسال الرسالة",
+    "message_sent": "تم إرسال رسالتك إلى المدرسة بنجاح",
+    "select_student": "-- اختر الطالب --",
+    "no_children": "لا يوجد أبناء مسجلين",
+    "loading": "جاري التحميل...",
+    "load_error": "حدث خطأ في التحميل",
+    "not_available": "---"
+  },
+  "dark_mode": {
+    "toggle": "تبديل الوضع الليلي"
+  },
   "system": {
-    "sender": "النظام"
+    "sender": "النظام",
+    "error": "حدث خطأ",
+    "connection_lost": "⚠️ انقطع الاتصال"
   }
 }
