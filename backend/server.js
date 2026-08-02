@@ -53,9 +53,8 @@ const io = socketIo(server, {
 });
 
 app.set('io', io);
-app.use(cors());
-app.use(express.json({ limit: '5mb' }));
 app.use(cors({ origin: 'https://student-tracker-system.vercel.app' }));
+app.use(express.json({ limit: '5mb' }));
 
 // ✅ Ping لإبقاء الخادم نشطاً
 setInterval(() => {
@@ -319,6 +318,7 @@ socket.on('toggle-status', async (studentId) => {
     }
 
     // ✅ تغيير الحالة بدون طرح ساعة
+    const now = new Date();
     student.isInside = !student.isInside;
     student.lastUpdate = now;
 
@@ -329,7 +329,7 @@ socket.on('toggle-status', async (studentId) => {
       student: student._id,
       status: student.isInside ? 'in' : 'out',
       method: 'manual',
-      timestamp: new Date(),
+      timestamp: now,
     });
     await attendance.save();
 
@@ -339,8 +339,8 @@ socket.on('toggle-status', async (studentId) => {
     // إرسال الإشعارات (نفس الكود السابق)
     if (student.parentEmail) {
       await sendPushNotificationToParent(
-        'status_title',
-        'status_body',
+        '🏫 تحديث حالة الحضور',
+        message,
         { 
           name: student.name, 
           status: statusText,
@@ -554,7 +554,7 @@ app.get('/', (req, res) => {
 // ==========================================
 // ✅ مسار اختبار الإشعارات المبكرة (للتجربة اليدوية)
 // ==========================================
-app.get('/api/test-leaving', async (req, res) => {
+app.get('/api/test-leaving', auth, async (req, res) => {
   try {
     const settings = await SchoolSettings.findOne();
     if (!settings) {
@@ -599,7 +599,7 @@ app.get('/api/test-leaving', async (req, res) => {
 // ==========================================
 // ✅ مسار الإشعارات المبكرة الفعلي (للتشغيل التلقائي)
 // ==========================================
-app.get('/api/trigger-leaving', async (req, res) => {
+app.get('/api/trigger-leaving', auth, async (req, res) => {
   try {
     const settings = await SchoolSettings.findOne();
     if (!settings) {
@@ -622,7 +622,7 @@ const messageFr = `⏰ Alerte : il reste ${notifyMinutesBefore} minutes avant la
       
       await new Notification({
         target: student.parentEmail,
-        message: message,
+        message: messageAr,
         sender: 'System',
       }).save();
 
