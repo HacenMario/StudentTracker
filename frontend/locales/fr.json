@@ -25,7 +25,7 @@
   "dashboard": {
     "admin": "Tableau de bord Admin",
     "parent": "Tableau de bord Parent",
-    "students": "Étudiants",
+    "students": "Élèves",
     "attendance": "Présence",
     "notifications": "Notifications",
     "settings": "Paramètres",
@@ -33,37 +33,37 @@
     "super_admin": "Tableau de bord Super Admin"
   },
   "student": {
-    "add": "Ajouter un étudiant",
-    "edit": "Modifier l'étudiant",
-    "delete": "Supprimer l'étudiant",
-    "name": "Nom de l'étudiant",
+    "add": "Ajouter un élève",
+    "edit": "Modifier l'élève",
+    "delete": "Supprimer l'élève",
+    "name": "Nom de l'élève",
     "parent_name": "Parent",
     "parent_phone": "Téléphone du parent",
     "parent_email": "E-mail du parent",
     "address": "Adresse",
     "status": "Statut",
-    "inside": "à l'intérieur 🏫",
-    "outside": "à l'extérieur 🚪",
+    "inside": "À l'intérieur 🏫",
+    "outside": "À l'extérieur 🚪",
     "toggle": "Changer le statut",
     "toggle_exit": "Enregistrer la sortie",
     "entry": "Entrée",
-    "student_id": "ID Étudiant",
+    "student_id": "ID Élève",
     "last_update": "Dernière mise à jour",
-    "no_students": "📭 Aucun étudiant",
-    "add_new": "Ajouter un nouvel étudiant",
-    "close_form": "Fermer le formulaire d'ajout",
+    "no_students": "📭 Aucun élève",
+    "add_new": "Ajouter un nouvel élève",
+    "close_form": "Fermer le formulaire",
     "save": "Enregistrer",
     "cancel": "Annuler",
-    "confirm_delete": "Êtes-vous sûr de vouloir supprimer cet étudiant définitivement ?",
-    "confirm_toggle": "Êtes-vous sûr de vouloir changer le statut de cet étudiant ?",
-    "not_found": "Étudiant non trouvé",
+    "confirm_delete": "Êtes-vous sûr de vouloir supprimer définitivement cet élève ?",
+    "confirm_toggle": "Êtes-vous sûr de vouloir changer le statut de cet élève ?",
     "confirm_edit": "Êtes-vous sûr de vouloir enregistrer les modifications ?",
-    "edit_title": "✏️ Modifier les informations de l'étudiant",
+    "edit_title": "✏️ Modifier les informations de l'élève",
     "for_parent": "pour le parent",
-    "confirm_add": "Confirmation d'ajout de l'étudiant",
-    "added": "Étudiant ajouté",
-    "toggled": "Statut de l'étudiant modifié",
-    "deleted": "Étudiant supprimé"
+    "confirm_add": "Confirmation d'ajout de l'élève",
+    "not_found": "Élève non trouvé",
+    "added": "Élève ajouté",
+    "toggled": "Statut de l'élève modifié",
+    "deleted": "Élève supprimé"
   },
   "notification": {
     "title": "Notifications",
@@ -78,12 +78,13 @@
     "old": "📜 Anciennes notifications",
     "hide_old": "Masquer les anciennes notifications",
     "show_old": "Afficher les anciennes notifications",
+    "new": "Nouvelle notification",
     "sent_general": "Notification générale envoyée avec succès",
     "sent_private": "Notification privée envoyée avec succès",
     "confirm_general": "Êtes-vous sûr d'envoyer cette notification à tous les parents ?",
     "confirm_private": "Êtes-vous sûr d'envoyer cette notification au parent ({email}) ?",
     "message_required": "Écrivez le message de notification",
-    "new": "Nouvelle notification"
+    "received": "📩 Notifications reçues"
   },
   "attendance": {
     "log": "Journal de présence",
@@ -97,19 +98,20 @@
     "hide_old_logs": "Masquer les anciens enregistrements",
     "show_old_logs": "Afficher les anciens enregistrements",
     "show_all": "Afficher tous les détails",
-    "my_children": "Journal d'entrée/sortie de mes enfants",
+    "my_children": "📋 Journal d'entrée/sortie de mes enfants",
     "last_entry_exit": "Dernière entrée/sortie",
     "entry": "Entrée",
     "exit": "Sortie",
-    "all_students_inside": "Tous les étudiants sont à l'intérieur 🏫",
-    "all_students_outside": "Tous les étudiants sont à l'extérieur 🚪",
-    "student_became": "L'étudiant {name} est {status}",
-    "student_became_inside": "L'étudiant {name} est à l'intérieur 🏫",
-    "student_became_outside": "L'étudiant {name} est à l'extérieur 🚪",
-    "student_deleted": "Étudiant supprimé",
-    "student_added": "Étudiant {name} ajouté",
-    "student_updated": "Étudiant {name} modifié",
-    "student_toggled": "Statut de l'étudiant modifié"
+    "all_students_inside": "Tous les élèves sont à l'intérieur 🏫",
+    "all_students_outside": "Tous les élèves sont à l'extérieur 🚪",
+    "student_became": "L'élève {name} est {status}",
+    "student_became_inside": "L'élève {name} est à l'intérieur 🏫",
+    "student_became_outside": "L'élève {name} est à l'extérieur 🚪",
+    "student_deleted": "Élève supprimé",
+    "student_added": "Élève {name} ajouté",
+    "student_updated": "Élève {name} modifié",
+    "student_toggled": "Statut de l'élève modifié",
+    "status_updated": "Statut des élèves mis à jour"
   },
   "settings": {
     "school": "Paramètres de l'établissement",
@@ -129,7 +131,7 @@
   "bulk": {
     "all_inside": "Tout changer à l'intérieur",
     "all_outside": "Tout changer à l'extérieur",
-    "confirm": "Êtes-vous sûr de vouloir changer le statut de tous les étudiants à {status} ?"
+    "confirm": "Êtes-vous sûr de vouloir changer le statut de tous les élèves à {status} ?"
   },
   "tenant": {
     "add": "Ajouter un nouveau locataire",
@@ -149,10 +151,22 @@
   "qr": {
     "accessing_camera": "Accès à la caméra...",
     "starting_camera": "Démarrage de la caméra...",
-    "camera_working": "Caméra active, placez le code devant"
+    "camera_working": "Caméra active, placez le code devant",
+    "download": "Télécharger le QR",
+    "download_failed": "Échec du téléchargement du QR"
+  },
+  "scanner": {
+    "accessing": "Accès à la caméra...",
+    "processing": "✅ Traitement du code...",
+    "found": "✅ Élève trouvé : {name}",
+    "not_found": "❌ Aucun élève trouvé avec ce code",
+    "error": "❌ Erreur de connexion au serveur",
+    "camera_selected": "Caméra sélectionnée",
+    "no_camera": "Aucune caméra disponible",
+    "permission_denied": "Permission de la caméra refusée",
+    "start_failed": "Échec du démarrage de la caméra"
   },
   "common": {
-    "time": "Heure :",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
@@ -175,16 +189,18 @@
     "close_scanner": "Fermer",
     "all_details": "Tous les détails",
     "confirm_add": "Confirmation d'ajout",
+    "enable_notifications": "Activer les notifications",
     "parent": "Parent",
-    "enable_notifications": "Activer les notifications"
+    "time": "Heure :",
+    "of": "de"
   },
   "search": {
-    "placeholder": "Rechercher un étudiant par nom...",
+    "placeholder": "Rechercher un élève par nom...",
     "no_results": "🔍 Aucun résultat pour \"{query}\"",
     "clear": "Annuler la recherche",
     "scan_qr": "Scanner QR",
-    "scan_qr_found": "✅ Étudiant trouvé: {name}",
-    "scan_qr_not_found": "❌ Aucun étudiant trouvé avec ce code"
+    "scan_qr_found": "✅ Élève trouvé : {name}",
+    "scan_qr_not_found": "❌ Aucun élève trouvé avec ce code"
   },
   "smart_alerts": {
     "title": "Alertes intelligentes",
@@ -205,7 +221,7 @@
   },
   "leave": {
     "title": "Soumettre une excuse d'absence",
-    "select_student": "Sélectionner l'étudiant",
+    "select_student": "Sélectionner l'élève",
     "date": "Date d'absence",
     "reason": "Motif de l'absence",
     "file": "Télécharger un fichier (certificat médical)",
@@ -228,34 +244,56 @@
     "title": "⏰ Alerte de sortie",
     "body": "⏰ Alerte : il reste {minutes} minutes avant la sortie de {studentName} de l'école"
   },
-"holidays": {
-  "title": "Gestion des jours fériés",
-  "add": "Ajouter un jour férié",
-  "date": "Date",
-  "name": "Nom du jour férié",
-  "description": "Description (optionnel)",
-  "save": "Enregistrer",
-  "delete": "Supprimer",
-  "confirm_delete": "Êtes-vous sûr de vouloir supprimer ce jour férié ?",
-  "close_form": "Fermer le formulaire",
-  "fill_all": "Veuillez saisir la date et le nom du jour férié",
-  "no_holidays": "📭 Aucun jour férié enregistré",
-  "edit": "Modifier le jour férié",
-  "toggle": "Désactiver",
-  "activate": "Activer",
-  "active": "Active",
-  "inactive": "Inactive",
-  "status": "Statut",
-  "confirm_toggle": "Êtes-vous sûr de {action} le jour férié \"{name}\" ?",
-  "edit_title": "✏️ Modifier le jour férié",
-  "save_edit": "Enregistrer les modifications",
-  "cancel_edit": "Annuler la modification",
-  "edit_success": "✅ Jour férié modifié avec succès",
-  "toggle_success": "✅ Jour férié {action} avec succès",
-  "not_found": "❌ Jour férié non trouvé",
-  "duplicate": "⚠️ Un jour férié existe déjà à cette date"
-},
+  "holidays": {
+    "title": "Gestion des jours fériés",
+    "add": "Ajouter un jour férié",
+    "date": "Date",
+    "name": "Nom du jour férié",
+    "description": "Description (optionnel)",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "confirm_delete": "Êtes-vous sûr de vouloir supprimer ce jour férié ?",
+    "close_form": "Fermer le formulaire",
+    "fill_all": "Veuillez saisir la date et le nom du jour férié",
+    "no_holidays": "📭 Aucun jour férié enregistré",
+    "edit": "Modifier le jour férié",
+    "toggle": "Désactiver",
+    "activate": "Activer",
+    "active": "Active",
+    "inactive": "Inactive",
+    "status": "Statut",
+    "confirm_toggle": "Êtes-vous sûr de {action} le jour férié \"{name}\" ?",
+    "edit_title": "✏️ Modifier le jour férié",
+    "save_edit": "Enregistrer les modifications",
+    "cancel_edit": "Annuler la modification",
+    "edit_success": "✅ Jour férié modifié avec succès",
+    "toggle_success": "✅ Jour férié {action} avec succès",
+    "not_found": "❌ Jour férié non trouvé",
+    "duplicate": "⚠️ Un jour férié existe déjà à cette date"
+  },
+  "parent": {
+    "info_card_title": "👋 Bienvenue",
+    "badge": "👨‍👩‍👦 Parent",
+    "message_form_title": "✉️ Envoyer un message à l'école",
+    "student_label": "Élève concerné",
+    "subject_label": "Sujet (optionnel)",
+    "subject_placeholder": "Exemple : question sur la présence",
+    "message_label": "Texte du message",
+    "message_placeholder": "Écrivez votre message ici...",
+    "send_btn": "Envoyer le message",
+    "message_sent": "Votre message a été envoyé à l'école avec succès",
+    "select_student": "-- Choisir l'élève --",
+    "no_children": "Aucun enfant enregistré",
+    "loading": "Chargement...",
+    "load_error": "Erreur de chargement",
+    "not_available": "---"
+  },
+  "dark_mode": {
+    "toggle": "Mode sombre"
+  },
   "system": {
-    "sender": "Système"
+    "sender": "Système",
+    "error": "Une erreur est survenue",
+    "connection_lost": "⚠️ Connexion perdue"
   }
 }
