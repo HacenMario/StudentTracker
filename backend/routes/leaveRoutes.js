@@ -1,11 +1,18 @@
+// backend/routes/leaveRoutes.js
+// ==========================================
+// مسارات طلبات عذر الغياب - النسخة المترجمة
+// ==========================================
+
 const express = require('express');
 const router = express.Router();
 const LeaveRequest = require('../models/LeaveRequest');
 const Student = require('../models/Student');
 const Attendance = require('../models/Attendance');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
+const { translate, detectUserLang } = require('../utils/i18n');
 
 // ==========================================
 // 1. تقديم طلب عذر غياب (ولي الأمر)
@@ -13,7 +20,7 @@ const { isAdmin } = require('../middleware/auth');
 router.post('/', auth, async (req, res) => {
   try {
     const { studentId, date, reason, fileUrl, fileName } = req.body;
-    
+
     const student = await Student.findById(studentId);
     if (!student) {
       return res.status(404).json({ message: 'الطالب غير موجود' });
@@ -22,7 +29,8 @@ router.post('/', auth, async (req, res) => {
       return res.status(403).json({ message: 'غير مصرح لك' });
     }
 
-    // ✅ تصحيح التاريخ
+    const lang = detectUserLang(req.user, req);
+
     let correctedDate = new Date(date);
     if (!isNaN(correctedDate.getTime())) {
       correctedDate = new Date(correctedDate.getTime() + (60 * 60 * 1000));
@@ -40,15 +48,16 @@ router.post('/', auth, async (req, res) => {
     await leaveRequest.save();
 
     const io = req.app.get('io');
+    const newRequestMsg = translate(lang, 'leave.new_request', { student: student.name });
     io.emit('new-leave-request', {
-      message: `📩 طلب عذر غياب جديد من ${student.name}`,
+      message: newRequestMsg,
       requestId: leaveRequest._id,
     });
 
-    res.status(201).json({ 
-      success: true, 
-      message: '✅ تم تقديم طلب العذر بنجاح', 
-      leaveRequest 
+    res.status(201).json({
+      success: true,
+      message: '✅ تم تقديم طلب العذر بنجاح',
+      leaveRequest,
     });
   } catch (err) {
     console.error('❌ خطأ في تقديم طلب العذر:', err);
@@ -75,7 +84,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // ==========================================
-// 3. الموافقة/الرفض (للمدير فقط) - ✅ مُصلح
+// 3. الموافقة/الرفض (للمدير فقط)
 // ==========================================
 router.put('/:id', auth, isAdmin, async (req, res) => {
   try {
@@ -85,35 +94,47 @@ router.put('/:id', auth, isAdmin, async (req, res) => {
       return res.status(404).json({ message: 'الطلب غير موجود' });
     }
 
-    // ✅ إذا كانت الموافقة، نحاول تسجيل Attendance
+    // ✅ جلب لغة ولي الأمر
+    let lang = 'ar';
+    if (leaveRequest.parentEmail) {
+      const parentUser = await User.findOne({ email: leaveRequest.parentEmail });
+      lang = detectUserLang(parentUser, req);
+    }
+
+    // إذا كانت الموافقة، نسجل Attendance
     if (status === 'approved') {
       try {
         const attendance = new Attendance({
           student: leaveRequest.student._id,
-          status: 'excused', // ✅ استخدام 'excused' بدلاً من 'out'
-          method: 'leave', // ✅ الآن مقبول لأننا أضفناه في enum
+          status: 'excused',
+          method: 'leave',
           timestamp: leaveRequest.date || new Date(),
         });
         await attendance.save();
       } catch (attendanceError) {
         console.error('❌ خطأ في تسجيل الحضور:', attendanceError);
-        return res.status(400).json({ 
-          success: false, 
-          message: 'فشل تسجيل الحضور: ' + attendanceError.message 
+        return res.status(400).json({
+          success: false,
+          message: 'فشل تسجيل الحضور: ' + attendanceError.message,
         });
       }
     }
 
-    // ✅ تحديث حالة الطلب
     leaveRequest.status = status;
     leaveRequest.adminNote = adminNote || '';
     await leaveRequest.save();
 
-    // ✅ إرسال إشعار لولي الأمر
     const io = req.app.get('io');
-    const statusText = status === 'approved' ? 'تمت الموافقة ✅' : 'تم الرفض ❌';
-    const notificationMessage = `📩 طلب عذر ${leaveRequest.student.name}: ${statusText}`;
-    
+    const leaveStatusText =
+      status === 'approved'
+        ? translate(lang, 'leave.approved')
+        : translate(lang, 'leave.rejected');
+
+    const notificationMessage = translate(lang, 'leave.updated', {
+      student: leaveRequest.student.name,
+      status: leaveStatusText,
+    });
+
     // حفظ الإشعار في قاعدة البيانات
     const notification = new Notification({
       target: leaveRequest.parentEmail,
@@ -129,10 +150,10 @@ router.put('/:id', auth, isAdmin, async (req, res) => {
       parentEmail: leaveRequest.parentEmail,
     });
 
-    res.json({ 
-      success: true, 
-      message: `✅ تم ${status === 'approved' ? 'الموافقة' : 'الرفض'} على الطلب`, 
-      leaveRequest 
+    res.json({
+      success: true,
+      message: notificationMessage,
+      leaveRequest,
     });
   } catch (err) {
     console.error('❌ خطأ في تحديث طلب العذر:', err);
@@ -161,8 +182,7 @@ router.get('/file/:id', auth, async (req, res) => {
     if (!leaveRequest) {
       return res.status(404).json({ message: 'الطلب غير موجود' });
     }
-    
-    // التحقق من الصلاحية: ولي الأمر يرى ملفه فقط، المدير يرى الكل
+
     if (req.user.role === 'parent' && leaveRequest.parentEmail !== req.user.email) {
       return res.status(403).json({ message: 'غير مصرح لك' });
     }
@@ -171,7 +191,6 @@ router.get('/file/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'لا يوجد ملف مرفق' });
     }
 
-    // إعادة التوجيه إلى الرابط أو عرض الملف مباشرة
     res.redirect(leaveRequest.fileUrl);
   } catch (err) {
     res.status(500).json({ message: err.message });
