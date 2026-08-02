@@ -1,3 +1,8 @@
+// backend/routes/studentRoutes.js
+// ==========================================
+// مسارات الطلاب - النسخة المترجمة
+// ==========================================
+
 const express = require('express');
 const router = express.Router();
 const Student = require('../models/Student');
@@ -7,6 +12,7 @@ const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
 const { sendPushNotificationToAll } = require('../utils/notifications');
+const { translate, detectUserLang } = require('../utils/i18n');
 const QRCode = require('qrcode');
 
 // ==========================================
@@ -32,10 +38,11 @@ router.get('/', auth, async (req, res) => {
 router.post('/', auth, isAdmin, async (req, res) => {
   try {
     const { name, parentEmail, parentName, parentPhone, address } = req.body;
+    const lang = detectUserLang(req.user, req);
 
     let parent = await User.findOne({ email: parentEmail, role: 'parent' });
     if (!parent) {
-      return res.status(400).json({ message: 'ولي الأمر غير موجود، يجب تسجيله أولاً' });
+      return res.status(400).json({ message: translate(lang, 'student.not_found') || 'ولي الأمر غير موجود، يجب تسجيله أولاً' });
     }
 
     const newStudent = new Student({
@@ -67,22 +74,34 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
       return res.status(404).json({ message: 'الطالب غير موجود' });
     }
 
+    // ✅ جلب لغة ولي الأمر
+    let lang = 'ar';
+    if (student.parentEmail) {
+      const parentUser = await User.findOne({ email: student.parentEmail });
+      lang = detectUserLang(parentUser, req);
+    }
+
     student.isInside = !student.isInside;
     student.lastUpdate = new Date(new Date().getTime() - (60 * 60 * 1000));
     await student.save();
 
-const attendance = new Attendance({
-  student: student._id,
-  status: student.isInside ? 'in' : 'out',
-  method: 'manual',
-  timestamp: new Date(new Date().getTime() - (60 * 60 * 1000)),
-  studentName: student.name,
-  statusText: student.isInside ? 'داخل 🏫' : 'خارج 🚪',
-});
-await attendance.save();
+    const attendance = new Attendance({
+      student: student._id,
+      status: student.isInside ? 'in' : 'out',
+      method: 'manual',
+      timestamp: new Date(new Date().getTime() - (60 * 60 * 1000)),
+      studentName: student.name,
+      statusText: student.isInside
+        ? translate(lang, 'attendance.status_inside')
+        : translate(lang, 'attendance.status_outside'),
+    });
+    await attendance.save();
 
-    const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
-    const message = `التلميذ ${student.name} أصبح ${statusText}`;
+    const statusText = student.isInside
+      ? translate(lang, 'attendance.status_inside')
+      : translate(lang, 'attendance.status_outside');
+
+    const message = translate(lang, 'attendance.student_became', { name: student.name, status: statusText });
 
     if (student.parentEmail) {
       const notification = new Notification({
@@ -101,11 +120,9 @@ await attendance.save();
       parentEmail: student.parentEmail,
     });
 
-    await sendPushNotificationToAll(
-      'تحديث حالة ابنك',
-      message,
-      { url: '/parent-dashboard' }
-    );
+    // ✅ إرسال push notification بلغة ولي الأمر
+    const pushTitle = translate(lang, 'webpush.status_title');
+    await sendPushNotificationToAll(pushTitle, message, { url: '/parent-dashboard' });
 
     res.json(student);
   } catch (err) {
@@ -122,10 +139,7 @@ router.delete('/:id', auth, isAdmin, async (req, res) => {
     const student = await Student.findByIdAndDelete(req.params.id);
     if (!student) return res.status(404).json({ message: 'غير موجود' });
 
-    await User.updateOne(
-      { _id: student.parent },
-      { $pull: { students: student._id } }
-    );
+    await User.updateOne({ _id: student.parent }, { $pull: { students: student._id } });
     await Attendance.deleteMany({ student: student._id });
 
     res.json({ message: 'تم الحذف' });
@@ -146,9 +160,7 @@ router.get('/:id/attendance', auth, async (req, res) => {
       return res.status(403).json({ message: 'غير مصرح لك برؤية هذا السجل' });
     }
 
-    const records = await Attendance.find({ student: student._id })
-      .sort({ timestamp: -1 })
-      .limit(30);
+    const records = await Attendance.find({ student: student._id }).sort({ timestamp: -1 }).limit(30);
 
     res.json(records);
   } catch (err) {
@@ -166,7 +178,7 @@ router.post('/scan-qr', auth, async (req, res) => {
 
     const cleanData = qrData.trim();
     let student = await Student.findOne({ studentId: cleanData });
-    
+
     if (!student && cleanData.match(/^[0-9a-fA-F]{24}$/)) {
       student = await Student.findById(cleanData);
     }
@@ -177,6 +189,13 @@ router.post('/scan-qr', auth, async (req, res) => {
 
     if (req.user.role === 'parent' && student.parent.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'غير مصرح لك بتغيير حالة هذا الطالب' });
+    }
+
+    // ✅ جلب لغة ولي الأمر
+    let lang = 'ar';
+    if (student.parentEmail) {
+      const parentUser = await User.findOne({ email: student.parentEmail });
+      lang = detectUserLang(parentUser, req);
     }
 
     student.isInside = !student.isInside;
@@ -190,8 +209,12 @@ router.post('/scan-qr', auth, async (req, res) => {
     });
     await attendance.save();
 
-    const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
-    const message = `التلميذ ${student.name} أصبح ${statusText} (عن طريق QR)`;
+    const statusText = student.isInside
+      ? translate(lang, 'attendance.status_inside')
+      : translate(lang, 'attendance.status_outside');
+
+    const message = translate(lang, 'attendance.student_became_qr', { name: student.name, status: statusText });
+
     const io = req.app.get('io');
     io.emit('status-changed', {
       student: student,
@@ -200,7 +223,7 @@ router.post('/scan-qr', auth, async (req, res) => {
       parentEmail: student.parentEmail,
     });
 
-    res.json({ success: true, message: `تم تغيير حالة ${student.name} إلى ${statusText}` });
+    res.json({ success: true, message: message });
   } catch (err) {
     console.error('❌ خطأ في مسح QR:', err);
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء معالجة QR' });
@@ -240,18 +263,14 @@ router.get('/:id/qr', auth, async (req, res) => {
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
     res.send(qrCodeBuffer);
-
   } catch (err) {
     console.error('❌ خطأ في توليد QR Code:', err);
-    res.status(500).json({ 
-      message: 'فشل توليد QR Code', 
-      error: err.message,
-    });
+    res.status(500).json({ message: 'فشل توليد QR Code', error: err.message });
   }
 });
 
 // ==========================================
-// 8. تعديل معلومات الطالب (للمدير فقط) - ✅ تمت الإضافة
+// 8. تعديل معلومات الطالب (للمدير فقط)
 // ==========================================
 router.put('/:id', auth, isAdmin, async (req, res) => {
   try {
@@ -262,7 +281,6 @@ router.put('/:id', auth, isAdmin, async (req, res) => {
       return res.status(404).json({ message: 'الطالب غير موجود' });
     }
 
-    // تحديث الحقول
     student.name = name || student.name;
     student.parentName = parentName || student.parentName;
     student.parentPhone = parentPhone || student.parentPhone;
