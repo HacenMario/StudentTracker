@@ -1,8 +1,14 @@
+// backend/routes/holidayRoutes.js
+// ==========================================
+// مسارات العطل والإجازات - النسخة المترجمة
+// ==========================================
+
 const express = require('express');
 const router = express.Router();
 const Holiday = require('../models/Holiday');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/auth');
+const { translate } = require('../utils/i18n');
 
 // ==========================================
 // 1. جلب جميع العطل
@@ -25,7 +31,7 @@ router.get('/range', auth, async (req, res) => {
     if (!start || !end) {
       return res.status(400).json({ message: 'يجب تحديد تاريخ البداية والنهاية' });
     }
-    
+
     const holidays = await Holiday.find({
       date: { $gte: new Date(start), $lte: new Date(end) },
     });
@@ -41,27 +47,26 @@ router.get('/range', auth, async (req, res) => {
 router.post('/', auth, isAdmin, async (req, res) => {
   try {
     const { date, endDate, name, description, isRecurring } = req.body;
-    
+
     if (!date || !name) {
       return res.status(400).json({ message: 'التاريخ والاسم مطلوبان' });
     }
-    
-    // ✅ التحقق من عدم وجود عطلة تتداخل مع التاريخ
+
     const start = new Date(date);
     const end = endDate ? new Date(endDate) : new Date(date);
-    
+
     const existing = await Holiday.findOne({
       $or: [
         { date: { $gte: start, $lte: end } },
         { endDate: { $gte: start, $lte: end } },
-        { date: { $lte: start }, endDate: { $gte: start } }
-      ]
+        { date: { $lte: start }, endDate: { $gte: start } },
+      ],
     });
-    
+
     if (existing) {
       return res.status(400).json({ message: 'يوجد عطلة تتداخل مع هذا التاريخ' });
     }
-    
+
     const holiday = new Holiday({
       date: start,
       endDate: endDate ? new Date(endDate) : null,
@@ -69,7 +74,7 @@ router.post('/', auth, isAdmin, async (req, res) => {
       description: description || '',
       isRecurring: isRecurring || false,
     });
-    
+
     await holiday.save();
     res.status(201).json({ success: true, message: '✅ تم إضافة العطلة بنجاح', holiday });
   } catch (err) {
@@ -98,16 +103,17 @@ router.put('/:id/toggle', auth, isAdmin, async (req, res) => {
     if (!holiday) {
       return res.status(404).json({ success: false, message: 'العطلة غير موجودة' });
     }
-    
+
     holiday.isActive = holiday.isActive === false ? true : false;
     await holiday.save();
-    
-    const statusText = holiday.isActive ? 'تفعيل' : 'تعطيل';
-    res.json({ 
-      success: true, 
-      message: `✅ تم ${statusText} العطلة بنجاح`,
-      holiday 
-    });
+
+    const lang = 'ar'; // العمليات الإدارية تظل بالعربية افتراضياً
+    const statusAction = holiday.isActive ? 'تفعيل' : 'تعطيل';
+    const msg = holiday.isActive
+      ? translate(lang, 'holiday.toggled_on')
+      : translate(lang, 'holiday.toggled_off');
+
+    res.json({ success: true, message: msg, holiday });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -120,23 +126,22 @@ router.put('/:id', auth, isAdmin, async (req, res) => {
   try {
     const { date, endDate, name, description } = req.body;
     const holiday = await Holiday.findById(req.params.id);
-    
+
     if (!holiday) {
       return res.status(404).json({ success: false, message: 'العطلة غير موجودة' });
     }
-    
+
     if (date) holiday.date = new Date(date);
     if (endDate) holiday.endDate = new Date(endDate);
     else if (endDate === null) holiday.endDate = null;
     if (name) holiday.name = name;
     if (description !== undefined) holiday.description = description;
-    
+
     await holiday.save();
     res.json({ success: true, message: '✅ تم تعديل العطلة بنجاح', holiday });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 
 module.exports = router;
