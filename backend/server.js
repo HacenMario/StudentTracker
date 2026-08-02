@@ -1,3 +1,9 @@
+// backend/server.js
+// ==========================================
+// الخادم الرئيسي - النسخة المترجمة الكاملة
+// تحتوي على جميع الوظائف من كلا الملفين مع دعم الترجمة الكامل
+// ==========================================
+
 require('dotenv').config();
 
 // ✅ ضبط المنطقة الزمنية للخادم إلى الجزائر
@@ -10,10 +16,17 @@ const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const webpush = require('web-push');
+
+// استيراد المسارات
 const leaveRoutes = require('./routes/leaveRoutes');
-const { startSmartAlertScheduler } = require('./services/smartAlertScheduler');
 const holidayRoutes = require('./routes/holidayRoutes');
 const parentRoutes = require('./routes/parent');
+const studentRoutes = require('./routes/studentRoutes');
+const authRoutes = require('./routes/authRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const smartAlertRoutes = require('./routes/smartAlertRoutes');
 
 // استيراد النماذج
 const Student = require('./models/Student');
@@ -22,24 +35,17 @@ const Attendance = require('./models/Attendance');
 const Notification = require('./models/Notification');
 const SchoolSettings = require('./models/SchoolSettings');
 const Subscription = require('./models/Subscription');
-
-// استيراد المسارات
-const studentRoutes = require('./routes/studentRoutes');
-const authRoutes = require('./routes/authRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
-const settingsRoutes = require('./routes/settingsRoutes');
-const subscriptionRoutes = require('./routes/subscriptionRoutes');
-const smartAlertRoutes = require('./routes/smartAlertRoutes');
-
 const Holiday = require('./models/Holiday');
 
+// استيراد الـ middleware والخدمات
 const auth = require('./middleware/auth');
 const { isAdmin } = require('./middleware/auth');
-
 const { getSchoolDaysInRange } = require('./services/smartAlertScheduler');
-
-// ✅ استيراد خدمة الجدولة للإشعارات المبكرة
 const { startNotificationScheduler } = require('./services/notificationScheduler');
+const { startSmartAlertScheduler } = require('./services/smartAlertScheduler');
+
+// ✅ استيراد نظام الترجمة
+const { translate, detectUserLang } = require('./utils/i18n');
 
 const app = express();
 const server = http.createServer(app);
@@ -47,9 +53,9 @@ const server = http.createServer(app);
 // تعريف io
 const io = socketIo(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"]
-  }
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  },
 });
 
 app.set('io', io);
@@ -73,79 +79,6 @@ app.use('/api/holidays', holidayRoutes);
 app.use('/api/parent', parentRoutes);
 
 // ==========================================
-// ✅ نقاط نهاية ولي الأمر (للرسائل) - إضافة مستقلة
-// ==========================================
-
-// 1. جلب أبناء ولي الأمر
-app.get('/api/parent/my-children', auth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).populate('students');
-        if (!user) {
-            return res.status(404).json({ msg: 'المستخدم غير موجود' });
-        }
-        if (user.role !== 'parent') {
-            return res.status(403).json({ msg: 'غير مصرح لك' });
-        }
-        res.json(user.students);
-    } catch (err) {
-        console.error('❌ خطأ في جلب أبناء ولي الأمر:', err);
-        res.status(500).json({ msg: 'خطأ في الخادم' });
-    }
-});
-
-// 2. إرسال رسالة من ولي الأمر إلى المدرسة
-app.post('/api/parent/send-message', auth, async (req, res) => {
-    try {
-        if (req.user.role !== 'parent') {
-            return res.status(403).json({ msg: 'غير مصرح لك بإرسال رسائل' });
-        }
-
-        const { studentId, subject, message } = req.body;
-        if (!studentId || !message) {
-            return res.status(400).json({ msg: 'الرجاء تحديد الطالب ونص الرسالة' });
-        }
-
-        const student = await Student.findById(studentId);
-        if (!student) {
-            return res.status(404).json({ msg: 'الطالب غير موجود' });
-        }
-
-        if (student.parent.toString() !== req.user.id) {
-            return res.status(403).json({ msg: 'هذا الطالب ليس تابعاً لك' });
-        }
-
-        const newNotification = new Notification({
-            sender: req.user.name,
-            target: 'admin',
-            subject: subject || 'رسالة من ولي أمر',
-            message: `رسالة من ولي أمر الطالب (${student.name}): ${message}`,
-            senderRole: 'parent',
-            parentStudentId: studentId,
-        });
-
-        await newNotification.save();
-
-        // إرسال إشعار فوري للمديرين المتصلين
-        const admins = await User.find({ role: 'admin' });
-        for (const admin of admins) {
-            const adminSocketId = userSockets.get(admin.email);
-            if (adminSocketId) {
-                io.to(adminSocketId).emit('notification', {
-                    message: `📩 رسالة من ولي أمر ${req.user.name} بخصوص ${student.name}`,
-                    notificationId: newNotification._id,
-                    createdAt: newNotification.createdAt,
-                });
-            }
-        }
-
-        res.json({ msg: 'تم إرسال رسالتك إلى المدرسة بنجاح' });
-    } catch (err) {
-        console.error('❌ خطأ في إرسال رسالة ولي الأمر:', err);
-        res.status(500).json({ msg: 'خطأ في الخادم' });
-    }
-});
-
-// ==========================================
 // إعداد Web Push (VAPID)
 // ==========================================
 const vapidKeys = {
@@ -154,36 +87,32 @@ const vapidKeys = {
 };
 
 if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
-  console.warn('⚠️ مفاتيح VAPID غير موجودة في ملف .env، الإشعارات لن تعمل');
+  console.warn('⚠️ VAPID keys not found in .env — push notifications will not work');
 } else {
-  webpush.setVapidDetails(
-    'mailto:info@school.edu',
-    vapidKeys.publicKey,
-    vapidKeys.privateKey
-  );
-  console.log('✅ تم إعداد VAPID للإشعارات');
+  webpush.setVapidDetails('mailto:info@school.edu', vapidKeys.publicKey, vapidKeys.privateKey);
+  console.log('✅ VAPID configured for push notifications');
 }
 
 // ==========================================
-// دالة إرسال إشعار لولي أمر محدد
+// دالة إرسال إشعار لولي أمر محدد (مع ترجمة)
 // ==========================================
 async function sendPushNotificationToParent(title, body, data = {}, parentEmail) {
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      console.warn('⚠️ مفاتيح VAPID غير متوفرة');
+      console.warn('⚠️ VAPID keys not available');
       return;
     }
 
     if (!parentEmail) {
-      console.warn('⚠️ لم يتم تحديد بريد ولي الأمر');
+      console.warn('⚠️ Parent email not specified');
       return;
     }
 
     const subscriptions = await Subscription.find({ userEmail: parentEmail });
-    console.log(`📊 عدد المشتركين للبريد ${parentEmail}: ${subscriptions.length}`);
+    console.log(`📊 Subscriptions for ${parentEmail}: ${subscriptions.length}`);
 
     if (subscriptions.length === 0) {
-      console.warn(`⚠️ لا يوجد اشتراكات للبريد: ${parentEmail}`);
+      console.warn(`⚠️ No subscriptions for: ${parentEmail}`);
       return;
     }
 
@@ -196,31 +125,27 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
       url: data.url || '/parent-dashboard',
     });
 
-    console.log(`📨 جاري إرسال إشعار خاص لـ ${parentEmail}`);
+    console.log(`📨 Sending push notification to ${parentEmail}`);
 
     let successCount = 0;
     for (const sub of subscriptions) {
       try {
-        const pushSubscription = {
-          endpoint: sub.endpoint,
-          keys: sub.keys,
-        };
+        const pushSubscription = { endpoint: sub.endpoint, keys: sub.keys };
         await webpush.sendNotification(pushSubscription, payload);
-        console.log(`✅ تم إرسال الإشعار إلى مشترك (بريد: ${sub.userEmail})`);
+        console.log(`✅ Push sent to subscriber (email: ${sub.userEmail})`);
         successCount++;
       } catch (err) {
-        console.error(`❌ فشل إرسال الإشعار:`, err.message);
+        console.error(`❌ Failed to send push:`, err.message);
         if (err.statusCode === 410 || err.statusCode === 404) {
           await Subscription.findByIdAndDelete(sub._id);
-          console.log(`🗑️ تم حذف اشتراك منتهي`);
+          console.log(`🗑️ Expired subscription removed`);
         }
       }
     }
 
-    console.log(`✅ انتهى إرسال الإشعار الخاص (نجح ${successCount} من ${subscriptions.length})`);
-
+    console.log(`✅ Push dispatch complete (${successCount}/${subscriptions.length} succeeded)`);
   } catch (err) {
-    console.error('❌ خطأ في إرسال الإشعار الخاص:', err);
+    console.error('❌ Error sending push notification:', err);
   }
 }
 
@@ -230,15 +155,15 @@ async function sendPushNotificationToParent(title, body, data = {}, parentEmail)
 async function sendPushNotificationToAll(title, body, data = {}) {
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      console.warn('⚠️ مفاتيح VAPID غير متوفرة');
+      console.warn('⚠️ VAPID keys not available');
       return;
     }
 
     const subscriptions = await Subscription.find({});
-    console.log(`📊 عدد المشتركين الكلي: ${subscriptions.length}`);
+    console.log(`📊 Total subscriptions: ${subscriptions.length}`);
 
     if (subscriptions.length === 0) {
-      console.warn('⚠️ لا يوجد مشتركين');
+      console.warn('⚠️ No subscribers');
       return;
     }
 
@@ -251,31 +176,25 @@ async function sendPushNotificationToAll(title, body, data = {}) {
       url: data.url || '/',
     });
 
-    console.log(`📨 جاري إرسال الإشعار لـ ${subscriptions.length} مشترك`);
+    console.log(`📨 Sending push to ${subscriptions.length} subscriber(s)`);
 
     let successCount = 0;
     for (const sub of subscriptions) {
       try {
-        const pushSubscription = {
-          endpoint: sub.endpoint,
-          keys: sub.keys,
-        };
+        const pushSubscription = { endpoint: sub.endpoint, keys: sub.keys };
         await webpush.sendNotification(pushSubscription, payload);
-        console.log(`✅ تم إرسال الإشعار إلى مشترك (بريد: ${sub.userEmail || 'غير معروف'})`);
         successCount++;
       } catch (err) {
-        console.error(`❌ فشل إرسال الإشعار:`, err.message);
+        console.error(`❌ Failed to send push:`, err.message);
         if (err.statusCode === 410 || err.statusCode === 404) {
           await Subscription.findByIdAndDelete(sub._id);
-          console.log(`🗑️ تم حذف اشتراك منتهي`);
         }
       }
     }
 
-    console.log(`✅ انتهى إرسال الإشعارات (نجح ${successCount} من ${subscriptions.length})`);
-
+    console.log(`✅ Push dispatch complete (${successCount}/${subscriptions.length} succeeded)`);
   } catch (err) {
-    console.error('❌ خطأ في إرسال الإشعارات:', err);
+    console.error('❌ Error sending push notifications:', err);
   }
 }
 
@@ -299,92 +218,96 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   const userEmail = socket.user.email;
   userSockets.set(userEmail, socket.id);
-  console.log(`🟢 عميل متصل: ${userEmail} (الدور: ${socket.user.role})`);
+  console.log(`🟢 Client connected: ${userEmail} (role: ${socket.user.role})`);
 
   // ----------------------
-  // 1. تبديل حالة الطالب (للمدير)
+  // 1. تبديل حالة الطالب (للمدير) - مع ترجمة
   // ----------------------
-socket.on('toggle-status', async (studentId) => {
-  if (socket.user.role !== 'admin') {
-    socket.emit('error', { message: 'غير مصرح لك' });
-    return;
-  }
-
-  try {
-    const student = await Student.findById(studentId);
-    if (!student) {
-      socket.emit('error', { message: 'الطالب غير موجود' });
+  socket.on('toggle-status', async (studentId) => {
+    if (socket.user.role !== 'admin') {
+      socket.emit('error', { message: 'غير مصرح لك' });
       return;
     }
 
-    // ✅ تغيير الحالة بدون طرح ساعة
-    const now = new Date();
-    student.isInside = !student.isInside;
-    student.lastUpdate = now;
-
-    await student.save();
-
-    // ✅ تسجيل الحضور بدون طرح ساعة
-    const attendance = new Attendance({
-      student: student._id,
-      status: student.isInside ? 'in' : 'out',
-      method: 'manual',
-      timestamp: now,
-    });
-    await attendance.save();
-
-    const statusText = student.isInside ? 'داخل 🏫' : 'خارج 🚪';
-    const message = `التلميذ ${student.name} أصبح ${statusText}`;
-
-    // إرسال الإشعارات (نفس الكود السابق)
-    if (student.parentEmail) {
-      await sendPushNotificationToParent(
-        '🏫 تحديث حالة الحضور',
-        message,
-        { 
-          name: student.name, 
-          status: statusText,
-          url: '/parent-dashboard'
-        },
-        student.parentEmail
-      );
-
-      const notification = new Notification({
-        target: student.parentEmail,
-        message: message,
-        sender: 'Admin',
-      });
-      await notification.save();
-
-      const targetSocketId = userSockets.get(student.parentEmail);
-      if (targetSocketId) {
-        io.to(targetSocketId).emit('notification', {
-          message: message,
-          notificationId: notification._id,
-          createdAt: notification.createdAt,
-        });
+    try {
+      const student = await Student.findById(studentId);
+      if (!student) {
+        socket.emit('error', { message: 'الطالب غير موجود' });
+        return;
       }
+
+      // ✅ جلب لغة ولي الأمر
+      let lang = 'ar';
+      if (student.parentEmail) {
+        const parentUser = await User.findOne({ email: student.parentEmail });
+        lang = detectUserLang(parentUser, null);
+      }
+
+      const now = new Date();
+      student.isInside = !student.isInside;
+      student.lastUpdate = now;
+      await student.save();
+
+      const attendance = new Attendance({
+        student: student._id,
+        status: student.isInside ? 'in' : 'out',
+        method: 'manual',
+        timestamp: now,
+      });
+      await attendance.save();
+
+      const statusText = student.isInside
+        ? translate(lang, 'attendance.status_inside')
+        : translate(lang, 'attendance.status_outside');
+
+      const message = translate(lang, 'attendance.student_became', { name: student.name, status: statusText });
+
+      // ✅ إرسال push notification بلغة ولي الأمر
+      if (student.parentEmail) {
+        await sendPushNotificationToParent(
+          translate(lang, 'webpush.status_title'),
+          message,
+          { name: student.name, status: statusText, url: '/parent-dashboard' },
+          student.parentEmail,
+        );
+
+        const notification = new Notification({
+          target: student.parentEmail,
+          message: message,
+          sender: 'Admin',
+        });
+        await notification.save();
+
+        const targetSocketId = userSockets.get(student.parentEmail);
+        if (targetSocketId) {
+          io.to(targetSocketId).emit('notification', {
+            message: message,
+            notificationId: notification._id,
+            createdAt: notification.createdAt,
+          });
+        }
+      }
+
+      io.emit('status-changed', {
+        student: student,
+        parentEmail: student.parentEmail,
+        parentId: student.parentId,
+      });
+
+      console.log(`✅ Status changed: ${student.name} → ${statusText}`);
+    } catch (error) {
+      console.error('❌ Error toggling student status:', error);
+      socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
     }
-
-    io.emit('status-changed', {
-      student: student,
-      parentEmail: student.parentEmail,
-      parentId: student.parentId,
-    });
-
-    console.log(`✅ تم تغيير حالة ${student.name} إلى ${statusText}`);
-
-  } catch (error) {
-    console.error('❌ خطأ في تغيير حالة الطالب:', error);
-    socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة' });
-  }
-});
+  });
 
   // ----------------------
-  // 2. إشعار عام من المدير
+  // 2. إشعار عام من المدير - مع ترجمة
   // ----------------------
   socket.on('admin-notification', async (data) => {
     if (socket.user.role !== 'admin') return;
+
+    const lang = detectUserLang(null, null);
 
     try {
       const notification = new Notification({
@@ -401,20 +324,20 @@ socket.on('toggle-status', async (studentId) => {
       });
 
       await sendPushNotificationToAll(
-        '📢 إشعار من المدرسة',
+        translate(lang, 'webpush.general'),
         data.message,
-        { url: '/' }
+        { url: '/' },
       );
 
-      console.log(`📢 تم إرسال إشعار عام: ${data.message}`);
+      console.log(`📢 General notification sent: ${data.message}`);
     } catch (err) {
-      console.error('❌ خطأ في إرسال الإشعار العام:', err);
+      console.error('❌ Error sending general notification:', err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار العام' });
     }
   });
 
   // ----------------------
-  // 3. إشعار خاص لولي أمر معين
+  // 3. إشعار خاص لولي أمر معين - مع ترجمة
   // ----------------------
   socket.on('admin-notification-to-parent', async (data) => {
     if (socket.user.role !== 'admin') {
@@ -426,6 +349,13 @@ socket.on('toggle-status', async (studentId) => {
     if (!parentEmail || !message) {
       socket.emit('notification-error', { message: 'البريد الإلكتروني والرسالة مطلوبان' });
       return;
+    }
+
+    // ✅ جلب لغة ولي الأمر
+    let lang = 'ar';
+    const parentUser = await User.findOne({ email: parentEmail });
+    if (parentUser) {
+      lang = detectUserLang(parentUser, null);
     }
 
     try {
@@ -443,101 +373,173 @@ socket.on('toggle-status', async (studentId) => {
           notificationId: notification._id,
           createdAt: notification.createdAt,
         });
-        socket.emit('notification-sent', {
-          parentEmail,
-          message: message + ' (تم الإرسال فوراً)',
-        });
+        socket.emit('notification-sent', { parentEmail, message: message + ' (sent instantly)' });
       } else {
         socket.emit('notification-sent', {
           parentEmail,
-          message: message + ' (تم الحفظ، سيظهر عند تسجيل الدخول)',
+          message: message + ' (saved — will appear on login)',
         });
       }
 
       await sendPushNotificationToParent(
-        '📩 إشعار خاص من المدرسة',
+        translate(lang, 'push.private_title'),
         message,
         { url: '/parent-dashboard' },
-        parentEmail
+        parentEmail,
       );
-
     } catch (err) {
-      console.error('❌ خطأ في إرسال الإشعار الخاص:', err);
+      console.error('❌ Error sending private notification:', err);
       socket.emit('notification-error', { message: 'فشل حفظ الإشعار الخاص' });
     }
   });
 
   // ----------------------
-  // 4. تغيير حالة جميع الطلاب دفعة واحدة
+  // 4. تغيير حالة جميع الطلاب دفعة واحدة - مع ترجمة
   // ----------------------
-socket.on('toggle-all-status', async (data) => {
+  socket.on('toggle-all-status', async (data) => {
     if (socket.user.role !== 'admin') {
-        socket.emit('error', { message: 'غير مصرح لك' });
-        return;
+      socket.emit('error', { message: 'غير مصرح لك' });
+      return;
     }
 
     const { newStatus } = data;
     try {
-        const students = await Student.find();
-        const updatedParents = new Set();
+      const students = await Student.find();
+      const updatedParents = new Set();
 
-        // حساب الوقت الحالي
-        const now = new Date();
-        now.setHours(now.getHours() -1);
+      const now = new Date();
+      now.setHours(now.getHours() - 1);
 
-        for (const student of students) {
-            student.isInside = newStatus;
-            student.lastUpdate = now;
-            await student.save();
+      for (const student of students) {
+        student.isInside = newStatus;
+        student.lastUpdate = now;
+        await student.save();
 
-            const attendance = new Attendance({
-                student: student._id,
-                status: newStatus ? 'in' : 'out',
-                method: 'manual',
-                timestamp: now,
-            });
-            await attendance.save();
-
-            if (student.parentEmail) updatedParents.add(student.parentEmail);
-        }
-
-        const statusText = newStatus ? 'داخل 🏫' : 'خارج 🚪';
-        const message = `تم تغيير حالة جميع الطلاب إلى ${statusText}`;
-
-        io.emit('status-changed', {
-            message: message,
-            isBulk: true,
+        const attendance = new Attendance({
+          student: student._id,
+          status: newStatus ? 'in' : 'out',
+          method: 'manual',
+          timestamp: now,
         });
+        await attendance.save();
 
-        for (const email of updatedParents) {
-            const notification = new Notification({
-                target: email,
-                message: message,
-                sender: 'Admin',
-            });
-            await notification.save();
+        if (student.parentEmail) updatedParents.add(student.parentEmail);
+      }
 
-            await sendPushNotificationToParent(
-                'تحديث جماعي',
-                message,
-                { url: '/parent-dashboard' },
-                email
-            );
+      // ✅ رسالة موحدة بالعربية (لأنها تشمل الجميع)
+      const message = newStatus
+        ? 'تم تغيير حالة جميع الطلاب إلى داخل 🏫'
+        : 'تم تغيير حالة جميع الطلاب إلى خارج 🚪';
+
+      io.emit('status-changed', { message, isBulk: true });
+
+      for (const email of updatedParents) {
+        // جلب لغة كل ولي أمر
+        let lang = 'ar';
+        const parentUser = await User.findOne({ email });
+        if (parentUser) {
+          lang = detectUserLang(parentUser, null);
         }
 
-        // ✅ إرسال رد للمدير لتحديث الواجهة
-        socket.emit('toggle-all-done', { success: true });
+        const localizedMessage = newStatus
+          ? translate(lang, 'attendance.all_inside')
+          : translate(lang, 'attendance.all_outside');
 
+        const notification = new Notification({
+          target: email,
+          message: localizedMessage,
+          sender: 'Admin',
+        });
+        await notification.save();
+
+        await sendPushNotificationToParent(
+          translate(lang, 'push.bulk_title'),
+          localizedMessage,
+          { url: '/parent-dashboard' },
+          email,
+        );
+      }
+
+      socket.emit('toggle-all-done', { success: true });
     } catch (error) {
-        console.error('❌ خطأ في التغيير الجماعي:', error);
-        socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
+      console.error('❌ Error in bulk toggle:', error);
+      socket.emit('error', { message: 'حدث خطأ أثناء تغيير الحالة الجماعية' });
     }
-});
-  
+  });
+
   socket.on('disconnect', () => {
     userSockets.delete(userEmail);
-    console.log(`🔴 عميل غير متصل: ${userEmail}`);
+    console.log(`🔴 Client disconnected: ${userEmail}`);
   });
+});
+
+// ==========================================
+// نقاط نهاية ولي الأمر (للرسائل) - مع ترجمة
+// ==========================================
+
+app.get('/api/parent/my-children', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('students');
+    if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
+    if (user.role !== 'parent') return res.status(403).json({ msg: 'غير مصرح لك' });
+    res.json(user.students);
+  } catch (err) {
+    console.error('❌ Error fetching parent children:', err);
+    res.status(500).json({ msg: 'خطأ في الخادم' });
+  }
+});
+
+app.post('/api/parent/send-message', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'parent') {
+      return res.status(403).json({ msg: 'غير مصرح لك بإرسال رسائل' });
+    }
+
+    const { studentId, subject, message } = req.body;
+    if (!studentId || !message) {
+      return res.status(400).json({ msg: 'الرجاء تحديد الطالب ونص الرسالة' });
+    }
+
+    const student = await Student.findById(studentId);
+    if (!student) return res.status(404).json({ msg: 'الطالب غير موجود' });
+    if (student.parent.toString() !== req.user.id) {
+      return res.status(403).json({ msg: 'هذا الطالب ليس تابعاً لك' });
+    }
+
+    const lang = detectUserLang(req.user, req);
+
+    const newNotification = new Notification({
+      sender: req.user.name,
+      target: 'admin',
+      subject: subject || 'رسالة من ولي أمر',
+      message: `رسالة من ولي أمر الطالب (${student.name}): ${message}`,
+      senderRole: 'parent',
+      parentStudentId: studentId,
+    });
+    await newNotification.save();
+
+    // إرسال إشعار فوري للمديرين المتصلين
+    const admins = await User.find({ role: 'admin' });
+    for (const admin of admins) {
+      const adminSocketId = userSockets.get(admin.email);
+      if (adminSocketId) {
+        const notifMsg = translate(lang, 'parent.message_notification', {
+          parent: req.user.name,
+          student: student.name,
+        });
+        io.to(adminSocketId).emit('notification', {
+          message: notifMsg,
+          notificationId: newNotification._id,
+          createdAt: newNotification.createdAt,
+        });
+      }
+    }
+
+    res.json({ msg: 'تم إرسال رسالتك إلى المدرسة بنجاح' });
+  } catch (err) {
+    console.error('❌ Error sending parent message:', err);
+    res.status(500).json({ msg: 'خطأ في الخادم' });
+  }
 });
 
 // ==========================================
@@ -552,18 +554,16 @@ app.get('/', (req, res) => {
 });
 
 // ==========================================
-// ✅ مسار اختبار الإشعارات المبكرة (للتجربة اليدوية)
+// مسار اختبار الإشعارات المبكرة (مع ترجمة)
 // ==========================================
 app.get('/api/test-leaving', auth, async (req, res) => {
   try {
     const settings = await SchoolSettings.findOne();
-    if (!settings) {
-      return res.status(404).json({ message: 'لا توجد إعدادات' });
-    }
+    if (!settings) return res.status(404).json({ message: 'No school settings found' });
 
-    const students = await Student.find({ isInside: true });
+    const students = await Student.find({ isInside: true }).populate('parent');
     if (students.length === 0) {
-      return res.json({ message: '📭 لا يوجد طلاب داخل المدرسة' });
+      return res.json({ message: '📭 No students currently inside school' });
     }
 
     const notifyMinutesBefore = settings.notificationBeforeMinutes || 30;
@@ -572,43 +572,45 @@ app.get('/api/test-leaving', auth, async (req, res) => {
     for (const student of students) {
       if (!student.parentEmail) continue;
 
-      const message = `🧪 اختبار: باقي ${notifyMinutesBefore} دقيقة على خروج ${student.name} من المدرسة`;
+      const lang =
+        student.parent && student.parent.preferences && student.parent.preferences.language
+          ? student.parent.preferences.language
+          : 'ar';
+
+      const title = translate(lang, 'push.test_title');
+      const body = translate(lang, 'push.leaving_body', {
+        minutes: notifyMinutesBefore,
+        studentName: student.name,
+      });
 
       await new Notification({
         target: student.parentEmail,
-        message: message,
-        sender: 'System',
+        message: `🧪 ${body}`,
+        sender: translate(lang, 'system.sender'),
       }).save();
 
-      await sendPushNotificationToParent(
-        '🧪 تنبيه خروج (اختبار)',
-        message,
-        { url: '/parent-dashboard' },
-        student.parentEmail
-      );
+      await sendPushNotificationToParent(title, body, { url: '/parent-dashboard' }, student.parentEmail);
       sentCount++;
     }
 
-    res.json({ message: `✅ تم إرسال ${sentCount} إشعار اختبار بنجاح` });
+    res.json({ message: `✅ Sent ${sentCount} test notification(s)` });
   } catch (err) {
-    console.error('❌ خطأ في اختبار الإشعارات:', err);
+    console.error('❌ Error in test leaving:', err);
     res.status(500).json({ message: err.message });
   }
 });
 
 // ==========================================
-// ✅ مسار الإشعارات المبكرة الفعلي (للتشغيل التلقائي)
+// مسار الإشعارات المبكرة الفعلي (للتشغيل التلقائي) - مع ترجمة
 // ==========================================
 app.get('/api/trigger-leaving', auth, async (req, res) => {
   try {
     const settings = await SchoolSettings.findOne();
-    if (!settings) {
-      return res.status(404).json({ message: 'لا توجد إعدادات' });
-    }
+    if (!settings) return res.status(404).json({ message: 'No school settings found' });
 
-    const students = await Student.find({ isInside: true });
+    const students = await Student.find({ isInside: true }).populate('parent');
     if (students.length === 0) {
-      return res.json({ message: '📭 لا يوجد طلاب داخل المدرسة' });
+      return res.json({ message: '📭 No students currently inside school' });
     }
 
     const notifyMinutesBefore = settings.notificationBeforeMinutes || 30;
@@ -617,57 +619,61 @@ app.get('/api/trigger-leaving', auth, async (req, res) => {
     for (const student of students) {
       if (!student.parentEmail) continue;
 
-const messageAr = `⏰ تنبيه: باقي ${notifyMinutesBefore} دقيقة على خروج ${student.name} من المدرسة`;
-const messageFr = `⏰ Alerte : il reste ${notifyMinutesBefore} minutes avant la sortie de ${student.name} de l'école`;
-      
+      const lang =
+        student.parent && student.parent.preferences && student.parent.preferences.language
+          ? student.parent.preferences.language
+          : 'ar';
+
+      const title = translate(lang, 'push.leaving_title');
+      const body = translate(lang, 'push.leaving_body', {
+        minutes: notifyMinutesBefore,
+        studentName: student.name,
+      });
+
       await new Notification({
         target: student.parentEmail,
-        message: messageAr,
-        sender: 'System',
+        message: `⏰ ${body}`,
+        sender: translate(lang, 'system.sender'),
       }).save();
 
-await sendPushNotificationToParent(
-  '⏰ تنبيه الخروج',
-  messageAr,
-  { url: '/parent-dashboard' },
-  student.parentEmail
-);
+      await sendPushNotificationToParent(title, body, { url: '/parent-dashboard' }, student.parentEmail);
       sentCount++;
     }
 
-    console.log(`✅ تم إرسال ${sentCount} إشعار خروج مبكر بنجاح`);
-    res.json({ message: `✅ تم إرسال ${sentCount} إشعار خروج مبكر بنجاح` });
+    console.log(`✅ Sent ${sentCount} leaving notification(s)`);
+    res.json({ message: `✅ Sent ${sentCount} leaving notification(s)` });
   } catch (err) {
-    console.error('❌ خطأ في إرسال الإشعارات المبكرة:', err);
+    console.error('❌ Error in trigger leaving:', err);
     res.status(500).json({ message: err.message });
   }
 });
 
+// ==========================================
+// مسار اختبار العطل (مع ترجمة - اختياري)
+// ==========================================
 app.get('/api/test-holidays', auth, async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const startDate = new Date(today);
     startDate.setDate(startDate.getDate() - 30);
-    
-    // ✅ استخدام الدالة المحسّنة
+
     const schoolDays = await getSchoolDaysInRange(startDate, today);
-    
-    // ✅ جلب العطل في النطاق مع عرض endDate
+
     const holidays = await Holiday.find({
       date: { $gte: startDate, $lte: today },
-      isActive: true
+      isActive: true,
     });
-    
+
     res.json({
       totalDays: 30,
       schoolDays: schoolDays.length,
-      holidays: holidays.map(h => ({
+      holidays: holidays.map((h) => ({
         name: h.name,
         date: new Date(h.date).toISOString().split('T')[0],
-        endDate: h.endDate ? new Date(h.endDate).toISOString().split('T')[0] : null
+        endDate: h.endDate ? new Date(h.endDate).toISOString().split('T')[0] : null,
       })),
-      message: `✅ تم استثناء ${holidays.length} يوم عطلة من أصل 30 يوم`
+      message: `✅ Excluded ${holidays.length} holiday day(s) out of 30 days`,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -679,21 +685,19 @@ app.get('/api/test-holidays', auth, async (req, res) => {
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('✅ متصل بـ MongoDB بنجاح');
-  
-  // ✅ بدء خدمة الجدولة للإشعارات التلقائية
-  startNotificationScheduler();
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
 
-  // ✅ بدء خدمة التنبيهات الذكية
-startSmartAlertScheduler()
-  
-  server.listen(PORT, () => {
-    console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
-  });
-})
-.catch(err => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err));
+    startNotificationScheduler();
+    startSmartAlertScheduler();
+
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => console.error('❌ MongoDB connection error:', err));
