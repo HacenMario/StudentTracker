@@ -20,7 +20,9 @@
     "register_now": "Register Now",
     "login_now": "Login Now",
     "password_min": "Password (6 characters minimum)",
-    "name": "Full Name"
+    "name": "Full Name",
+    "welcome": "Welcome to the Attendance Tracking System",
+    "create_account": "Create your account to start tracking"
   },
   "dashboard": {
     "admin": "Admin Dashboard",
@@ -30,7 +32,8 @@
     "notifications": "Notifications",
     "settings": "Settings",
     "live": "Live",
-    "super_admin": "Super Admin Dashboard"
+    "super_admin": "Super Admin Dashboard",
+    "recent": "Recent Records"
   },
   "student": {
     "add": "Add Student",
@@ -42,14 +45,14 @@
     "parent_email": "Parent Email",
     "address": "Address",
     "status": "Status",
-    "inside": "Inside \uD83C\uDFEB",
-    "outside": "Outside \uD83D\uDEAA",
+    "inside": "Inside 🏫",
+    "outside": "Outside 🚪",
     "toggle": "Toggle Status",
     "toggle_exit": "Check Out",
     "entry": "Check In",
     "student_id": "Student ID",
     "last_update": "Last Update",
-    "no_students": "\uD83D\uDCED No students",
+    "no_students": "📭 No students",
     "add_new": "Add New Student",
     "close_form": "Close Add Form",
     "save": "Save",
@@ -57,16 +60,21 @@
     "confirm_delete": "Are you sure you want to delete this student permanently?",
     "confirm_toggle": "Are you sure you want to change this student's status?",
     "confirm_edit": "Are you sure you want to save the changes?",
-    "edit_title": "\u270F\uFE0F Edit Student Information",
+    "edit_title": "✏️ Edit Student Information",
     "for_parent": "for the parent",
     "confirm_add": "Confirm adding student",
     "not_found": "Student not found",
     "added": "Student added",
     "toggled": "Student status changed",
-    "deleted": "Student deleted"
+    "deleted": "Student deleted",
+    "management": "Student Management",
+    "total": "Total Students",
+    "inside_count": "Inside School",
+    "outside_count": "Outside School",
+    "today_logs": "Today's Log"
   },
   "notification": {
-    "title": "Notifications",
+    "title": "Incoming Notifications",
     "general": "General Notification",
     "private": "Private Notification",
     "send": "Send",
@@ -74,8 +82,8 @@
     "target": "Target",
     "all_parents": "All Parents",
     "parent_email": "Target Parent Email",
-    "no_notifications": "\uD83D\uDCED No notifications",
-    "old": "\uD83D\uDCDC Old Notifications",
+    "no_notifications": "📭 No notifications",
+    "old": "📜 Old Notifications",
     "hide_old": "Hide Old Notifications",
     "show_old": "Show Old Notifications",
     "new": "New Notification",
@@ -84,7 +92,7 @@
     "confirm_general": "Are you sure you want to send this notification to all parents?",
     "confirm_private": "Are you sure you want to send this notification to parent ({email})?",
     "message_required": "Write the notification message",
-    "received": "\uD83D\uDCE9 Incoming Notifications"
+    "received": "📩 Incoming Notifications"
   },
   "attendance": {
     "log": "Attendance Log",
@@ -94,24 +102,25 @@
     "manual": "Manual",
     "qr": "QR Code",
     "no_logs": "No records",
-    "old_logs": "\uD83D\uDCDC Old records",
+    "old_logs": "📜 Old records",
     "hide_old_logs": "Hide Old Records",
     "show_old_logs": "Show Old Records",
     "show_all": "Show All Details",
-    "my_children": "\uD83D\uDCCB My Children's Check In/Out Log",
+    "my_children": "📋 My Children's Check In/Out Log",
     "last_entry_exit": "Last Check In/Out",
     "entry": "Check In",
     "exit": "Check Out",
-    "all_students_inside": "All students are inside \uD83C\uDFEB",
-    "all_students_outside": "All students are outside \uD83D\uDEAA",
+    "all_students_inside": "All students are inside 🏫",
+    "all_students_outside": "All students are outside 🚪",
     "student_became": "Student {name} is {status}",
-    "student_became_inside": "Student {name} is inside \uD83C\uDFEB",
-    "student_became_outside": "Student {name} is outside \uD83D\uDEAA",
+    "student_became_inside": "Student {name} is inside 🏫",
+    "student_became_outside": "Student {name} is outside 🚪",
     "student_deleted": "Student deleted",
     "student_added": "Student {name} added",
     "student_updated": "Student {name} updated",
     "student_toggled": "Student status changed",
-    "status_updated": "Student statuses updated"
+    "status_updated": "Student statuses updated",
+    "recent": "Recent Records"
   },
   "settings": {
     "school": "School Settings",
@@ -157,16 +166,17 @@
   },
   "scanner": {
     "accessing": "Accessing camera...",
-    "processing": "\u2705 Processing code...",
-    "found": "\u2705 Student found: {name}",
-    "not_found": "\u274C No student found with this code",
-    "error": "\u274C Server connection error",
+    "processing": "✅ Processing code...",
+    "found": "✅ Student found: {name}",
+    "not_found": "❌ No student found with this code",
+    "error": "❌ Server connection error",
     "camera_selected": "Camera selected",
     "no_camera": "No cameras available",
     "permission_denied": "Camera permission denied",
     "start_failed": "Failed to start camera"
   },
   "common": {
+    "time": "Time:",
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
@@ -190,17 +200,18 @@
     "all_details": "All Details",
     "confirm_add": "Confirm Add",
     "enable_notifications": "Enable Notifications",
-    "time": "Time:",
     "parent": "Parent",
-    "of": "of"
+    "of": "of",
+    "confirm_message": "Are you sure you want to perform this action?",
+    "scan_qr_hint": "Place the QR code in front of the camera to change the student's status"
   },
   "search": {
-    "placeholder": "Search for a student by name...",
-    "no_results": "\uD83D\uDD0D No results found for \"{query}\"",
+    "placeholder": "Search for a student by name or ID...",
+    "no_results": "🔍 No results found for \"{query}\"",
     "clear": "Clear search",
     "scan_qr": "Scan QR",
-    "scan_qr_found": "\u2705 Student found: {name}",
-    "scan_qr_not_found": "\u274C No student found with this code"
+    "scan_qr_found": "✅ Student found: {name}",
+    "scan_qr_not_found": "❌ No student found with this code"
   },
   "smart_alerts": {
     "title": "Smart Alerts",
@@ -213,11 +224,14 @@
     "absence": "Repeated Absence",
     "tardiness": "Morning Tardiness",
     "achievement": "Achievement Motivation",
-    "no_alerts": "\uD83D\uDCED No alerts",
+    "no_alerts": "📭 No alerts",
     "sent_alerts": "Sent Alerts",
     "confirm_run": "Are you sure you want to run all smart alerts manually?",
-    "run_success": "\u2705 All smart alerts have been run successfully",
-    "rules_saved": "\u2705 Alert rules saved successfully"
+    "run_success": "✅ All smart alerts have been run successfully",
+    "rules_saved": "✅ Alert rules saved successfully",
+    "repeated_absence": "🚨 Repeated Absence",
+    "morning_tardiness": "⏰ Morning Tardiness",
+    "achievement_motivation": "🎉 Achievement Motivation"
   },
   "leave": {
     "title": "Submit Leave Excuse",
@@ -227,10 +241,10 @@
     "file": "Upload File (Medical Certificate)",
     "submit": "Submit Request",
     "requests": "Leave Excuse Requests",
-    "no_requests": "\uD83D\uDCED No requests",
+    "no_requests": "📭 No requests",
     "status_pending": "Pending",
-    "status_approved": "Approved \u2705",
-    "status_rejected": "Rejected \u274C",
+    "status_approved": "Approved ✅",
+    "status_rejected": "Rejected ❌",
     "approve": "Approve",
     "reject": "Reject",
     "confirm_approve": "Are you sure you want to approve this request?",
@@ -241,8 +255,8 @@
     "download_file": "Download File"
   },
   "leaving_notification": {
-    "title": "\u23F0 Leaving Alert",
-    "body": "\u23F0 Alert: {minutes} minutes until {studentName} leaves school"
+    "title": "⏰ Leaving Alert",
+    "body": "⏰ Alert: {minutes} minutes until {studentName} leaves school"
   },
   "holidays": {
     "title": "Holidays Management",
@@ -255,7 +269,7 @@
     "confirm_delete": "Are you sure you want to delete this holiday?",
     "close_form": "Close Form",
     "fill_all": "Please enter date and holiday name",
-    "no_holidays": "\uD83D\uDCED No holidays registered",
+    "no_holidays": "📭 No holidays registered",
     "edit": "Edit Holiday",
     "toggle": "Deactivate",
     "activate": "Activate",
@@ -263,18 +277,24 @@
     "inactive": "Inactive",
     "status": "Status",
     "confirm_toggle": "Are you sure you want to {action} the holiday \"{name}\"?",
-    "edit_title": "\u270F\uFE0F Edit Holiday",
+    "edit_title": "✏️ Edit Holiday",
     "save_edit": "Save Changes",
     "cancel_edit": "Cancel Edit",
-    "edit_success": "\u2705 Holiday updated successfully",
-    "toggle_success": "\u2705 Holiday {action} successfully",
-    "not_found": "\u274C Holiday not found",
-    "duplicate": "\u26A0\uFE0F A holiday already exists on this date"
+    "edit_success": "✅ Holiday updated successfully",
+    "toggle_success": "✅ Holiday {action} successfully",
+    "not_found": "❌ Holiday not found",
+    "duplicate": "⚠️ A holiday already exists on this date",
+    "start_date": "📅 Start Date",
+    "end_date": "📅 End Date (optional - for multi-day holidays)",
+    "holiday_name": "📝 Holiday Name",
+    "holiday_description": "📋 Description (optional)",
+    "save_changes": "Save Changes",
+    "cancel_edit_btn": "Cancel"
   },
   "parent": {
-    "info_card_title": "\uD83D\uDC4B Welcome",
-    "badge": "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC66 Parent",
-    "message_form_title": "\u2709\uFE0F Send a Message to the School",
+    "info_card_title": "👋 Welcome",
+    "badge": "👨‍👩‍👦 Parent",
+    "message_form_title": "✉️ Send a Message to the School",
     "student_label": "Student concerned",
     "subject_label": "Subject (optional)",
     "subject_placeholder": "Example: attendance inquiry",
@@ -286,7 +306,10 @@
     "no_children": "No registered children",
     "loading": "Loading...",
     "load_error": "Loading error",
-    "not_available": "---"
+    "not_available": "---",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone"
   },
   "dark_mode": {
     "toggle": "Toggle Dark Mode"
@@ -294,6 +317,38 @@
   "system": {
     "sender": "System",
     "error": "An error occurred",
-    "connection_lost": "\u26A0\uFE0F Connection lost"
+    "connection_lost": "⚠️ Connection lost"
+  },
+  "stats": {
+    "total_students": "Total Students",
+    "inside": "Inside School",
+    "outside": "Outside School",
+    "today_logs": "Today's Log"
+  },
+  "sidebar": {
+    "students": "Students",
+    "logs": "Logs",
+    "leaves": "Leaves",
+    "holidays": "Holidays",
+    "alerts": "Smart Alerts",
+    "settings": "Settings",
+    "children": "My Children",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "leave": "Leave Excuse"
+  },
+  "messages": {
+    "title": "Send a Message to the School",
+    "send_to_school": "✉️ Send a Message to the School",
+    "student_concerned": "Student concerned by the message",
+    "subject_optional": "Subject (optional)",
+    "message_text": "Message text",
+    "send": "Send Message"
+  },
+  "children": {
+    "my_children": "My Children"
+  },
+  "students": {
+    "management": "Student Management"
   }
 }
