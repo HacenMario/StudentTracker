@@ -141,7 +141,6 @@ function applyTranslationsToAll() {
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
                 el.placeholder = translation;
             } else if (el.tagName === 'SELECT') {
-                // للقوائم المنسدلة نترجم الخيارات
                 const options = el.querySelectorAll('option');
                 options.forEach(opt => {
                     const optKey = opt.getAttribute('data-i18n');
@@ -158,7 +157,7 @@ function applyTranslationsToAll() {
         }
     });
 
-    // ترجمة الأماكن الديناميكية
+    // تحديث النصوص الديناميكية
     updateDynamicTexts();
     
     // ترجمة عناصر ولي الأمر
@@ -167,7 +166,149 @@ function applyTranslationsToAll() {
     // ترجمة الأزرار والروابط
     translateButtonsAndLinks();
     
+    // ✅ ترجمة التنبيهات الذكية
+    translateSmartAlerts();
+    
+    // ✅ ترجمة الإحصائيات
+    translateStats();
+    
+    // ✅ ترجمة الشريط الجانبي
+    translateSidebar();
+    
+    // ✅ ترجمة قسم العطل
+    translateHolidaysSection();
+    
     console.log('🌍 تم تطبيق الترجمة على جميع العناصر');
+}
+
+// ✅ دالة جديدة لترجمة التنبيهات الذكية
+function translateSmartAlerts() {
+    // عناوين البطاقات
+    document.querySelectorAll('.rule-card h4').forEach(el => {
+        const text = el.textContent.trim();
+        if (text.includes('الغياب المتكرر') || text.includes('Repeated Absence') || text.includes('Absence répétée')) {
+            el.innerHTML = `🚨 ${t('smart_alerts.absence')}`;
+        } else if (text.includes('التأخر الصباحي') || text.includes('Morning Tardiness') || text.includes('Retard matinal')) {
+            el.innerHTML = `⏰ ${t('smart_alerts.tardiness')}`;
+        } else if (text.includes('الإنجاز التحفيزي') || text.includes('Achievement Motivation') || text.includes('Motivation de réussite')) {
+            el.innerHTML = `🎉 ${t('smart_alerts.achievement')}`;
+        }
+    });
+    
+    // ترجمة التسميات داخل البطاقات
+    document.querySelectorAll('.rule-controls label').forEach(label => {
+        const text = label.textContent.trim();
+        if (text.includes('متتالي') || text.includes('Consecutive') || text.includes('Consécutif')) {
+            label.innerHTML = `${t('smart_alerts.consecutive')} <input type="number" id="absenceConsecutive" value="3" min="1" style="width:52px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center; font-family:var(--font);">`;
+        } else if (text.includes('شهري') || text.includes('Monthly') || text.includes('Mensuel')) {
+            label.innerHTML = `${t('smart_alerts.monthly')} <input type="number" id="absenceMonthly" value="5" min="1" style="width:52px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center; font-family:var(--font);">`;
+        } else if (text.includes('في الأسبوع') || text.includes('Per Week') || text.includes('Par semaine')) {
+            label.innerHTML = `${t('smart_alerts.per_week')} <input type="number" id="tardinessPerWeek" value="3" min="1" style="width:52px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center; font-family:var(--font);">`;
+        } else if (text.includes('مفعل') || text.includes('Enabled') || text.includes('Activé')) {
+            label.innerHTML = `<input type="checkbox" id="absenceEnabled" checked style="width:18px; height:18px; cursor:pointer;"> ${t('smart_alerts.enabled')}`;
+        }
+    });
+    
+    // زر "تشغيل الآن"
+    const runBtn = document.getElementById('runSmartAlertsBtn');
+    if (runBtn) {
+        const span = runBtn.querySelector('span');
+        if (span) span.textContent = t('smart_alerts.run_now');
+        else runBtn.innerHTML = `<i class="fas fa-play"></i> <span data-i18n="smart_alerts.run_now">${t('smart_alerts.run_now')}</span>`;
+    }
+    
+    // زر "حفظ القواعد"
+    const saveRulesBtn = document.getElementById('saveAlertRulesBtn');
+    if (saveRulesBtn) {
+        const span = saveRulesBtn.querySelector('span');
+        if (span) span.textContent = t('smart_alerts.save_rules');
+        else saveRulesBtn.innerHTML = `<i class="fas fa-save"></i> <span data-i18n="smart_alerts.save_rules">${t('smart_alerts.save_rules')}</span>`;
+    }
+    
+    // عنوان "التنبيهات المرسلة"
+    const sentTitle = document.querySelector('.smart-alerts-section h4');
+    if (sentTitle) {
+        sentTitle.innerHTML = `<i class="fas fa-list"></i> ${t('smart_alerts.sent_alerts')}`;
+    }
+}
+
+// ✅ دالة جديدة لترجمة الإحصائيات
+function translateStats() {
+    const statTitles = {
+        'statTotalStudents': 'stats.total_students',
+        'statInsideStudents': 'stats.inside',
+        'statOutsideStudents': 'stats.outside',
+        'statTodayLogs': 'stats.today_logs'
+    };
+    
+    Object.keys(statTitles).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            const parent = el.parentElement;
+            if (parent) {
+                const p = parent.querySelector('p');
+                if (p) {
+                    const key = statTitles[id];
+                    p.textContent = t(key);
+                }
+            }
+        }
+    });
+}
+
+// ✅ دالة جديدة لترجمة الشريط الجانبي
+function translateSidebar() {
+    const sidebarLinks = {
+        'الطلاب': 'sidebar.students',
+        'السجلات': 'sidebar.logs',
+        'الإجازات': 'sidebar.leaves',
+        'العطل': 'sidebar.holidays',
+        'تنبيهات ذكية': 'sidebar.alerts',
+        'الإعدادات': 'sidebar.settings'
+    };
+    
+    document.querySelectorAll('.sidebar-link span').forEach(el => {
+        const text = el.textContent.trim();
+        if (sidebarLinks[text]) {
+            el.textContent = t(sidebarLinks[text]);
+        }
+    });
+}
+
+// ✅ دالة جديدة لترجمة قسم العطل
+function translateHolidaysSection() {
+    // عنوان القسم
+    const sectionTitle = document.querySelector('.holidays-section .section-header h2');
+    if (sectionTitle) {
+        const icon = sectionTitle.querySelector('i');
+        if (icon) {
+            sectionTitle.innerHTML = `<i class="fas fa-calendar-times"></i> ${t('holidays.title')}`;
+        }
+    }
+    
+    // زر إضافة عطلة
+    const addBtn = document.getElementById('toggleHolidayFormBtn');
+    if (addBtn) {
+        const span = addBtn.querySelector('span');
+        if (span) span.textContent = t('holidays.add');
+        else addBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('holidays.add')}`;
+    }
+    
+    // نموذج العطلة
+    const formLabels = document.querySelectorAll('#holidayForm .form-group label');
+    if (formLabels.length >= 4) {
+        formLabels[0].textContent = t('holidays.start_date');
+        formLabels[1].textContent = t('holidays.end_date');
+        formLabels[2].textContent = t('holidays.name');
+        formLabels[3].textContent = t('holidays.description');
+    }
+    
+    // أزرار النموذج
+    const saveBtn = document.getElementById('saveHolidayBtn');
+    if (saveBtn) saveBtn.innerHTML = `<i class="fas fa-save"></i> ${t('holidays.save_changes')}`;
+    
+    const cancelBtn = document.getElementById('cancelHolidayBtn');
+    if (cancelBtn) cancelBtn.innerHTML = `<i class="fas fa-times"></i> ${t('holidays.cancel')}`;
 }
 
 // دالة جديدة لترجمة عناصر ولي الأمر
@@ -237,6 +378,21 @@ function translateButtonsAndLinks() {
         const span = qrBtn.querySelector('span');
         if (span) span.textContent = t('common.scan_qr');
         else qrBtn.innerHTML = `<i class="fas fa-qrcode"></i> <span data-i18n="common.scan_qr">${t('common.scan_qr')}</span>`;
+    }
+    
+    // زر "أحدث السجلات"
+    const recentLogs = document.querySelector('.log-section .log-header span');
+    if (recentLogs) {
+        recentLogs.textContent = t('attendance.recent');
+    }
+    
+    // زر "إدارة الطلاب"
+    const studentsMgmt = document.querySelector('#section-students .section-header h2');
+    if (studentsMgmt) {
+        const icon = studentsMgmt.querySelector('i');
+        if (icon) {
+            studentsMgmt.innerHTML = `<i class="fas fa-users"></i> ${t('students.management')}`;
+        }
     }
 }
 
@@ -3636,7 +3792,8 @@ function setupEnhancedEvents() {
     setupSectionNavigation('adminSidebar');
     setupSectionNavigation('parentSidebar');
     initScrollAnimations();
-    
+    applyTranslationsToAll();
+
     const studentsList = document.getElementById('adminStudentsList');
     if (studentsList) {
         const observer = new MutationObserver(() => {
