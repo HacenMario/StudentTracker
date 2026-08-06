@@ -20,7 +20,9 @@
     "register_now": "S'inscrire maintenant",
     "login_now": "Se connecter",
     "password_min": "Mot de passe (6 caractères minimum)",
-    "name": "Nom complet"
+    "name": "Nom complet",
+    "welcome": "Bienvenue dans le système de suivi de présence",
+    "create_account": "Créez votre compte pour commencer le suivi"
   },
   "dashboard": {
     "admin": "Tableau de bord Admin",
@@ -30,7 +32,8 @@
     "notifications": "Notifications",
     "settings": "Paramètres",
     "live": "En direct",
-    "super_admin": "Tableau de bord Super Admin"
+    "super_admin": "Tableau de bord Super Admin",
+    "recent": "Derniers enregistrements"
   },
   "student": {
     "add": "Ajouter un élève",
@@ -63,10 +66,15 @@
     "not_found": "Élève non trouvé",
     "added": "Élève ajouté",
     "toggled": "Statut de l'élève modifié",
-    "deleted": "Élève supprimé"
+    "deleted": "Élève supprimé",
+    "management": "Gestion des élèves",
+    "total": "Total des élèves",
+    "inside_count": "À l'intérieur",
+    "outside_count": "À l'extérieur",
+    "today_logs": "Journal d'aujourd'hui"
   },
   "notification": {
-    "title": "Notifications",
+    "title": "Notifications reçues",
     "general": "Notification générale",
     "private": "Notification privée",
     "send": "Envoyer",
@@ -111,7 +119,8 @@
     "student_added": "Élève {name} ajouté",
     "student_updated": "Élève {name} modifié",
     "student_toggled": "Statut de l'élève modifié",
-    "status_updated": "Statut des élèves mis à jour"
+    "status_updated": "Statut des élèves mis à jour",
+    "recent": "Derniers enregistrements"
   },
   "settings": {
     "school": "Paramètres de l'établissement",
@@ -167,6 +176,7 @@
     "start_failed": "Échec du démarrage de la caméra"
   },
   "common": {
+    "time": "Heure :",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
@@ -191,11 +201,12 @@
     "confirm_add": "Confirmation d'ajout",
     "enable_notifications": "Activer les notifications",
     "parent": "Parent",
-    "time": "Heure :",
-    "of": "de"
+    "of": "de",
+    "confirm_message": "Êtes-vous sûr de vouloir effectuer cette action ?",
+    "scan_qr_hint": "Placez le code QR devant la caméra pour changer le statut de l'élève"
   },
   "search": {
-    "placeholder": "Rechercher un élève par nom...",
+    "placeholder": "Rechercher un élève par nom ou ID...",
     "no_results": "🔍 Aucun résultat pour \"{query}\"",
     "clear": "Annuler la recherche",
     "scan_qr": "Scanner QR",
@@ -217,7 +228,10 @@
     "sent_alerts": "Alertes envoyées",
     "confirm_run": "Êtes-vous sûr de vouloir exécuter toutes les alertes intelligentes manuellement ?",
     "run_success": "✅ Toutes les alertes intelligentes ont été exécutées avec succès",
-    "rules_saved": "✅ Les règles d'alertes ont été enregistrées avec succès"
+    "rules_saved": "✅ Les règles d'alertes ont été enregistrées avec succès",
+    "repeated_absence": "🚨 Absence répétée",
+    "morning_tardiness": "⏰ Retard matinal",
+    "achievement_motivation": "🎉 Motivation de réussite"
   },
   "leave": {
     "title": "Soumettre une excuse d'absence",
@@ -269,7 +283,13 @@
     "edit_success": "✅ Jour férié modifié avec succès",
     "toggle_success": "✅ Jour férié {action} avec succès",
     "not_found": "❌ Jour férié non trouvé",
-    "duplicate": "⚠️ Un jour férié existe déjà à cette date"
+    "duplicate": "⚠️ Un jour férié existe déjà à cette date",
+    "start_date": "📅 Date de début",
+    "end_date": "📅 Date de fin (optionnel - pour les congés de plusieurs jours)",
+    "holiday_name": "📝 Nom du jour férié",
+    "holiday_description": "📋 Description (optionnel)",
+    "save_changes": "Enregistrer les modifications",
+    "cancel_edit_btn": "Annuler"
   },
   "parent": {
     "info_card_title": "👋 Bienvenue",
@@ -286,7 +306,10 @@
     "no_children": "Aucun enfant enregistré",
     "loading": "Chargement...",
     "load_error": "Erreur de chargement",
-    "not_available": "---"
+    "not_available": "---",
+    "name": "Nom",
+    "email": "E-mail",
+    "phone": "Téléphone"
   },
   "dark_mode": {
     "toggle": "Mode sombre"
@@ -295,5 +318,37 @@
     "sender": "Système",
     "error": "Une erreur est survenue",
     "connection_lost": "⚠️ Connexion perdue"
+  },
+  "stats": {
+    "total_students": "Total des élèves",
+    "inside": "À l'intérieur",
+    "outside": "À l'extérieur",
+    "today_logs": "Journal d'aujourd'hui"
+  },
+  "sidebar": {
+    "students": "Élèves",
+    "logs": "Journaux",
+    "leaves": "Congés",
+    "holidays": "Jours fériés",
+    "alerts": "Alertes intelligentes",
+    "settings": "Paramètres",
+    "children": "Mes enfants",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "leave": "Excuse d'absence"
+  },
+  "messages": {
+    "title": "Envoyer un message à l'école",
+    "send_to_school": "✉️ Envoyer un message à l'école",
+    "student_concerned": "Élève concerné par le message",
+    "subject_optional": "Sujet (optionnel)",
+    "message_text": "Texte du message",
+    "send": "Envoyer le message"
+  },
+  "children": {
+    "my_children": "Mes enfants"
+  },
+  "students": {
+    "management": "Gestion des élèves"
   }
 }
