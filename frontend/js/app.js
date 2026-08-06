@@ -133,18 +133,111 @@ function switchLanguage(lang) {
 
 // تطبيق الترجمات على جميع العناصر
 function applyTranslationsToAll() {
+    // ترجمة العناصر التي تحمل data-i18n
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         const translation = t(key);
         if (translation && translation !== key) {
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
                 el.placeholder = translation;
+            } else if (el.tagName === 'SELECT') {
+                // للقوائم المنسدلة نترجم الخيارات
+                const options = el.querySelectorAll('option');
+                options.forEach(opt => {
+                    const optKey = opt.getAttribute('data-i18n');
+                    if (optKey) {
+                        const optTranslation = t(optKey);
+                        if (optTranslation && optTranslation !== optKey) {
+                            opt.textContent = optTranslation;
+                        }
+                    }
+                });
             } else {
                 el.textContent = translation;
             }
         }
     });
+
+    // ترجمة الأماكن الديناميكية
     updateDynamicTexts();
+    
+    // ترجمة عناصر ولي الأمر
+    translateParentElements();
+    
+    // ترجمة الأزرار والروابط
+    translateButtonsAndLinks();
+    
+    console.log('🌍 تم تطبيق الترجمة على جميع العناصر');
+}
+
+// دالة جديدة لترجمة عناصر ولي الأمر
+function translateParentElements() {
+    // ترجمة بطاقة معلومات ولي الأمر
+    const parentNameLabel = document.querySelector('.parent-info-card .label-name');
+    const parentEmailLabel = document.querySelector('.parent-info-card .label-email');
+    const parentPhoneLabel = document.querySelector('.parent-info-card .label-phone');
+    
+    if (parentNameLabel) parentNameLabel.textContent = t('parent.name') + ':';
+    if (parentEmailLabel) parentEmailLabel.textContent = t('parent.email') + ':';
+    if (parentPhoneLabel) parentPhoneLabel.textContent = t('parent.phone') + ':';
+    
+    // ترجمة نموذج الرسائل
+    const messageFormTitle = document.querySelector('.message-form-card h4');
+    if (messageFormTitle) messageFormTitle.innerHTML = `✉️ ${t('messages.send_to_school')}`;
+    
+    const studentLabel = document.querySelector('label[for="parentStudentSelect"]');
+    if (studentLabel) studentLabel.textContent = t('messages.student_concerned');
+    
+    const subjectLabel = document.querySelector('label[for="parentSubjectInput"]');
+    if (subjectLabel) subjectLabel.textContent = t('messages.subject_optional');
+    
+    const messageLabel = document.querySelector('label[for="parentMessageInput"]');
+    if (messageLabel) messageLabel.textContent = t('messages.message_text');
+    
+    const sendBtn = document.getElementById('parentSendMessageBtn');
+    if (sendBtn) sendBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('messages.send')}`;
+}
+
+// دالة جديدة لترجمة الأزرار والروابط
+function translateButtonsAndLinks() {
+    // زر إضافة طالب
+    const addBtn = document.getElementById('toggleAddStudentBtn');
+    if (addBtn) {
+        const span = addBtn.querySelector('span');
+        if (span) span.textContent = t('student.add_new');
+        else addBtn.innerHTML = `<i class="fas fa-plus-circle"></i> <span data-i18n="student.add_new">${t('student.add_new')}</span>`;
+    }
+    
+    // زر حفظ في نموذج الإضافة
+    const saveBtn = document.getElementById('adminAddBtn');
+    if (saveBtn) {
+        const span = saveBtn.querySelector('span');
+        if (span) span.textContent = t('student.save');
+        else saveBtn.innerHTML = `<i class="fas fa-save"></i> <span data-i18n="student.save">${t('student.save')}</span>`;
+    }
+    
+    // أزرار التغيير الجماعي
+    const insideBtn = document.getElementById('toggleAllInsideBtn');
+    if (insideBtn) {
+        const span = insideBtn.querySelector('span');
+        if (span) span.textContent = t('bulk.all_inside');
+        else insideBtn.innerHTML = `<i class="fas fa-arrow-right"></i> <span data-i18n="bulk.all_inside">${t('bulk.all_inside')}</span>`;
+    }
+    
+    const outsideBtn = document.getElementById('toggleAllOutsideBtn');
+    if (outsideBtn) {
+        const span = outsideBtn.querySelector('span');
+        if (span) span.textContent = t('bulk.all_outside');
+        else outsideBtn.innerHTML = `<i class="fas fa-arrow-left"></i> <span data-i18n="bulk.all_outside">${t('bulk.all_outside')}</span>`;
+    }
+    
+    // زر مسح QR
+    const qrBtn = document.getElementById('openScannerBtn');
+    if (qrBtn) {
+        const span = qrBtn.querySelector('span');
+        if (span) span.textContent = t('common.scan_qr');
+        else qrBtn.innerHTML = `<i class="fas fa-qrcode"></i> <span data-i18n="common.scan_qr">${t('common.scan_qr')}</span>`;
+    }
 }
 
 // تحديث النصوص الديناميكية
@@ -1643,6 +1736,10 @@ function renderAdminLogs(showOld) {
 
     if (adminLogs.length === 0) {
         container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center;">${translate('attendance.no_logs')}</div>`;
+        // ✅ تحديث الإحصائيات عند عدم وجود سجلات
+        if (allStudents && allStudents.length > 0) {
+            updateStats(allStudents);
+        }
         return;
     }
 
@@ -1688,13 +1785,17 @@ function renderAdminLogs(showOld) {
             }
         }
         
-        // ✅ ترجمة كلمة "وقت"
         const timeLabel = translate('common.time') || 'وقت:';
         const timeDisplay = log.time || '';
         
         item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${timeLabel} ${timeDisplay}</span>`;
         container.appendChild(item);
     });
+
+    // ✅ تحديث الإحصائيات بعد عرض السجلات
+    if (allStudents && allStudents.length > 0) {
+        setTimeout(() => updateStats(allStudents), 100);
+    }
 
     if (showOld && oldLogs.length > 0) {
         const divider = document.createElement('div');
@@ -3382,10 +3483,23 @@ function updateStats(students) {
     if (insideEl) insideEl.textContent = inside;
     if (outsideEl) outsideEl.textContent = outside;
     
+    // ✅ إصلاح مشكلة سجل اليوم
     const logContainer = document.getElementById('adminLogContainer');
     if (logContainer && todayEl) {
         const items = logContainer.querySelectorAll('.log-item');
-        todayEl.textContent = items.length;
+        // فقط السجلات التي تحتوي على وقت اليوم
+        const todayItems = Array.from(items).filter(item => {
+            const timeSpan = item.querySelector('.log-time');
+            if (timeSpan) {
+                const timeText = timeSpan.textContent;
+                // التحقق من وجود تاريخ اليوم
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                return timeText.includes(todayStr);
+            }
+            return true; // إذا لم نتمكن من التحقق، نعتبره من اليوم
+        });
+        todayEl.textContent = todayItems.length || items.length || 0;
     }
 }
 
