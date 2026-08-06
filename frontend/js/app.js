@@ -2754,85 +2754,220 @@ function setupHolidayEvents() {
 // 19. أحداث المصادقة وربط الأحداث (DOM فقط)
 // ==========================================
 function setupAuthEvents() {
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-        if (!email || !password) return alert('املأ جميع الحقول');
-        try {
-            const res = await fetch(API_BASE_URL + '/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
-            saveAuth(data);
-        } catch (err) {
-            showToast(err.message || 'فشل تسجيل الدخول');
-        }
-    });
+    // زر تسجيل الدخول
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail');
+            const password = document.getElementById('loginPassword');
+            
+            if (!email || !password) {
+                showToast('املأ جميع الحقول', 'error');
+                return;
+            }
+            
+            const emailValue = email.value.trim();
+            const passwordValue = password.value.trim();
+            
+            if (!emailValue || !passwordValue) {
+                showToast('املأ جميع الحقول', 'error');
+                return;
+            }
+            
+            try {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الدخول...';
+                
+                const res = await fetch(API_BASE_URL + '/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailValue, password: passwordValue })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                saveAuth(data);
+                showToast('✅ تم تسجيل الدخول بنجاح', 'success');
+            } catch (err) {
+                showToast(err.message || 'فشل تسجيل الدخول', 'error');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<span data-i18n="auth.login">دخول</span> <i class="fas fa-arrow-left"></i>';
+            }
+        });
+    }
 
-    document.getElementById('registerBtn').addEventListener('click', async () => {
-        const name = document.getElementById('regName').value.trim();
-        const email = document.getElementById('regEmail').value.trim();
-        const password = document.getElementById('regPassword').value.trim();
-        const phone = document.getElementById('regPhone').value.trim();
-        const role = document.getElementById('regRole').value;
-        if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
-        if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
-        try {
-            const res = await fetch(API_BASE_URL + '/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, phone, role })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
-            saveAuth(data);
-        } catch (err) {
-            showToast(err.message || 'فشل التسجيل');
-        }
-    });
+    // زر التسجيل
+    const registerBtn = document.getElementById('registerBtn');
+    if (registerBtn) {
+        registerBtn.addEventListener('click', async () => {
+            const name = document.getElementById('regName');
+            const email = document.getElementById('regEmail');
+            const password = document.getElementById('regPassword');
+            const phone = document.getElementById('regPhone');
+            const role = document.getElementById('regRole');
+            
+            if (!name || !email || !password || !phone || !role) {
+                showToast('املأ جميع الحقول', 'error');
+                return;
+            }
+            
+            const nameValue = name.value.trim();
+            const emailValue = email.value.trim();
+            const passwordValue = password.value.trim();
+            const phoneValue = phone.value.trim();
+            const roleValue = role.value;
+            
+            if (!nameValue || !emailValue || !passwordValue || !phoneValue) {
+                showToast('املأ جميع الحقول', 'error');
+                return;
+            }
+            
+            if (passwordValue.length < 6) {
+                showToast('كلمة المرور 6 أحرف على الأقل', 'error');
+                return;
+            }
+            
+            try {
+                registerBtn.disabled = true;
+                registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التسجيل...';
+                
+                const res = await fetch(API_BASE_URL + '/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: nameValue, 
+                        email: emailValue, 
+                        password: passwordValue, 
+                        phone: phoneValue, 
+                        role: roleValue 
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                saveAuth(data);
+                showToast('✅ تم التسجيل بنجاح', 'success');
+            } catch (err) {
+                showToast(err.message || 'فشل التسجيل', 'error');
+            } finally {
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = '<span data-i18n="auth.register">تسجيل</span> <i class="fas fa-user-plus"></i>';
+            }
+        });
+    }
 
-    document.getElementById('showRegister').addEventListener('click', showRegister);
-    document.getElementById('showLogin').addEventListener('click', showLogin);
-    document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
-    document.getElementById('logoutBtnParent').addEventListener('click', logout);
-
-    document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsForm);
-    document.getElementById('saveSettingsBtn').addEventListener('click', saveSchoolSettings);
-    document.getElementById('toggleAddStudentBtn').addEventListener('click', toggleAddStudentForm);
-    document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
-    document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
-    document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
+    // روابط التبديل بين شاشات الدخول والتسجيل
+    const showRegisterLink = document.getElementById('showRegister');
+    if (showRegisterLink) {
+        showRegisterLink.addEventListener('click', showRegister);
+    }
     
-    document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
-        toggleAllStudents(true);
-    });
-    document.getElementById('toggleAllOutsideBtn').addEventListener('click', function() {
-        toggleAllStudents(false);
-    });
+    const showLoginLink = document.getElementById('showLogin');
+    if (showLoginLink) {
+        showLoginLink.addEventListener('click', showLogin);
+    }
+    
+    // أزرار الخروج
+    const logoutAdminBtn = document.getElementById('logoutBtnAdmin');
+    if (logoutAdminBtn) {
+        logoutAdminBtn.addEventListener('click', logout);
+    }
+    
+    const logoutParentBtn = document.getElementById('logoutBtnParent');
+    if (logoutParentBtn) {
+        logoutParentBtn.addEventListener('click', logout);
+    }
 
-    document.getElementById('adminShowOldLogsBtn').addEventListener('click', function() {
-        toggleAdminOldLogs(true);
-    });
-    document.getElementById('adminHideOldLogsBtn').addEventListener('click', function() {
-        toggleAdminOldLogs(false);
-    });
-
-    document.getElementById('parentShowOldLogsBtn').addEventListener('click', function() {
-        toggleParentOldLogs(true);
-    });
-    document.getElementById('parentHideOldLogsBtn').addEventListener('click', function() {
-        toggleParentOldLogs(false);
-    });
-
-    document.getElementById('showOldNotificationsBtn').addEventListener('click', function() {
-        toggleOldNotifications(true);
-    });
-    document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
-        toggleOldNotifications(false);
-    });
+    // أزرار الإعدادات
+    const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
+    if (toggleSettingsBtn) {
+        toggleSettingsBtn.addEventListener('click', toggleSettingsForm);
+    }
+    
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', saveSchoolSettings);
+    }
+    
+    // أزرار إضافة طالب
+    const toggleAddBtn = document.getElementById('toggleAddStudentBtn');
+    if (toggleAddBtn) {
+        toggleAddBtn.addEventListener('click', toggleAddStudentForm);
+    }
+    
+    const adminAddBtn = document.getElementById('adminAddBtn');
+    if (adminAddBtn) {
+        adminAddBtn.addEventListener('click', adminAddStudent);
+    }
+    
+    // أزرار الإشعارات
+    const sendGeneralBtn = document.getElementById('adminSendNotificationBtn');
+    if (sendGeneralBtn) {
+        sendGeneralBtn.addEventListener('click', adminSendGeneralNotification);
+    }
+    
+    const sendParentBtn = document.getElementById('adminSendParentNotificationBtn');
+    if (sendParentBtn) {
+        sendParentBtn.addEventListener('click', adminSendParentNotification);
+    }
+    
+    // أزرار التغيير الجماعي
+    const allInsideBtn = document.getElementById('toggleAllInsideBtn');
+    if (allInsideBtn) {
+        allInsideBtn.addEventListener('click', function() {
+            toggleAllStudents(true);
+        });
+    }
+    
+    const allOutsideBtn = document.getElementById('toggleAllOutsideBtn');
+    if (allOutsideBtn) {
+        allOutsideBtn.addEventListener('click', function() {
+            toggleAllStudents(false);
+        });
+    }
+    
+    // أزرار عرض السجلات القديمة
+    const adminShowOldBtn = document.getElementById('adminShowOldLogsBtn');
+    if (adminShowOldBtn) {
+        adminShowOldBtn.addEventListener('click', function() {
+            toggleAdminOldLogs(true);
+        });
+    }
+    
+    const adminHideOldBtn = document.getElementById('adminHideOldLogsBtn');
+    if (adminHideOldBtn) {
+        adminHideOldBtn.addEventListener('click', function() {
+            toggleAdminOldLogs(false);
+        });
+    }
+    
+    const parentShowOldBtn = document.getElementById('parentShowOldLogsBtn');
+    if (parentShowOldBtn) {
+        parentShowOldBtn.addEventListener('click', function() {
+            toggleParentOldLogs(true);
+        });
+    }
+    
+    const parentHideOldBtn = document.getElementById('parentHideOldLogsBtn');
+    if (parentHideOldBtn) {
+        parentHideOldBtn.addEventListener('click', function() {
+            toggleParentOldLogs(false);
+        });
+    }
+    
+    // أزرار الإشعارات القديمة
+    const showOldNotifBtn = document.getElementById('showOldNotificationsBtn');
+    if (showOldNotifBtn) {
+        showOldNotifBtn.addEventListener('click', function() {
+            toggleOldNotifications(true);
+        });
+    }
+    
+    const hideOldNotifBtn = document.getElementById('hideOldNotificationsBtn');
+    if (hideOldNotifBtn) {
+        hideOldNotifBtn.addEventListener('click', function() {
+            toggleOldNotifications(false);
+        });
+    }
 }
 
 // ==========================================
@@ -3212,18 +3347,17 @@ function setupParentMessageForm() {
 // ==========================================
 function initScrollAnimations() {
     const elements = document.querySelectorAll('.animate-on-scroll');
+    if (!elements.length) return;
     
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('visible');
-                // اختياري: إلغاء المراقبة بعد الظهور
-                // observer.unobserve(entry.target);
             }
         });
     }, {
         threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
+        rootMargin: '0px 0px -30px 0px'
     });
     
     elements.forEach(el => observer.observe(el));
@@ -3233,22 +3367,26 @@ function initScrollAnimations() {
 // 2. تحديث الإحصائيات
 // ==========================================
 function updateStats(students) {
+    if (!students || !Array.isArray(students)) return;
+    
     const total = students.length;
-    const inside = students.filter(s => s.isInside).length;
+    const inside = students.filter(s => s.isInside === true).length;
     const outside = total - inside;
     
     const totalEl = document.getElementById('statTotalStudents');
     const insideEl = document.getElementById('statInsideStudents');
     const outsideEl = document.getElementById('statOutsideStudents');
+    const todayEl = document.getElementById('statTodayLogs');
     
     if (totalEl) totalEl.textContent = total;
     if (insideEl) insideEl.textContent = inside;
     if (outsideEl) outsideEl.textContent = outside;
     
-    // تحديث سجل اليوم
-    const todayLogs = document.querySelectorAll('#adminLogContainer .log-item').length;
-    const todayEl = document.getElementById('statTodayLogs');
-    if (todayEl) todayEl.textContent = todayLogs;
+    const logContainer = document.getElementById('adminLogContainer');
+    if (logContainer && todayEl) {
+        const items = logContainer.querySelectorAll('.log-item');
+        todayEl.textContent = items.length;
+    }
 }
 
 // ==========================================
@@ -3278,77 +3416,76 @@ function setupSidebar(toggleId, closeId, overlayId, sidebarId) {
     if (close) close.addEventListener('click', closeSidebar);
     if (overlay) overlay.addEventListener('click', closeSidebar);
     
-    // إغلاق عند الضغط على ESC
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeSidebar();
     });
 }
 
-// ==========================================
-// 4. التنقل بين أقسام الـ Dashboard عبر الـ Sidebar
-// ==========================================
-function setupSectionNavigation(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
+// التنقل بين الأقسام
+function setupSectionNavigation(sidebarId) {
+    const sidebar = document.getElementById(sidebarId);
+    if (!sidebar) return;
     
-    const links = container.querySelectorAll('.sidebar-link');
-    const sections = container.parentElement.querySelectorAll('.dashboard-section');
+    const links = sidebar.querySelectorAll('.sidebar-link');
+    const dashboard = sidebar.closest('.dashboard') || document.querySelector('.dashboard');
+    if (!dashboard) return;
+    
+    const sections = dashboard.querySelectorAll('.dashboard-section');
+    if (!sections.length) return;
     
     links.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             const sectionId = this.dataset.section;
+            if (!sectionId) return;
             
-            // تحديث الحالة النشطة
             links.forEach(l => l.classList.remove('active'));
             this.classList.add('active');
             
-            // إخفاء جميع الأقسام
             sections.forEach(s => s.style.display = 'none');
             
-            // إظهار القسم المطلوب
             const targetSection = document.getElementById(`section-${sectionId}`);
             if (targetSection) {
                 targetSection.style.display = 'block';
-                // إعادة تشغيل الأنيميشن
                 targetSection.classList.remove('visible');
                 setTimeout(() => targetSection.classList.add('visible'), 50);
             }
             
-            // إغلاق الـ Sidebar
-            const sidebar = container.closest('.sidebar');
-            if (sidebar) {
-                sidebar.classList.remove('open');
-                const overlay = document.getElementById(sidebar.id + 'Overlay');
-                if (overlay) overlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
+            sidebar.classList.remove('open');
+            const overlay = document.getElementById(sidebarId + 'Overlay');
+            if (overlay) overlay.classList.remove('active');
+            document.body.style.overflow = '';
         });
     });
 }
 
-// ==========================================
-// 5. تحسين تجربة المستخدم - إشعارات بإغلاق تلقائي
-// ==========================================
+// عرض إشعار توست
 function showToast(message, type = 'success', duration = 4000) {
-    // إزالة أي توست سابق
     const oldToast = document.querySelector('.toast-notification');
     if (oldToast) oldToast.remove();
     
     const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+    
     toast.innerHTML = `
-        <div class="toast-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</div>
+        <div class="toast-icon">${icon}</div>
         <div class="toast-message">${message}</div>
         <button class="toast-close">&times;</button>
     `;
+    
+    const colors = {
+        success: '#27ae60',
+        error: '#e74c3c',
+        warning: '#f39c12',
+        info: '#3498db'
+    };
     
     toast.style.cssText = `
         position: fixed;
         bottom: 24px;
         left: 50%;
         transform: translateX(-50%);
-        background: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
+        background: ${colors[type] || colors.info};
         color: white;
         padding: 14px 24px;
         border-radius: 12px;
@@ -3357,21 +3494,18 @@ function showToast(message, type = 'success', duration = 4000) {
         align-items: center;
         gap: 12px;
         z-index: 99999;
-        font-family: 'Tajawal', sans-serif;
+        font-family: 'Tajawal', 'Segoe UI', sans-serif;
         font-weight: 600;
         animation: slideUp 0.4s ease;
         max-width: 90%;
         direction: rtl;
+        transition: all 0.3s ease;
     `;
     
     document.body.appendChild(toast);
     
-    // زر الإغلاق
-    toast.querySelector('.toast-close').addEventListener('click', () => {
-        toast.remove();
-    });
+    toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
     
-    // إغلاق تلقائي
     setTimeout(() => {
         if (toast.parentNode) {
             toast.style.opacity = '0';
@@ -3381,31 +3515,25 @@ function showToast(message, type = 'success', duration = 4000) {
     }, duration);
 }
 
-// ==========================================
-// 6. ربط الأحداث الجديدة
-// ==========================================
+// ربط جميع التحسينات
 function setupEnhancedEvents() {
-    // Sidebars
     setupSidebar('adminSidebarToggle', 'adminSidebarClose', 'adminSidebarOverlay', 'adminSidebar');
     setupSidebar('parentSidebarToggle', 'parentSidebarClose', 'parentSidebarOverlay', 'parentSidebar');
-    
-    // التنقل بين الأقسام
     setupSectionNavigation('adminSidebar');
     setupSectionNavigation('parentSidebar');
-    
-    // أنيميشن التمرير
     initScrollAnimations();
     
-    // مراقبة تغييرات قائمة الطلاب لتحديث الإحصائيات
-    const observer = new MutationObserver(() => {
-        if (currentUser && currentUser.role === 'admin' && allStudents.length > 0) {
-            updateStats(allStudents);
-        }
-    });
     const studentsList = document.getElementById('adminStudentsList');
     if (studentsList) {
+        const observer = new MutationObserver(() => {
+            if (currentUser && currentUser.role === 'admin' && allStudents && allStudents.length > 0) {
+                updateStats(allStudents);
+            }
+        });
         observer.observe(studentsList, { childList: true, subtree: true });
     }
+    
+    console.log('✅ تم تفعيل جميع التحسينات الإضافية');
 }
 
 // ==========================================
@@ -3476,7 +3604,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupSmartAlertEvents();
     setupHolidayEvents();
     
-    // ✅ تفعيل التحسينات الجديدة (أنيميشن، Sidebar، إحصائيات، توست)
+    // ✅ تفعيل التحسينات الجديدة
     setupEnhancedEvents();
     
     // التحقق من وجود توكن لتسجيل الدخول التلقائي
@@ -3490,7 +3618,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 } else {
                     showParentDashboard();
                 }
-                // بعد تحميل لوحة التحكم، قم بتحديث الإحصائيات إذا كان مديراً
+                // بعد تحميل لوحة التحكم، تحديث الإحصائيات إذا كان مديراً
                 if (currentUser.role === 'admin' && allStudents && allStudents.length > 0) {
                     setTimeout(() => updateStats(allStudents), 500);
                 }
