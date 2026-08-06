@@ -131,41 +131,41 @@
                 <div class="dashboard-content">
 
                     <!-- بطاقات إحصائيات سريعة -->
-                    <div class="stats-grid animate-on-scroll" id="adminStatsGrid">
-                        <div class="stat-card stat-card-purple">
-                            <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
-                            <div class="stat-info">
-                                <h3 id="statTotalStudents">0</h3>
-                                <p data-i18n="stats.total_students">إجمالي الطلاب</p>
-                            </div>
-                        </div>
-                        <div class="stat-card stat-card-green">
-                            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                            <div class="stat-info">
-                                <h3 id="statInsideStudents">0</h3>
-                                <p data-i18n="stats.inside">داخل المدرسة</p>
-                            </div>
-                        </div>
-                        <div class="stat-card stat-card-red">
-                            <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
-                            <div class="stat-info">
-                                <h3 id="statOutsideStudents">0</h3>
-                                <p data-i18n="stats.outside">خارج المدرسة</p>
-                            </div>
-                        </div>
-                        <div class="stat-card stat-card-orange">
-                            <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
-                            <div class="stat-info">
-                                <h3 id="statTodayLogs">0</h3>
-                                <p data-i18n="stats.today_logs">سجل اليوم</p>
-                            </div>
-                        </div>
-                    </div>
+<div class="stats-grid animate-on-scroll" id="adminStatsGrid">
+    <div class="stat-card stat-card-purple">
+        <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+        <div class="stat-info">
+            <h3 id="statTotalStudents">0</h3>
+            <p data-i18n="stats.total_students">إجمالي الطلاب</p>
+        </div>
+    </div>
+    <div class="stat-card stat-card-green">
+        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info">
+            <h3 id="statInsideStudents">0</h3>
+            <p data-i18n="stats.inside">داخل المدرسة</p>
+        </div>
+    </div>
+    <div class="stat-card stat-card-red">
+        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+        <div class="stat-info">
+            <h3 id="statOutsideStudents">0</h3>
+            <p data-i18n="stats.outside">خارج المدرسة</p>
+        </div>
+    </div>
+    <div class="stat-card stat-card-orange">
+        <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+        <div class="stat-info">
+            <h3 id="statTodayLogs">0</h3>
+            <p data-i18n="stats.today_logs">سجل اليوم</p>
+        </div>
+    </div>
+</div>
 
                     <!-- قسم الطلاب -->
-                    <section id="section-students" class="dashboard-section">
-                        <div class="section-header">
-                            <h2><i class="fas fa-users"></i> <span data-i18n="students.management">إدارة الطلاب</span></h2>
+<section id="section-students" class="dashboard-section">
+    <div class="section-header">
+        <h2><i class="fas fa-users"></i> <span data-i18n="students.management">إدارة الطلاب</span></h2>
                             <div class="section-actions">
                                 <button id="toggleAddStudentBtn" class="btn-add-student">
     <i class="fas fa-plus-circle"></i> <span data-i18n="student.add_new">إضافة طالب جديد</span>
@@ -237,58 +237,126 @@
                     </section>
 
                     <!-- قسم العطل -->
-                    <section id="section-holidays" class="dashboard-section" style="display:none;">
-                        <div class="section-header">
-                            <h2><i class="fas fa-calendar-times"></i> <span data-i18n="holidays.title">إدارة العطل والإجازات</span></h2>
-                            <button id="toggleHolidayFormBtn" class="btn-add btn-sm"><i class="fas fa-plus"></i> <span data-i18n="holidays.add">إضافة عطلة</span></button>
-                        </div>
-                        <div id="holidayForm" style="display:none;" class="holiday-form animate-on-scroll">
-                            <div class="form-grid">
-                                <input type="date" id="holidayDate" class="form-control">
-                                <input type="date" id="holidayEndDate" class="form-control" placeholder="تاريخ النهاية (اختياري)">
-                                <input type="text" id="holidayName" placeholder="اسم العطلة" class="form-control">
-                                <textarea id="holidayDescription" placeholder="وصف (اختياري)" class="form-control"></textarea>
-                                <button id="saveHolidayBtn" class="btn-success"><i class="fas fa-save"></i> حفظ</button>
-                                <button id="cancelHolidayBtn" class="btn-secondary">إلغاء</button>
-                            </div>
-                        </div>
-                        <div id="holidaysList" class="holidays-list"></div>
-                    </section>
+<div class="holidays-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+        <h3 style="color:#1a365d; font-size:18px; display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-calendar-times" style="color:#e67e22;"></i>
+            <span data-i18n="holidays.title">إدارة العطل والإجازات</span>
+        </h3>
+        <button id="toggleHolidayFormBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #e67e22, #d35400); padding:8px 20px; font-size:14px; margin:0;">
+            <i class="fas fa-plus"></i> <span data-i18n="holidays.add">إضافة عطلة</span>
+        </button>
+    </div>
 
+    <!-- نموذج إضافة عطلة -->
+    <div id="holidayForm" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+        <div class="form-group">
+            <label data-i18n="holidays.start_date">📅 تاريخ البداية</label>
+            <input type="date" id="holidayDate" class="form-control">
+        </div>
+        <div class="form-group">
+            <label data-i18n="holidays.end_date">📅 تاريخ النهاية (اختياري - للإجازات المتعددة الأيام)</label>
+            <input type="date" id="holidayEndDate" class="form-control">
+        </div>
+        <div class="form-group">
+            <label data-i18n="holidays.name">📝 اسم العطلة</label>
+            <input type="text" id="holidayName" class="form-control" placeholder="مثال: عيد الفطر">
+        </div>
+        <div class="form-group">
+            <label data-i18n="holidays.description">📋 وصف (اختياري)</label>
+            <textarea id="holidayDescription" class="form-control" placeholder="وصف العطلة..."></textarea>
+        </div>
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 10px;">
+            <button id="saveHolidayBtn" class="btn-success">
+                <i class="fas fa-save"></i> <span data-i18n="holidays.save_changes">حفظ التعديلات</span>
+            </button>
+            <button id="cancelHolidayBtn" class="btn-secondary">
+                <i class="fas fa-times"></i> <span data-i18n="holidays.cancel">إلغاء</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- قائمة العطل -->
+    <div id="holidaysList" style="max-height:300px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
+</div>
+                    
                     <!-- قسم التنبيهات الذكية -->
-                    <section id="section-alerts" class="dashboard-section" style="display:none;">
-                        <div class="section-header">
-                            <h2><i class="fas fa-brain"></i> <span data-i18n="smart_alerts.title">التنبيهات الذكية</span></h2>
-                            <button id="runSmartAlertsBtn" class="btn-purple btn-sm"><i class="fas fa-play"></i> <span data-i18n="smart_alerts.run_now">تشغيل</span></button>
-                        </div>
-                        <div class="rules-grid">
-                            <div class="rule-card">
-                                <h4>🚨 <span data-i18n="smart_alerts.absence">الغياب المتكرر</span></h4>
-                                <div class="rule-controls">
-                                    <label>متتالي: <input type="number" id="absenceConsecutive" value="3" min="1"></label>
-                                    <label>شهري: <input type="number" id="absenceMonthly" value="5" min="1"></label>
-                                    <label><input type="checkbox" id="absenceEnabled" checked> مفعل</label>
-                                </div>
-                            </div>
-                            <div class="rule-card">
-                                <h4>⏰ <span data-i18n="smart_alerts.tardiness">التأخر الصباحي</span></h4>
-                                <div class="rule-controls">
-                                    <label>في الأسبوع: <input type="number" id="tardinessPerWeek" value="3" min="1"></label>
-                                    <label><input type="checkbox" id="tardinessEnabled" checked> مفعل</label>
-                                </div>
-                            </div>
-                            <div class="rule-card">
-                                <h4>🎉 <span data-i18n="smart_alerts.achievement">الإنجاز التحفيزي</span></h4>
-                                <div class="rule-controls">
-                                    <label>متتالي: <input type="number" id="achievementConsecutive" value="10" min="1"></label>
-                                    <label>شهري: <input type="number" id="achievementMonthly" value="20" min="1"></label>
-                                    <label><input type="checkbox" id="achievementEnabled" checked> مفعل</label>
-                                </div>
-                            </div>
-                        </div>
-                        <button id="saveAlertRulesBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-i18n="smart_alerts.save_rules">حفظ القواعد</span></button>
-                        <div id="smartAlertsList" class="alerts-list"></div>
-                    </section>
+<div class="smart-alerts-section" style="margin-top:20px; border-top:2px solid #e2eaf2; padding-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+        <h3 style="color:#1a365d; font-size:20px; display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-brain" style="color:#8e44ad;"></i>
+            <span data-i18n="smart_alerts.title">التنبيهات الذكية</span>
+        </h3>
+        <button id="runSmartAlertsBtn" class="btn-toggle-form" style="background: linear-gradient(135deg, #8e44ad, #6c3483); padding:8px 20px; font-size:14px; margin:0;">
+            <i class="fas fa-play"></i> <span data-i18n="smart_alerts.run_now">تشغيل الآن</span>
+        </button>
+    </div>
+
+    <!-- قواعد التنبيهات -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px; margin:10px 0;">
+        <!-- 1️⃣ الغياب المتكرر -->
+        <div class="rule-card" style="background:#f8fcff; padding:14px 16px; border-radius:16px; border:1px solid #e2eaf2;">
+            <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">🚨 <span data-i18n="smart_alerts.absence">الغياب المتكرر</span></h4>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                    <span data-i18n="smart_alerts.consecutive">متتالي:</span>
+                    <input type="number" id="absenceConsecutive" value="3" min="1" max="10" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                    <span data-i18n="smart_alerts.monthly">شهري:</span>
+                    <input type="number" id="absenceMonthly" value="5" min="1" max="20" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                </label>
+                <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="absenceEnabled" checked style="width:16px; height:16px;">
+                    <span data-i18n="smart_alerts.enabled">مفعل</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 2️⃣ التأخر الصباحي -->
+        <div class="rule-card" style="background:#f8fcff; padding:14px 16px; border-radius:16px; border:1px solid #e2eaf2;">
+            <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">⏰ <span data-i18n="smart_alerts.tardiness">التأخر الصباحي</span></h4>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                    <span data-i18n="smart_alerts.per_week">في الأسبوع:</span>
+                    <input type="number" id="tardinessPerWeek" value="3" min="1" max="10" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                </label>
+                <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="tardinessEnabled" checked style="width:16px; height:16px;">
+                    <span data-i18n="smart_alerts.enabled">مفعل</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 3️⃣ الإنجاز التحفيزي -->
+        <div class="rule-card" style="background:#f8fcff; padding:14px 16px; border-radius:16px; border:1px solid #e2eaf2;">
+            <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">🎉 <span data-i18n="smart_alerts.achievement">الإنجاز التحفيزي</span></h4>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                    <span data-i18n="smart_alerts.consecutive">متتالي:</span>
+                    <input type="number" id="achievementConsecutive" value="10" min="1" max="30" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                    <span data-i18n="smart_alerts.monthly">شهري:</span>
+                    <input type="number" id="achievementMonthly" value="20" min="1" max="30" style="width:50px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center;">
+                </label>
+                <label style="font-size:13px; color:#4a5a6e; display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="achievementEnabled" checked style="width:16px; height:16px;">
+                    <span data-i18n="smart_alerts.enabled">مفعل</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- زر حفظ القواعد -->
+    <button id="saveAlertRulesBtn" class="btn-primary" style="margin:10px 0;">
+        <i class="fas fa-save"></i> <span data-i18n="smart_alerts.save_rules">حفظ القواعد</span>
+    </button>
+
+    <!-- قائمة التنبيهات المرسلة -->
+    <div style="margin-top:15px;">
+        <h4 style="color:#1a365d; font-size:15px; margin-bottom:8px;">
+            <i class="fas fa-list"></i> <span data-i18n="smart_alerts.sent_alerts">التنبيهات المرسلة</span>
+        </h4>
+        <div id="smartAlertsList" style="max-height:300px; overflow-y:auto; border:1px solid #eef4fa; border-radius:12px; padding:4px 0;"></div>
+    </div>
+</div>
 
                     <!-- قسم الإعدادات -->
                     <section id="section-settings" class="dashboard-section" style="display:none;">
@@ -371,13 +439,14 @@
                         <h3>📋 القائمة</h3>
                         <button class="sidebar-close" id="parentSidebarClose"><i class="fas fa-times"></i></button>
                     </div>
-                    <nav class="sidebar-nav">
-                        <a href="#" class="sidebar-link active" data-section="children"><i class="fas fa-child"></i> <span data-i18n="sidebar.children">أبنائي</span></a>
-                        <a href="#" class="sidebar-link" data-section="logs"><i class="fas fa-history"></i> <span data-i18n="sidebar.logs">سجل الحضور</span></a>
-                        <a href="#" class="sidebar-link" data-section="leave"><i class="fas fa-file-medical"></i> <span data-i18n="sidebar.leave">عذر غياب</span></a>
-                        <a href="#" class="sidebar-link" data-section="messages"><i class="fas fa-envelope"></i> <span data-i18n="sidebar.messages">الرسائل</span></a>
-                        <a href="#" class="sidebar-link" data-section="notifications"><i class="fas fa-bell"></i> <span data-i18n="sidebar.notifications">الإشعارات</span></a>
-                    </nav>
+<nav class="sidebar-nav">
+    <a href="#" class="sidebar-link active" data-section="students"><i class="fas fa-users"></i> <span data-i18n="sidebar.students">الطلاب</span></a>
+    <a href="#" class="sidebar-link" data-section="logs"><i class="fas fa-history"></i> <span data-i18n="sidebar.logs">السجلات</span></a>
+    <a href="#" class="sidebar-link" data-section="leaves"><i class="fas fa-file-medical"></i> <span data-i18n="sidebar.leaves">الإجازات</span></a>
+    <a href="#" class="sidebar-link" data-section="holidays"><i class="fas fa-calendar-times"></i> <span data-i18n="sidebar.holidays">العطل</span></a>
+    <a href="#" class="sidebar-link" data-section="alerts"><i class="fas fa-brain"></i> <span data-i18n="sidebar.alerts">تنبيهات ذكية</span></a>
+    <a href="#" class="sidebar-link" data-section="settings"><i class="fas fa-cog"></i> <span data-i18n="sidebar.settings">الإعدادات</span></a>
+</nav>
                 </aside>
 
                 <div class="dashboard-content">
