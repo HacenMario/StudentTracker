@@ -289,7 +289,16 @@
     "holiday_name": "📝 اسم العطلة",
     "holiday_description": "📋 وصف (اختياري)",
     "save_changes": "حفظ التعديلات",
-    "cancel_edit_btn": "إلغاء"
+    "cancel_edit_btn": "إلغاء",
+    "edit_modal": {
+  "title": "✏️ تعديل العطلة",
+  "start_date": "📅 تاريخ البداية",
+  "end_date": "📅 تاريخ النهاية (اختياري - للإجازات المتعددة الأيام)",
+  "name": "📝 اسم العطلة",
+  "description": "📋 وصف (اختياري)",
+  "save": "حفظ التعديلات",
+  "cancel": "إلغاء"
+}
   },
   "parent": {
     "info_card_title": "👋 مرحباً",
