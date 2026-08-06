@@ -346,6 +346,9 @@ function showAdminDashboard() {
     loadLeaveRequests().then(requests => {
         renderLeaveRequests(requests, 'leaveRequestsList');
     });
+
+    setTimeout(initScrollAnimations, 500);
+
     
     // ✅ إضافة أحداث العطل عند عرض لوحة المدير
     setupHolidayEvents();
@@ -367,6 +370,8 @@ function showParentDashboard() {
     loadParentChildren(); // تعبئة القائمة المنسدلة
     setupParentMessageForm();
     loadParentSmartAlerts();
+
+    setTimeout(initScrollAnimations, 500);
 }
 
 // دالة جديدة لجلب معلومات ولي الأمر وعرضها
@@ -499,7 +504,7 @@ socket.on('status-changed', (data) => {
     });
 
     socket.on('notification-error', (data) => {
-        alert(data.message);
+        showToast(data.message);
     });
 
     socket.on('notification-sent', (data) => {
@@ -612,11 +617,11 @@ async function saveSchoolSettings() {
         const data = await res.json();
         schoolSettings = data;
         applySchoolSettings();
-        alert(translate('settings.success'));
+        showToast(translate('settings.success'));
         document.getElementById('settingsForm').style.display = 'none';
         document.getElementById('toggleSettingsBtn').innerHTML = `<i class="fas fa-cog"></i> ${translate('settings.school')}`;
     } catch (err) {
-        alert(translate('common.error'));
+        showToast(translate('common.error'));
     }
 }
 
@@ -678,7 +683,7 @@ window.downloadQR = function(studentId) {
             a.remove();
             window.URL.revokeObjectURL(url);
         })
-        .catch(err => alert('فشل تحميل QR: ' + err.message));
+        .catch(err => showToast('فشل تحميل QR: ' + err.message));
 };
 
 function openScanner() {
@@ -792,7 +797,7 @@ function startNewScanner(cameraId) {
 
 function switchCamera() {
     if (availableCameras.length < 2) {
-        alert('لا توجد كاميرات أخرى');
+        showToast('لا توجد كاميرات أخرى');
         return;
     }
 
@@ -1233,7 +1238,7 @@ async function toggleAllStudents(status) {
         const key = status ? 'attendance.all_students_inside' : 'attendance.all_students_outside';
         addLog('', new Date(), 'adminLogContainer', key);
     } else {
-        alert(translate('common.error'));
+        showToast(translate('common.error'));
     }
 }
 
@@ -1244,10 +1249,12 @@ async function loadAdminStudents() {
     try {
         const res = await fetchWithAuth('/api/students');
         if (!res.ok) throw new Error('فشل جلب الطلاب');
-        allStudents = await res.json(); // ✅ تخزين جميع الطلاب
+        allStudents = await res.json();
         renderFilteredStudents();
+        updateStats(allStudents); // تحديث الإحصائيات
     } catch (err) {
         console.error(err);
+        showToast(translate('common.error'), 'error');
     }
 }
 
@@ -1322,6 +1329,15 @@ function renderStudents(students, containerId, showAdminControls) {
         `;
     });
     container.innerHTML = html;
+    container.querySelectorAll('.student-card').forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 80);
+    });
 }
 
 window.adminToggle = async function(id) {
@@ -1341,7 +1357,7 @@ window.adminToggle = async function(id) {
             // ✅ استخدام المفتاح
             addLog('', new Date(), 'adminLogContainer', 'attendance.student_toggled');
         })
-        .catch(err => alert(translate('common.error') + ': ' + err.message));
+        .catch(err => showToast(translate('common.error') + ': ' + err.message));
 };
 
 window.adminDelete = async function(id) {
@@ -1356,7 +1372,7 @@ window.adminDelete = async function(id) {
             loadAdminStudents();
             addLog('', new Date(), 'adminLogContainer', 'attendance.student_deleted');
         })
-        .catch(err => alert(translate('common.error') + ': ' + err.message));
+        .catch(err => showToast(translate('common.error') + ': ' + err.message));
 };
 
 // ==========================================
@@ -1369,7 +1385,7 @@ window.openEditStudent = async function(studentId) {
         const students = await res.json();
         const student = students.find(s => s._id === studentId);
         if (!student) {
-            alert(translate('student.not_found'));
+            showToast(translate('student.not_found'));
             return;
         }
 
@@ -1387,7 +1403,7 @@ window.openEditStudent = async function(studentId) {
         
         document.getElementById('editStudentModal').style.display = 'flex';
     } catch (err) {
-        alert(translate('common.error') + ': ' + err.message);
+        showToast(translate('common.error') + ': ' + err.message);
     }
 };
 
@@ -1400,7 +1416,7 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     const address = document.getElementById('editAddress').value.trim();
 
     if (!name || !parentName || !parentPhone || !parentEmail) {
-        alert(translate('common.error'));
+        showToast(translate('common.error'));
         return;
     }
 
@@ -1419,12 +1435,12 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
             const error = await res.json();
             throw new Error(error.message || 'فشل التعديل');
         }
-        alert('✅ تم تعديل معلومات الطالب بنجاح');
+        showToast('✅ تم تعديل معلومات الطالب بنجاح');
         document.getElementById('editStudentModal').style.display = 'none';
         loadAdminStudents();
         addLog('✏️ تم تعديل معلومات الطالب ' + name, new Date(), 'adminLogContainer');
     } catch (err) {
-        alert('خطأ: ' + err.message);
+        showToast('خطأ: ' + err.message);
     }
 });
 
@@ -1482,7 +1498,7 @@ async function adminAddStudent() {
     const address = document.getElementById('adminAddress').value.trim();
     
     if (!name || !parentEmail || !parentName || !parentPhone) {
-        alert(translate('common.error') + ': ' + translate('student.add'));
+        showToast(translate('common.error') + ': ' + translate('student.add'));
         return;
     }
 
@@ -1517,11 +1533,11 @@ async function adminAddStudent() {
             document.getElementById('toggleAddStudentBtn').innerHTML = `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
         } else {
             const data = await res.json();
-            alert(translate('common.error') + ': ' + (data.message || translate('common.error')));
+            showToast(translate('common.error') + ': ' + (data.message || translate('common.error')));
         }
     } catch (err) {
         console.error('❌ خطأ في إضافة الطالب:', err);
-        alert(translate('common.error') + ': ' + err.message);
+        showToast(translate('common.error') + ': ' + err.message);
     }
 }
 
@@ -1539,7 +1555,7 @@ function toggleAddStudentForm() {
 
 async function adminSendGeneralNotification() {
     const msg = document.getElementById('adminNotificationMsg').value.trim();
-    if (!msg) return alert(translate('notification.message_required'));
+    if (!msg) return showToast(translate('notification.message_required'));
     
     const confirmed = await showConfirmModal(
         translate('notification.general'),
@@ -1551,16 +1567,16 @@ async function adminSendGeneralNotification() {
         socket.emit('admin-notification', { message: msg });
         document.getElementById('adminNotificationMsg').value = '';
         addLog(`📢 ${translate('notification.sent_general')}`, new Date(), 'adminLogContainer');
-        alert(translate('notification.sent_general'));
+        showToast(translate('notification.sent_general'));
     } else {
-        alert(translate('common.error'));
+        showToast(translate('common.error'));
     }
 }
 
 async function adminSendParentNotification() {
     const email = document.getElementById('adminParentEmailInput').value.trim();
     const msg = document.getElementById('adminParentNotificationMsg').value.trim();
-    if (!email || !msg) return alert(translate('common.error'));
+    if (!email || !msg) return showToast(translate('common.error'));
     
     const confirmed = await showConfirmModal(
         translate('notification.private'),
@@ -1572,9 +1588,9 @@ async function adminSendParentNotification() {
         socket.emit('admin-notification-to-parent', { parentEmail: email, message: msg });
         document.getElementById('adminParentEmailInput').value = '';
         document.getElementById('adminParentNotificationMsg').value = '';
-        alert(translate('notification.sent_private'));
+        showToast(translate('notification.sent_private'));
     } else {
-        alert(translate('common.error'));
+        showToast(translate('common.error'));
     }
 }
 
@@ -1974,16 +1990,16 @@ window.handleLeaveRequest = async function(requestId, status) {
   try {
     const result = await updateLeaveRequest(requestId, status);
     if (result.success) {
-      alert(result.message);
+      showToast(result.message);
       // إعادة تحميل الطلبات
       const requests = await loadLeaveRequests();
       renderLeaveRequests(requests, 'leaveRequestsList');
     } else {
-      alert(result.message || translate('common.error'));
+      showToast(result.message || translate('common.error'));
     }
   } catch (err) {
     console.error('❌ خطأ في معالجة الطلب:', err);
-    alert(translate('common.error') + ': ' + err.message);
+    showToast(translate('common.error') + ': ' + err.message);
   }
 };
 
@@ -2021,7 +2037,7 @@ function setupLeaveEvents() {
         const file = document.getElementById('leaveFile').files[0];
 
         if (!studentId || !date || !reason) {
-            alert(translate('leave.fill_all'));
+            showToast(translate('leave.fill_all'));
             return;
         }
 
@@ -2192,11 +2208,11 @@ function setupSmartAlertEvents() {
             
             const result = await runSmartAlerts();
             if (result.success) {
-                alert(translate('smart_alerts.run_success'));
+                showToast(translate('smart_alerts.run_success'));
                 const alerts = await loadSmartAlerts();
                 renderSmartAlerts(alerts, 'smartAlertsList');
             } else {
-                alert(result.message || translate('common.error'));
+                showToast(result.message || translate('common.error'));
             }
             
             this.disabled = false;
@@ -2246,7 +2262,7 @@ function setupSmartAlertEvents() {
             const results = await saveAlertRules(rules);
             const allSuccess = results.every(r => r.success);
             
-            alert(allSuccess ? translate('smart_alerts.rules_saved') : translate('common.error'));
+            showToast(allSuccess ? translate('smart_alerts.rules_saved') : translate('common.error'));
             
             this.disabled = false;
             this.innerHTML = '<i class="fas fa-save"></i> ' + translate('smart_alerts.save_rules');
@@ -2376,11 +2392,11 @@ window.handleToggleHoliday = async function(id) {
   
   const result = await toggleHolidayStatus(id);
   if (result.success) {
-    alert('✅ ' + result.message);
+    showToast('✅ ' + result.message);
     const holidays = await loadHolidays();
     renderHolidays(holidays, 'holidaysList');
   } else {
-    alert('❌ ' + (result.message || 'حدث خطأ'));
+    showToast('❌ ' + (result.message || 'حدث خطأ'));
   }
 };
 
@@ -2389,7 +2405,7 @@ window.handleEditHoliday = async function(id) {
   const holidays = await loadHolidays();
   const holiday = holidays.find(h => h._id === id);
   if (!holiday) {
-    alert('❌ العطلة غير موجودة');
+    showToast('❌ العطلة غير موجودة');
     return;
   }
   
@@ -2451,7 +2467,7 @@ window.handleEditHoliday = async function(id) {
     const newDescription = document.getElementById('editHolidayDescription').value.trim();
     
     if (!newDate || !newName) {
-      alert('الرجاء إدخال التاريخ واسم العطلة');
+      showToast('الرجاء إدخال التاريخ واسم العطلة');
       return;
     }
     
@@ -2464,12 +2480,12 @@ window.handleEditHoliday = async function(id) {
     this.innerHTML = '<i class="fas fa-save"></i> حفظ التعديلات';
     
     if (result.success) {
-      alert('✅ ' + result.message);
+      showToast('✅ ' + result.message);
       modal.remove();
       const holidays = await loadHolidays();
       renderHolidays(holidays, 'holidaysList');
     } else {
-      alert('❌ ' + (result.message || 'حدث خطأ'));
+      showToast('❌ ' + (result.message || 'حدث خطأ'));
     }
   });
   
@@ -2567,11 +2583,11 @@ window.handleDeleteHoliday = async function(id) {
   
   const result = await deleteHoliday(id);
   if (result.success) {
-    alert(result.message);
+    showToast(result.message);
     const holidays = await loadHolidays();
     renderHolidays(holidays, 'holidaysList');
   } else {
-    alert(result.message || translate('common.error'));
+    showToast(result.message || translate('common.error'));
   }
 };
 
@@ -2697,7 +2713,7 @@ function setupHolidayEvents() {
       const description = document.getElementById('holidayDescription')?.value.trim();
 
       if (!date || !name) {
-        alert('الرجاء إدخال التاريخ واسم العطلة');
+        showToast('الرجاء إدخال التاريخ واسم العطلة');
         return;
       }
 
@@ -2710,7 +2726,7 @@ function setupHolidayEvents() {
       this.innerHTML = '<i class="fas fa-save"></i> حفظ العطلة';
 
       if (result.success) {
-        alert('✅ ' + result.message);
+        showToast('✅ ' + result.message);
         if (form) form.style.display = 'none';
         if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
         document.getElementById('holidayDate').value = '';
@@ -2721,7 +2737,7 @@ function setupHolidayEvents() {
         const holidays = await loadHolidays();
         renderHolidays(holidays, 'holidaysList');
       } else {
-        alert('❌ ' + (result.message || 'حدث خطأ'));
+        showToast('❌ ' + (result.message || 'حدث خطأ'));
       }
     });
   }
@@ -2752,7 +2768,7 @@ function setupAuthEvents() {
             if (!res.ok) throw new Error(data.message);
             saveAuth(data);
         } catch (err) {
-            alert(err.message || 'فشل تسجيل الدخول');
+            showToast(err.message || 'فشل تسجيل الدخول');
         }
     });
 
@@ -2774,7 +2790,7 @@ function setupAuthEvents() {
             if (!res.ok) throw new Error(data.message);
             saveAuth(data);
         } catch (err) {
-            alert(err.message || 'فشل التسجيل');
+            showToast(err.message || 'فشل التسجيل');
         }
     });
 
@@ -3192,6 +3208,207 @@ function setupParentMessageForm() {
 }
 
 // ==========================================
+// 1. أنيميشن عند التمرير (Scroll Animation)
+// ==========================================
+function initScrollAnimations() {
+    const elements = document.querySelectorAll('.animate-on-scroll');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                // اختياري: إلغاء المراقبة بعد الظهور
+                // observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    });
+    
+    elements.forEach(el => observer.observe(el));
+}
+
+// ==========================================
+// 2. تحديث الإحصائيات
+// ==========================================
+function updateStats(students) {
+    const total = students.length;
+    const inside = students.filter(s => s.isInside).length;
+    const outside = total - inside;
+    
+    const totalEl = document.getElementById('statTotalStudents');
+    const insideEl = document.getElementById('statInsideStudents');
+    const outsideEl = document.getElementById('statOutsideStudents');
+    
+    if (totalEl) totalEl.textContent = total;
+    if (insideEl) insideEl.textContent = inside;
+    if (outsideEl) outsideEl.textContent = outside;
+    
+    // تحديث سجل اليوم
+    const todayLogs = document.querySelectorAll('#adminLogContainer .log-item').length;
+    const todayEl = document.getElementById('statTodayLogs');
+    if (todayEl) todayEl.textContent = todayLogs;
+}
+
+// ==========================================
+// 3. تحسين Sidebar
+// ==========================================
+function setupSidebar(toggleId, closeId, overlayId, sidebarId) {
+    const toggle = document.getElementById(toggleId);
+    const close = document.getElementById(closeId);
+    const overlay = document.getElementById(overlayId);
+    const sidebar = document.getElementById(sidebarId);
+    
+    if (!toggle || !sidebar) return;
+    
+    function openSidebar() {
+        sidebar.classList.add('open');
+        if (overlay) overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    
+    toggle.addEventListener('click', openSidebar);
+    if (close) close.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+    
+    // إغلاق عند الضغط على ESC
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeSidebar();
+    });
+}
+
+// ==========================================
+// 4. التنقل بين أقسام الـ Dashboard عبر الـ Sidebar
+// ==========================================
+function setupSectionNavigation(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const links = container.querySelectorAll('.sidebar-link');
+    const sections = container.parentElement.querySelectorAll('.dashboard-section');
+    
+    links.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sectionId = this.dataset.section;
+            
+            // تحديث الحالة النشطة
+            links.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+            
+            // إخفاء جميع الأقسام
+            sections.forEach(s => s.style.display = 'none');
+            
+            // إظهار القسم المطلوب
+            const targetSection = document.getElementById(`section-${sectionId}`);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+                // إعادة تشغيل الأنيميشن
+                targetSection.classList.remove('visible');
+                setTimeout(() => targetSection.classList.add('visible'), 50);
+            }
+            
+            // إغلاق الـ Sidebar
+            const sidebar = container.closest('.sidebar');
+            if (sidebar) {
+                sidebar.classList.remove('open');
+                const overlay = document.getElementById(sidebar.id + 'Overlay');
+                if (overlay) overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    });
+}
+
+// ==========================================
+// 5. تحسين تجربة المستخدم - إشعارات بإغلاق تلقائي
+// ==========================================
+function showToast(message, type = 'success', duration = 4000) {
+    // إزالة أي توست سابق
+    const oldToast = document.querySelector('.toast-notification');
+    if (oldToast) oldToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</div>
+        <div class="toast-message">${message}</div>
+        <button class="toast-close">&times;</button>
+    `;
+    
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
+        color: white;
+        padding: 14px 24px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 99999;
+        font-family: 'Tajawal', sans-serif;
+        font-weight: 600;
+        animation: slideUp 0.4s ease;
+        max-width: 90%;
+        direction: rtl;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // زر الإغلاق
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+        toast.remove();
+    });
+    
+    // إغلاق تلقائي
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(20px)';
+            setTimeout(() => toast.remove(), 400);
+        }
+    }, duration);
+}
+
+// ==========================================
+// 6. ربط الأحداث الجديدة
+// ==========================================
+function setupEnhancedEvents() {
+    // Sidebars
+    setupSidebar('adminSidebarToggle', 'adminSidebarClose', 'adminSidebarOverlay', 'adminSidebar');
+    setupSidebar('parentSidebarToggle', 'parentSidebarClose', 'parentSidebarOverlay', 'parentSidebar');
+    
+    // التنقل بين الأقسام
+    setupSectionNavigation('adminSidebar');
+    setupSectionNavigation('parentSidebar');
+    
+    // أنيميشن التمرير
+    initScrollAnimations();
+    
+    // مراقبة تغييرات قائمة الطلاب لتحديث الإحصائيات
+    const observer = new MutationObserver(() => {
+        if (currentUser && currentUser.role === 'admin' && allStudents.length > 0) {
+            updateStats(allStudents);
+        }
+    });
+    const studentsList = document.getElementById('adminStudentsList');
+    if (studentsList) {
+        observer.observe(studentsList, { childList: true, subtree: true });
+    }
+}
+
+// ==========================================
 // الوضع الليلي (Dark Mode)
 // ==========================================
 
@@ -3240,20 +3457,29 @@ updateDarkModeIcon();
 // 20. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', async function() {
+    // طلب إذن الإشعارات
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
 
+    // تحميل الترجمات
     await loadTranslations();
     applyTranslationsToAll();
 
+    // تحميل إعدادات المدرسة
     loadSchoolSettings();
+    
+    // إعداد الأحداث الأساسية
     setupAuthEvents();
     setupLeaveEvents();
-    setupSearchEvents(); 
+    setupSearchEvents();
     setupSmartAlertEvents();
     setupHolidayEvents();
     
+    // ✅ تفعيل التحسينات الجديدة (أنيميشن، Sidebar، إحصائيات، توست)
+    setupEnhancedEvents();
+    
+    // التحقق من وجود توكن لتسجيل الدخول التلقائي
     if (token) {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
@@ -3264,9 +3490,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 } else {
                     showParentDashboard();
                 }
+                // بعد تحميل لوحة التحكم، قم بتحديث الإحصائيات إذا كان مديراً
+                if (currentUser.role === 'admin' && allStudents && allStudents.length > 0) {
+                    setTimeout(() => updateStats(allStudents), 500);
+                }
                 return;
             }
-        } catch(e) {}
+        } catch(e) {
+            console.warn('⚠️ فشل استعادة بيانات المستخدم:', e);
+        }
     }
+    
+    // إذا لم يكن هناك توكن أو مستخدم، عرض شاشة تسجيل الدخول
     showLogin();
 });
