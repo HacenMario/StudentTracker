@@ -31,6 +31,14 @@
     --radius-xl: 32px;
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --font: 'Tajawal', sans-serif;
+    --header-bg: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+    --header-text: #ffffff;
+    --card-bg: #ffffff;
+    --body-bg: #f0f4f8;
+    --border-color: #e2eaf2;
+    --input-bg: #f8fafc;
+    --text-color: #1a365d;
+    --text-muted: #4a5a6e;
 }
 
 /* ==========================================
@@ -48,11 +56,11 @@ html {
 
 body {
     font-family: var(--font);
-    background: var(--bg-body);
+    background: var(--body-bg);
     min-height: 100vh;
     padding: 16px;
     transition: var(--transition);
-    color: var(--text-primary);
+    color: var(--text-color);
 }
 
 /* ==========================================
@@ -73,8 +81,8 @@ body {
    رأس المدرسة
    ========================================== */
 .school-header {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    color: white;
+    background: var(--header-bg);
+    color: var(--header-text);
     padding: 20px 32px;
     border-radius: var(--radius-lg);
     margin-bottom: 25px;
@@ -130,6 +138,7 @@ body {
     font-weight: 700;
     border: 1px solid rgba(255, 255, 255, 0.2);
     animation: pulse-green 2s infinite;
+    color: #fff;
 }
 
 .live-badge i {
@@ -174,7 +183,7 @@ body {
 }
 
 .auth-card {
-    background: white;
+    background: var(--card-bg);
     padding: 40px 36px;
     border-radius: var(--radius-xl);
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
@@ -211,7 +220,7 @@ body {
 }
 
 .auth-subtitle {
-    color: var(--gray-dark);
+    color: var(--text-muted);
     font-size: 15px;
     margin-bottom: 24px;
 }
@@ -221,11 +230,11 @@ body {
     width: 100%;
     padding: 14px 18px;
     margin: 8px 0;
-    border: 2px solid #e2eaf2;
+    border: 2px solid var(--border-color);
     border-radius: 60px;
     font-size: 16px;
     font-family: var(--font);
-    background: #f8fafc;
+    background: var(--input-bg);
     transition: var(--transition);
 }
 
@@ -246,7 +255,7 @@ body {
 
 .auth-switch {
     margin-top: 16px;
-    color: var(--gray-dark);
+    color: var(--text-muted);
 }
 
 .auth-switch a {
@@ -378,6 +387,28 @@ body {
     box-shadow: 0 8px 24px rgba(211, 84, 0, 0.35);
 }
 
+/* ✅ زر إضافة طالب - ستايل مميز جديد */
+.btn-add-student {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 12px 28px !important;
+    border-radius: var(--radius-sm) !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: var(--transition) !important;
+    font-family: var(--font) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    box-shadow: 0 4px 20px rgba(245, 87, 108, 0.4) !important;
+}
+
+.btn-add-student:hover {
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow: 0 8px 30px rgba(245, 87, 108, 0.5) !important;
+}
+
 .btn-purple {
     background: linear-gradient(135deg, var(--secondary), #6c3483);
     color: white;
@@ -424,15 +455,16 @@ body {
     border-radius: 8px;
 }
 
+/* ✅ زر الخروج - محسن للوضع النهاري */
 .btn-logout {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(231, 76, 60, 0.15);
+    border: 2px solid rgba(231, 76, 60, 0.3);
+    color: #e74c3c;
     padding: 8px 20px;
     border-radius: var(--radius-sm);
     cursor: pointer;
     font-family: var(--font);
-    font-weight: 600;
-    color: white;
+    font-weight: 700;
     transition: var(--transition);
     display: inline-flex;
     align-items: center;
@@ -440,8 +472,34 @@ body {
 }
 
 .btn-logout:hover {
-    background: rgba(231, 76, 60, 0.3);
-    border-color: var(--danger);
+    background: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(231, 76, 60, 0.35);
+}
+
+/* ✅ زر تبديل الوضع الليلي - محسن للوضع النهاري */
+.dark-mode-toggle {
+    background: rgba(26, 54, 93, 0.08);
+    border: 2px solid rgba(26, 54, 93, 0.2);
+    color: var(--text-primary);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dark-mode-toggle:hover {
+    background: var(--primary-light);
+    color: white;
+    border-color: var(--primary-light);
+    transform: rotate(20deg) scale(1.05);
 }
 
 /* ==========================================
@@ -525,7 +583,7 @@ body {
     right: -320px;
     width: 300px;
     height: 100%;
-    background: white;
+    background: var(--card-bg);
     box-shadow: -4px 0 32px rgba(0, 0, 0, 0.12);
     z-index: 999;
     transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -645,7 +703,7 @@ body {
 }
 
 .stat-card {
-    background: white;
+    background: var(--card-bg);
     padding: 20px 24px;
     border-radius: var(--radius-md);
     display: flex;
@@ -653,7 +711,7 @@ body {
     gap: 16px;
     box-shadow: var(--shadow-card);
     transition: var(--transition);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border-color);
 }
 
 .stat-card:hover {
@@ -687,7 +745,7 @@ body {
 
 .stat-info p {
     font-size: 14px;
-    color: var(--gray-dark);
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -716,10 +774,10 @@ body {
 }
 
 .student-card {
-    background: white;
+    background: var(--card-bg);
     padding: 18px 20px;
     border-radius: var(--radius-md);
-    border: 1px solid #eef4fa;
+    border: 1px solid var(--border-color);
     box-shadow: var(--shadow-card);
     transition: var(--transition);
     display: flex;
@@ -759,7 +817,7 @@ body {
 
 .student-time {
     font-size: 13px;
-    color: var(--gray-dark);
+    color: var(--text-muted);
     display: flex;
     align-items: center;
     gap: 5px;
@@ -860,17 +918,17 @@ body {
     right: 16px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--gray-dark);
+    color: var(--text-muted);
 }
 
 .search-wrapper input {
     width: 100%;
     padding: 12px 48px 12px 20px;
-    border: 2px solid #e2eaf2;
+    border: 2px solid var(--border-color);
     border-radius: 60px;
     font-size: 16px;
     font-family: var(--font);
-    background: white;
+    background: var(--input-bg);
     transition: var(--transition);
     outline: none;
 }
@@ -942,7 +1000,7 @@ body {
     border-radius: var(--radius-md);
     padding: 20px 24px;
     margin-bottom: 20px;
-    border: 1px solid #e2eaf2;
+    border: 1px solid var(--border-color);
     animation: fadeIn 0.3s ease;
 }
 
@@ -956,11 +1014,11 @@ body {
 .form-grid select,
 .form-grid textarea {
     padding: 12px 16px;
-    border: 2px solid #e2eaf2;
+    border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     font-size: 15px;
     font-family: var(--font);
-    background: white;
+    background: var(--input-bg);
     transition: var(--transition);
     width: 100%;
 }
@@ -997,7 +1055,7 @@ body {
 .logo-preview img {
     max-height: 80px;
     border-radius: var(--radius-sm);
-    border: 2px solid #e2eaf2;
+    border: 2px solid var(--border-color);
 }
 
 /* ==========================================
@@ -1042,7 +1100,7 @@ body {
     display: flex;
     justify-content: space-between;
     padding: 8px 4px;
-    border-bottom: 1px dashed #e2eaf2;
+    border-bottom: 1px dashed var(--border-color);
     font-size: 14px;
     color: var(--text-secondary);
     transition: var(--transition);
@@ -1057,7 +1115,7 @@ body {
 }
 
 .log-time {
-    color: var(--gray-dark);
+    color: var(--text-muted);
     font-size: 12px;
     font-weight: 500;
 }
@@ -1091,11 +1149,11 @@ body {
 .notif-box textarea {
     width: 100%;
     padding: 12px 16px;
-    border: 2px solid #e2eaf2;
+    border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     font-size: 15px;
     font-family: var(--font);
-    background: white;
+    background: var(--input-bg);
     margin-bottom: 10px;
     transition: var(--transition);
 }
@@ -1142,11 +1200,11 @@ body {
 }
 
 .leave-request-card {
-    background: white;
+    background: var(--card-bg);
     border-radius: var(--radius-md);
     padding: 16px 18px;
     margin-bottom: 10px;
-    border: 1px solid #eef4fa;
+    border: 1px solid var(--border-color);
     box-shadow: var(--shadow-card);
     transition: var(--transition);
 }
@@ -1249,7 +1307,7 @@ body {
    نموذج الرسائل (ولي الأمر)
    ========================================== */
 .message-form-card {
-    background: white;
+    background: var(--card-bg);
     border-radius: var(--radius-md);
     padding: 24px 28px;
     box-shadow: var(--shadow-card);
@@ -1273,11 +1331,11 @@ body {
 .message-form-card textarea {
     width: 100%;
     padding: 12px 16px;
-    border: 2px solid #e2eaf2;
+    border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     font-size: 15px;
     font-family: var(--font);
-    background: #f8faff;
+    background: var(--input-bg);
     transition: var(--transition);
 }
 
@@ -1332,7 +1390,7 @@ body {
     background: #f8fcff;
     padding: 16px 18px;
     border-radius: var(--radius-md);
-    border: 1px solid #e2eaf2;
+    border: 1px solid var(--border-color);
     transition: var(--transition);
 }
 
@@ -1395,7 +1453,7 @@ body {
 }
 
 .modal-box {
-    background: white;
+    background: var(--card-bg);
     max-width: 520px;
     width: 92%;
     padding: 32px 28px;
@@ -1415,7 +1473,7 @@ body {
 
 .modal-box p {
     text-align: center;
-    color: var(--gray-dark);
+    color: var(--text-muted);
     font-size: 16px;
     margin-bottom: 20px;
 }
@@ -1492,31 +1550,20 @@ body {
 }
 
 /* ==========================================
-   الوضع الليلي (Dark Mode)
+   الوضع الليلي (Dark Mode) - محسن
    ========================================== */
-.dark-mode-toggle {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    font-size: 18px;
-    cursor: pointer;
-    transition: var(--transition);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.dark-mode-toggle:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: rotate(20deg);
-}
-
 body.dark-mode {
-    background: #0f1724 !important;
-    color: #e8edf5 !important;
+    --body-bg: #0f1724;
+    --card-bg: #1a2332;
+    --border-color: #2a3a4f;
+    --input-bg: #0f1724;
+    --text-primary: #f0f4fa;
+    --text-secondary: #b0c4de;
+    --text-muted: #8a9aaa;
+    --header-bg: linear-gradient(135deg, #0f1f3a, #1a365d);
+    --header-text: #ffffff;
+    --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.4);
 }
 
 body.dark-mode .container {
@@ -1532,10 +1579,11 @@ body.dark-mode .rule-card,
 body.dark-mode .notif-box,
 body.dark-mode .message-form-card,
 body.dark-mode .parent-info-card,
-body.dark-mode .sidebar {
-    background: #1a2332 !important;
-    border-color: #2a3a4f !important;
-    color: #e8edf5 !important;
+body.dark-mode .sidebar,
+body.dark-mode .modal-box {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
 }
 
 body.dark-mode .stat-info h3,
@@ -1545,7 +1593,7 @@ body.dark-mode .parent-info-text h3,
 body.dark-mode .sidebar-header h3,
 body.dark-mode .modal-box h3,
 body.dark-mode .auth-card h2 {
-    color: #f0f4fa !important;
+    color: var(--text-primary) !important;
 }
 
 body.dark-mode .stat-info p,
@@ -1555,7 +1603,7 @@ body.dark-mode .log-time,
 body.dark-mode .parent-info-text p,
 body.dark-mode .auth-subtitle,
 body.dark-mode .modal-box p {
-    color: #b0c4de !important;
+    color: var(--text-secondary) !important;
 }
 
 body.dark-mode .add-student-form,
@@ -1563,16 +1611,16 @@ body.dark-mode .settings-form,
 body.dark-mode .holiday-form,
 body.dark-mode .log-section,
 body.dark-mode .notif-box {
-    background: #1a2332 !important;
-    border-color: #2a3a4f !important;
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
 }
 
 body.dark-mode input,
 body.dark-mode select,
 body.dark-mode textarea {
-    background: #0f1724 !important;
-    border-color: #2a3a4f !important;
-    color: #e8edf5 !important;
+    background: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
 }
 
 body.dark-mode input:focus,
@@ -1585,7 +1633,7 @@ body.dark-mode textarea:focus {
 
 body.dark-mode input::placeholder,
 body.dark-mode textarea::placeholder {
-    color: #8a9aaa !important;
+    color: var(--text-muted) !important;
 }
 
 body.dark-mode .status-badge.inside {
@@ -1599,7 +1647,7 @@ body.dark-mode .status-badge.outside {
 
 body.dark-mode .btn-secondary {
     background: #2a3a4f !important;
-    color: #e8edf5 !important;
+    color: var(--text-primary) !important;
 }
 body.dark-mode .btn-secondary:hover {
     background: #3a4a5f !important;
@@ -1610,11 +1658,11 @@ body.dark-mode .school-header {
 }
 
 body.dark-mode .sidebar-link {
-    color: #b0c4de !important;
+    color: var(--text-secondary) !important;
 }
 body.dark-mode .sidebar-link:hover {
     background: #1f2a3d !important;
-    color: #f0f4fa !important;
+    color: var(--text-primary) !important;
 }
 body.dark-mode .sidebar-link.active {
     background: #1f2a3d !important;
@@ -1623,12 +1671,22 @@ body.dark-mode .sidebar-link.active {
 }
 
 body.dark-mode .dark-mode-toggle {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
     color: #f6ad55 !important;
-    border-color: rgba(255, 255, 255, 0.15) !important;
-    background: rgba(255, 255, 255, 0.05) !important;
 }
 body.dark-mode .dark-mode-toggle:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.dark-mode .btn-logout {
+    background: rgba(231, 76, 60, 0.2) !important;
+    border-color: rgba(231, 76, 60, 0.4) !important;
+    color: #fca5a5 !important;
+}
+body.dark-mode .btn-logout:hover {
+    background: #e74c3c !important;
+    color: white !important;
 }
 
 body.dark-mode .live-badge {
@@ -1777,7 +1835,8 @@ body.dark-mode .live-badge {
     .btn-danger,
     .btn-warning,
     .btn-purple,
-    .btn-add {
+    .btn-add,
+    .btn-add-student {
         font-size: 14px;
         padding: 10px 16px;
     }
