@@ -133,267 +133,18 @@ function switchLanguage(lang) {
 
 // تطبيق الترجمات على جميع العناصر
 function applyTranslationsToAll() {
-    // ترجمة العناصر التي تحمل data-i18n
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         const translation = t(key);
         if (translation && translation !== key) {
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
                 el.placeholder = translation;
-            } else if (el.tagName === 'SELECT') {
-                const options = el.querySelectorAll('option');
-                options.forEach(opt => {
-                    const optKey = opt.getAttribute('data-i18n');
-                    if (optKey) {
-                        const optTranslation = t(optKey);
-                        if (optTranslation && optTranslation !== optKey) {
-                            opt.textContent = optTranslation;
-                        }
-                    }
-                });
             } else {
                 el.textContent = translation;
             }
         }
     });
-
-    // تحديث النصوص الديناميكية
     updateDynamicTexts();
-    
-    // ترجمة عناصر ولي الأمر
-    translateParentElements();
-    
-    // ترجمة الأزرار والروابط
-    translateButtonsAndLinks();
-    
-    // ✅ ترجمة التنبيهات الذكية
-    translateSmartAlerts();
-    
-    // ✅ ترجمة الإحصائيات
-    translateStats();
-    
-    // ✅ ترجمة الشريط الجانبي
-    translateSidebar();
-    
-    // ✅ ترجمة قسم العطل
-    translateHolidaysSection();
-    
-    console.log('🌍 تم تطبيق الترجمة على جميع العناصر');
-}
-
-// ✅ دالة جديدة لترجمة التنبيهات الذكية
-function translateSmartAlerts() {
-    // عناوين البطاقات
-    document.querySelectorAll('.rule-card h4').forEach(el => {
-        const text = el.textContent.trim();
-        if (text.includes('الغياب المتكرر') || text.includes('Repeated Absence') || text.includes('Absence répétée')) {
-            el.innerHTML = `🚨 ${t('smart_alerts.absence')}`;
-        } else if (text.includes('التأخر الصباحي') || text.includes('Morning Tardiness') || text.includes('Retard matinal')) {
-            el.innerHTML = `⏰ ${t('smart_alerts.tardiness')}`;
-        } else if (text.includes('الإنجاز التحفيزي') || text.includes('Achievement Motivation') || text.includes('Motivation de réussite')) {
-            el.innerHTML = `🎉 ${t('smart_alerts.achievement')}`;
-        }
-    });
-    
-    // ترجمة التسميات داخل البطاقات
-    document.querySelectorAll('.rule-controls label').forEach(label => {
-        const text = label.textContent.trim();
-        if (text.includes('متتالي') || text.includes('Consecutive') || text.includes('Consécutif')) {
-            label.innerHTML = `${t('smart_alerts.consecutive')} <input type="number" id="absenceConsecutive" value="3" min="1" style="width:52px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center; font-family:var(--font);">`;
-        } else if (text.includes('شهري') || text.includes('Monthly') || text.includes('Mensuel')) {
-            label.innerHTML = `${t('smart_alerts.monthly')} <input type="number" id="absenceMonthly" value="5" min="1" style="width:52px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center; font-family:var(--font);">`;
-        } else if (text.includes('في الأسبوع') || text.includes('Per Week') || text.includes('Par semaine')) {
-            label.innerHTML = `${t('smart_alerts.per_week')} <input type="number" id="tardinessPerWeek" value="3" min="1" style="width:52px; padding:4px 6px; border-radius:8px; border:1px solid #d6e8f5; text-align:center; font-family:var(--font);">`;
-        } else if (text.includes('مفعل') || text.includes('Enabled') || text.includes('Activé')) {
-            label.innerHTML = `<input type="checkbox" id="absenceEnabled" checked style="width:18px; height:18px; cursor:pointer;"> ${t('smart_alerts.enabled')}`;
-        }
-    });
-    
-    // زر "تشغيل الآن"
-    const runBtn = document.getElementById('runSmartAlertsBtn');
-    if (runBtn) {
-        const span = runBtn.querySelector('span');
-        if (span) span.textContent = t('smart_alerts.run_now');
-        else runBtn.innerHTML = `<i class="fas fa-play"></i> <span data-i18n="smart_alerts.run_now">${t('smart_alerts.run_now')}</span>`;
-    }
-    
-    // زر "حفظ القواعد"
-    const saveRulesBtn = document.getElementById('saveAlertRulesBtn');
-    if (saveRulesBtn) {
-        const span = saveRulesBtn.querySelector('span');
-        if (span) span.textContent = t('smart_alerts.save_rules');
-        else saveRulesBtn.innerHTML = `<i class="fas fa-save"></i> <span data-i18n="smart_alerts.save_rules">${t('smart_alerts.save_rules')}</span>`;
-    }
-    
-    // عنوان "التنبيهات المرسلة"
-    const sentTitle = document.querySelector('.smart-alerts-section h4');
-    if (sentTitle) {
-        sentTitle.innerHTML = `<i class="fas fa-list"></i> ${t('smart_alerts.sent_alerts')}`;
-    }
-}
-
-// ✅ دالة جديدة لترجمة الإحصائيات
-function translateStats() {
-    const statTitles = {
-        'statTotalStudents': 'stats.total_students',
-        'statInsideStudents': 'stats.inside',
-        'statOutsideStudents': 'stats.outside',
-        'statTodayLogs': 'stats.today_logs'
-    };
-    
-    Object.keys(statTitles).forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            const parent = el.parentElement;
-            if (parent) {
-                const p = parent.querySelector('p');
-                if (p) {
-                    const key = statTitles[id];
-                    p.textContent = t(key);
-                }
-            }
-        }
-    });
-}
-
-// ✅ دالة جديدة لترجمة الشريط الجانبي
-function translateSidebar() {
-    const sidebarLinks = {
-        'الطلاب': 'sidebar.students',
-        'السجلات': 'sidebar.logs',
-        'الإجازات': 'sidebar.leaves',
-        'العطل': 'sidebar.holidays',
-        'تنبيهات ذكية': 'sidebar.alerts',
-        'الإعدادات': 'sidebar.settings'
-    };
-    
-    document.querySelectorAll('.sidebar-link span').forEach(el => {
-        const text = el.textContent.trim();
-        if (sidebarLinks[text]) {
-            el.textContent = t(sidebarLinks[text]);
-        }
-    });
-}
-
-// ✅ دالة جديدة لترجمة قسم العطل
-function translateHolidaysSection() {
-    // عنوان القسم
-    const sectionTitle = document.querySelector('.holidays-section .section-header h2');
-    if (sectionTitle) {
-        const icon = sectionTitle.querySelector('i');
-        if (icon) {
-            sectionTitle.innerHTML = `<i class="fas fa-calendar-times"></i> ${t('holidays.title')}`;
-        }
-    }
-    
-    // زر إضافة عطلة
-    const addBtn = document.getElementById('toggleHolidayFormBtn');
-    if (addBtn) {
-        const span = addBtn.querySelector('span');
-        if (span) span.textContent = t('holidays.add');
-        else addBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('holidays.add')}`;
-    }
-    
-    // نموذج العطلة
-    const formLabels = document.querySelectorAll('#holidayForm .form-group label');
-    if (formLabels.length >= 4) {
-        formLabels[0].textContent = t('holidays.start_date');
-        formLabels[1].textContent = t('holidays.end_date');
-        formLabels[2].textContent = t('holidays.name');
-        formLabels[3].textContent = t('holidays.description');
-    }
-    
-    // أزرار النموذج
-    const saveBtn = document.getElementById('saveHolidayBtn');
-    if (saveBtn) saveBtn.innerHTML = `<i class="fas fa-save"></i> ${t('holidays.save_changes')}`;
-    
-    const cancelBtn = document.getElementById('cancelHolidayBtn');
-    if (cancelBtn) cancelBtn.innerHTML = `<i class="fas fa-times"></i> ${t('holidays.cancel')}`;
-}
-
-// دالة جديدة لترجمة عناصر ولي الأمر
-function translateParentElements() {
-    // ترجمة بطاقة معلومات ولي الأمر
-    const parentNameLabel = document.querySelector('.parent-info-card .label-name');
-    const parentEmailLabel = document.querySelector('.parent-info-card .label-email');
-    const parentPhoneLabel = document.querySelector('.parent-info-card .label-phone');
-    
-    if (parentNameLabel) parentNameLabel.textContent = t('parent.name') + ':';
-    if (parentEmailLabel) parentEmailLabel.textContent = t('parent.email') + ':';
-    if (parentPhoneLabel) parentPhoneLabel.textContent = t('parent.phone') + ':';
-    
-    // ترجمة نموذج الرسائل
-    const messageFormTitle = document.querySelector('.message-form-card h4');
-    if (messageFormTitle) messageFormTitle.innerHTML = `✉️ ${t('messages.send_to_school')}`;
-    
-    const studentLabel = document.querySelector('label[for="parentStudentSelect"]');
-    if (studentLabel) studentLabel.textContent = t('messages.student_concerned');
-    
-    const subjectLabel = document.querySelector('label[for="parentSubjectInput"]');
-    if (subjectLabel) subjectLabel.textContent = t('messages.subject_optional');
-    
-    const messageLabel = document.querySelector('label[for="parentMessageInput"]');
-    if (messageLabel) messageLabel.textContent = t('messages.message_text');
-    
-    const sendBtn = document.getElementById('parentSendMessageBtn');
-    if (sendBtn) sendBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('messages.send')}`;
-}
-
-// دالة جديدة لترجمة الأزرار والروابط
-function translateButtonsAndLinks() {
-    // زر إضافة طالب
-    const addBtn = document.getElementById('toggleAddStudentBtn');
-    if (addBtn) {
-        const span = addBtn.querySelector('span');
-        if (span) span.textContent = t('student.add_new');
-        else addBtn.innerHTML = `<i class="fas fa-plus-circle"></i> <span data-i18n="student.add_new">${t('student.add_new')}</span>`;
-    }
-    
-    // زر حفظ في نموذج الإضافة
-    const saveBtn = document.getElementById('adminAddBtn');
-    if (saveBtn) {
-        const span = saveBtn.querySelector('span');
-        if (span) span.textContent = t('student.save');
-        else saveBtn.innerHTML = `<i class="fas fa-save"></i> <span data-i18n="student.save">${t('student.save')}</span>`;
-    }
-    
-    // أزرار التغيير الجماعي
-    const insideBtn = document.getElementById('toggleAllInsideBtn');
-    if (insideBtn) {
-        const span = insideBtn.querySelector('span');
-        if (span) span.textContent = t('bulk.all_inside');
-        else insideBtn.innerHTML = `<i class="fas fa-arrow-right"></i> <span data-i18n="bulk.all_inside">${t('bulk.all_inside')}</span>`;
-    }
-    
-    const outsideBtn = document.getElementById('toggleAllOutsideBtn');
-    if (outsideBtn) {
-        const span = outsideBtn.querySelector('span');
-        if (span) span.textContent = t('bulk.all_outside');
-        else outsideBtn.innerHTML = `<i class="fas fa-arrow-left"></i> <span data-i18n="bulk.all_outside">${t('bulk.all_outside')}</span>`;
-    }
-    
-    // زر مسح QR
-    const qrBtn = document.getElementById('openScannerBtn');
-    if (qrBtn) {
-        const span = qrBtn.querySelector('span');
-        if (span) span.textContent = t('common.scan_qr');
-        else qrBtn.innerHTML = `<i class="fas fa-qrcode"></i> <span data-i18n="common.scan_qr">${t('common.scan_qr')}</span>`;
-    }
-    
-    // زر "أحدث السجلات"
-    const recentLogs = document.querySelector('.log-section .log-header span');
-    if (recentLogs) {
-        recentLogs.textContent = t('attendance.recent');
-    }
-    
-    // زر "إدارة الطلاب"
-    const studentsMgmt = document.querySelector('#section-students .section-header h2');
-    if (studentsMgmt) {
-        const icon = studentsMgmt.querySelector('i');
-        if (icon) {
-            studentsMgmt.innerHTML = `<i class="fas fa-users"></i> ${t('students.management')}`;
-        }
-    }
 }
 
 // تحديث النصوص الديناميكية
@@ -595,9 +346,6 @@ function showAdminDashboard() {
     loadLeaveRequests().then(requests => {
         renderLeaveRequests(requests, 'leaveRequestsList');
     });
-
-    setTimeout(initScrollAnimations, 500);
-
     
     // ✅ إضافة أحداث العطل عند عرض لوحة المدير
     setupHolidayEvents();
@@ -619,8 +367,6 @@ function showParentDashboard() {
     loadParentChildren(); // تعبئة القائمة المنسدلة
     setupParentMessageForm();
     loadParentSmartAlerts();
-
-    setTimeout(initScrollAnimations, 500);
 }
 
 // دالة جديدة لجلب معلومات ولي الأمر وعرضها
@@ -753,7 +499,7 @@ socket.on('status-changed', (data) => {
     });
 
     socket.on('notification-error', (data) => {
-        showToast(data.message);
+        alert(data.message);
     });
 
     socket.on('notification-sent', (data) => {
@@ -866,11 +612,11 @@ async function saveSchoolSettings() {
         const data = await res.json();
         schoolSettings = data;
         applySchoolSettings();
-        showToast(translate('settings.success'));
+        alert(translate('settings.success'));
         document.getElementById('settingsForm').style.display = 'none';
         document.getElementById('toggleSettingsBtn').innerHTML = `<i class="fas fa-cog"></i> ${translate('settings.school')}`;
     } catch (err) {
-        showToast(translate('common.error'));
+        alert(translate('common.error'));
     }
 }
 
@@ -932,7 +678,7 @@ window.downloadQR = function(studentId) {
             a.remove();
             window.URL.revokeObjectURL(url);
         })
-        .catch(err => showToast('فشل تحميل QR: ' + err.message));
+        .catch(err => alert('فشل تحميل QR: ' + err.message));
 };
 
 function openScanner() {
@@ -1046,7 +792,7 @@ function startNewScanner(cameraId) {
 
 function switchCamera() {
     if (availableCameras.length < 2) {
-        showToast('لا توجد كاميرات أخرى');
+        alert('لا توجد كاميرات أخرى');
         return;
     }
 
@@ -1487,7 +1233,7 @@ async function toggleAllStudents(status) {
         const key = status ? 'attendance.all_students_inside' : 'attendance.all_students_outside';
         addLog('', new Date(), 'adminLogContainer', key);
     } else {
-        showToast(translate('common.error'));
+        alert(translate('common.error'));
     }
 }
 
@@ -1498,12 +1244,10 @@ async function loadAdminStudents() {
     try {
         const res = await fetchWithAuth('/api/students');
         if (!res.ok) throw new Error('فشل جلب الطلاب');
-        allStudents = await res.json();
+        allStudents = await res.json(); // ✅ تخزين جميع الطلاب
         renderFilteredStudents();
-        updateStats(allStudents); // تحديث الإحصائيات
     } catch (err) {
         console.error(err);
-        showToast(translate('common.error'), 'error');
     }
 }
 
@@ -1578,15 +1322,6 @@ function renderStudents(students, containerId, showAdminControls) {
         `;
     });
     container.innerHTML = html;
-    container.querySelectorAll('.student-card').forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            card.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 80);
-    });
 }
 
 window.adminToggle = async function(id) {
@@ -1606,7 +1341,7 @@ window.adminToggle = async function(id) {
             // ✅ استخدام المفتاح
             addLog('', new Date(), 'adminLogContainer', 'attendance.student_toggled');
         })
-        .catch(err => showToast(translate('common.error') + ': ' + err.message));
+        .catch(err => alert(translate('common.error') + ': ' + err.message));
 };
 
 window.adminDelete = async function(id) {
@@ -1621,7 +1356,7 @@ window.adminDelete = async function(id) {
             loadAdminStudents();
             addLog('', new Date(), 'adminLogContainer', 'attendance.student_deleted');
         })
-        .catch(err => showToast(translate('common.error') + ': ' + err.message));
+        .catch(err => alert(translate('common.error') + ': ' + err.message));
 };
 
 // ==========================================
@@ -1634,7 +1369,7 @@ window.openEditStudent = async function(studentId) {
         const students = await res.json();
         const student = students.find(s => s._id === studentId);
         if (!student) {
-            showToast(translate('student.not_found'));
+            alert(translate('student.not_found'));
             return;
         }
 
@@ -1652,7 +1387,7 @@ window.openEditStudent = async function(studentId) {
         
         document.getElementById('editStudentModal').style.display = 'flex';
     } catch (err) {
-        showToast(translate('common.error') + ': ' + err.message);
+        alert(translate('common.error') + ': ' + err.message);
     }
 };
 
@@ -1665,7 +1400,7 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
     const address = document.getElementById('editAddress').value.trim();
 
     if (!name || !parentName || !parentPhone || !parentEmail) {
-        showToast(translate('common.error'));
+        alert(translate('common.error'));
         return;
     }
 
@@ -1684,12 +1419,12 @@ document.getElementById('saveEditStudentBtn').addEventListener('click', async fu
             const error = await res.json();
             throw new Error(error.message || 'فشل التعديل');
         }
-        showToast('✅ تم تعديل معلومات الطالب بنجاح');
+        alert('✅ تم تعديل معلومات الطالب بنجاح');
         document.getElementById('editStudentModal').style.display = 'none';
         loadAdminStudents();
         addLog('✏️ تم تعديل معلومات الطالب ' + name, new Date(), 'adminLogContainer');
     } catch (err) {
-        showToast('خطأ: ' + err.message);
+        alert('خطأ: ' + err.message);
     }
 });
 
@@ -1747,7 +1482,7 @@ async function adminAddStudent() {
     const address = document.getElementById('adminAddress').value.trim();
     
     if (!name || !parentEmail || !parentName || !parentPhone) {
-        showToast(translate('common.error') + ': ' + translate('student.add'));
+        alert(translate('common.error') + ': ' + translate('student.add'));
         return;
     }
 
@@ -1782,11 +1517,11 @@ async function adminAddStudent() {
             document.getElementById('toggleAddStudentBtn').innerHTML = `<i class="fas fa-plus-circle"></i> ${translate('student.add_new')}`;
         } else {
             const data = await res.json();
-            showToast(translate('common.error') + ': ' + (data.message || translate('common.error')));
+            alert(translate('common.error') + ': ' + (data.message || translate('common.error')));
         }
     } catch (err) {
         console.error('❌ خطأ في إضافة الطالب:', err);
-        showToast(translate('common.error') + ': ' + err.message);
+        alert(translate('common.error') + ': ' + err.message);
     }
 }
 
@@ -1804,7 +1539,7 @@ function toggleAddStudentForm() {
 
 async function adminSendGeneralNotification() {
     const msg = document.getElementById('adminNotificationMsg').value.trim();
-    if (!msg) return showToast(translate('notification.message_required'));
+    if (!msg) return alert(translate('notification.message_required'));
     
     const confirmed = await showConfirmModal(
         translate('notification.general'),
@@ -1816,16 +1551,16 @@ async function adminSendGeneralNotification() {
         socket.emit('admin-notification', { message: msg });
         document.getElementById('adminNotificationMsg').value = '';
         addLog(`📢 ${translate('notification.sent_general')}`, new Date(), 'adminLogContainer');
-        showToast(translate('notification.sent_general'));
+        alert(translate('notification.sent_general'));
     } else {
-        showToast(translate('common.error'));
+        alert(translate('common.error'));
     }
 }
 
 async function adminSendParentNotification() {
     const email = document.getElementById('adminParentEmailInput').value.trim();
     const msg = document.getElementById('adminParentNotificationMsg').value.trim();
-    if (!email || !msg) return showToast(translate('common.error'));
+    if (!email || !msg) return alert(translate('common.error'));
     
     const confirmed = await showConfirmModal(
         translate('notification.private'),
@@ -1837,9 +1572,9 @@ async function adminSendParentNotification() {
         socket.emit('admin-notification-to-parent', { parentEmail: email, message: msg });
         document.getElementById('adminParentEmailInput').value = '';
         document.getElementById('adminParentNotificationMsg').value = '';
-        showToast(translate('notification.sent_private'));
+        alert(translate('notification.sent_private'));
     } else {
-        showToast(translate('common.error'));
+        alert(translate('common.error'));
     }
 }
 
@@ -1892,10 +1627,6 @@ function renderAdminLogs(showOld) {
 
     if (adminLogs.length === 0) {
         container.innerHTML = `<div class="log-item" style="color:#8a9aaa; justify-content:center;">${translate('attendance.no_logs')}</div>`;
-        // ✅ تحديث الإحصائيات عند عدم وجود سجلات
-        if (allStudents && allStudents.length > 0) {
-            updateStats(allStudents);
-        }
         return;
     }
 
@@ -1941,17 +1672,13 @@ function renderAdminLogs(showOld) {
             }
         }
         
+        // ✅ ترجمة كلمة "وقت"
         const timeLabel = translate('common.time') || 'وقت:';
         const timeDisplay = log.time || '';
         
         item.innerHTML = `<span>${displayMessage}</span><span class="log-time">${timeLabel} ${timeDisplay}</span>`;
         container.appendChild(item);
     });
-
-    // ✅ تحديث الإحصائيات بعد عرض السجلات
-    if (allStudents && allStudents.length > 0) {
-        setTimeout(() => updateStats(allStudents), 100);
-    }
 
     if (showOld && oldLogs.length > 0) {
         const divider = document.createElement('div');
@@ -2247,16 +1974,16 @@ window.handleLeaveRequest = async function(requestId, status) {
   try {
     const result = await updateLeaveRequest(requestId, status);
     if (result.success) {
-      showToast(result.message);
+      alert(result.message);
       // إعادة تحميل الطلبات
       const requests = await loadLeaveRequests();
       renderLeaveRequests(requests, 'leaveRequestsList');
     } else {
-      showToast(result.message || translate('common.error'));
+      alert(result.message || translate('common.error'));
     }
   } catch (err) {
     console.error('❌ خطأ في معالجة الطلب:', err);
-    showToast(translate('common.error') + ': ' + err.message);
+    alert(translate('common.error') + ': ' + err.message);
   }
 };
 
@@ -2294,7 +2021,7 @@ function setupLeaveEvents() {
         const file = document.getElementById('leaveFile').files[0];
 
         if (!studentId || !date || !reason) {
-            showToast(translate('leave.fill_all'));
+            alert(translate('leave.fill_all'));
             return;
         }
 
@@ -2465,11 +2192,11 @@ function setupSmartAlertEvents() {
             
             const result = await runSmartAlerts();
             if (result.success) {
-                showToast(translate('smart_alerts.run_success'));
+                alert(translate('smart_alerts.run_success'));
                 const alerts = await loadSmartAlerts();
                 renderSmartAlerts(alerts, 'smartAlertsList');
             } else {
-                showToast(result.message || translate('common.error'));
+                alert(result.message || translate('common.error'));
             }
             
             this.disabled = false;
@@ -2519,7 +2246,7 @@ function setupSmartAlertEvents() {
             const results = await saveAlertRules(rules);
             const allSuccess = results.every(r => r.success);
             
-            showToast(allSuccess ? translate('smart_alerts.rules_saved') : translate('common.error'));
+            alert(allSuccess ? translate('smart_alerts.rules_saved') : translate('common.error'));
             
             this.disabled = false;
             this.innerHTML = '<i class="fas fa-save"></i> ' + translate('smart_alerts.save_rules');
@@ -2649,11 +2376,11 @@ window.handleToggleHoliday = async function(id) {
   
   const result = await toggleHolidayStatus(id);
   if (result.success) {
-    showToast('✅ ' + result.message);
+    alert('✅ ' + result.message);
     const holidays = await loadHolidays();
     renderHolidays(holidays, 'holidaysList');
   } else {
-    showToast('❌ ' + (result.message || 'حدث خطأ'));
+    alert('❌ ' + (result.message || 'حدث خطأ'));
   }
 };
 
@@ -2662,7 +2389,7 @@ window.handleEditHoliday = async function(id) {
   const holidays = await loadHolidays();
   const holiday = holidays.find(h => h._id === id);
   if (!holiday) {
-    showToast('❌ العطلة غير موجودة');
+    alert('❌ العطلة غير موجودة');
     return;
   }
   
@@ -2724,7 +2451,7 @@ window.handleEditHoliday = async function(id) {
     const newDescription = document.getElementById('editHolidayDescription').value.trim();
     
     if (!newDate || !newName) {
-      showToast('الرجاء إدخال التاريخ واسم العطلة');
+      alert('الرجاء إدخال التاريخ واسم العطلة');
       return;
     }
     
@@ -2737,12 +2464,12 @@ window.handleEditHoliday = async function(id) {
     this.innerHTML = '<i class="fas fa-save"></i> حفظ التعديلات';
     
     if (result.success) {
-      showToast('✅ ' + result.message);
+      alert('✅ ' + result.message);
       modal.remove();
       const holidays = await loadHolidays();
       renderHolidays(holidays, 'holidaysList');
     } else {
-      showToast('❌ ' + (result.message || 'حدث خطأ'));
+      alert('❌ ' + (result.message || 'حدث خطأ'));
     }
   });
   
@@ -2840,11 +2567,11 @@ window.handleDeleteHoliday = async function(id) {
   
   const result = await deleteHoliday(id);
   if (result.success) {
-    showToast(result.message);
+    alert(result.message);
     const holidays = await loadHolidays();
     renderHolidays(holidays, 'holidaysList');
   } else {
-    showToast(result.message || translate('common.error'));
+    alert(result.message || translate('common.error'));
   }
 };
 
@@ -2970,7 +2697,7 @@ function setupHolidayEvents() {
       const description = document.getElementById('holidayDescription')?.value.trim();
 
       if (!date || !name) {
-        showToast('الرجاء إدخال التاريخ واسم العطلة');
+        alert('الرجاء إدخال التاريخ واسم العطلة');
         return;
       }
 
@@ -2983,7 +2710,7 @@ function setupHolidayEvents() {
       this.innerHTML = '<i class="fas fa-save"></i> حفظ العطلة';
 
       if (result.success) {
-        showToast('✅ ' + result.message);
+        alert('✅ ' + result.message);
         if (form) form.style.display = 'none';
         if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة عطلة';
         document.getElementById('holidayDate').value = '';
@@ -2994,7 +2721,7 @@ function setupHolidayEvents() {
         const holidays = await loadHolidays();
         renderHolidays(holidays, 'holidaysList');
       } else {
-        showToast('❌ ' + (result.message || 'حدث خطأ'));
+        alert('❌ ' + (result.message || 'حدث خطأ'));
       }
     });
   }
@@ -3011,220 +2738,85 @@ function setupHolidayEvents() {
 // 19. أحداث المصادقة وربط الأحداث (DOM فقط)
 // ==========================================
 function setupAuthEvents() {
-    // زر تسجيل الدخول
-    const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', async () => {
-            const email = document.getElementById('loginEmail');
-            const password = document.getElementById('loginPassword');
-            
-            if (!email || !password) {
-                showToast('املأ جميع الحقول', 'error');
-                return;
-            }
-            
-            const emailValue = email.value.trim();
-            const passwordValue = password.value.trim();
-            
-            if (!emailValue || !passwordValue) {
-                showToast('املأ جميع الحقول', 'error');
-                return;
-            }
-            
-            try {
-                loginBtn.disabled = true;
-                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الدخول...';
-                
-                const res = await fetch(API_BASE_URL + '/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: emailValue, password: passwordValue })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
-                saveAuth(data);
-                showToast('✅ تم تسجيل الدخول بنجاح', 'success');
-            } catch (err) {
-                showToast(err.message || 'فشل تسجيل الدخول', 'error');
-            } finally {
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = '<span data-i18n="auth.login">دخول</span> <i class="fas fa-arrow-left"></i>';
-            }
-        });
-    }
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        if (!email || !password) return alert('املأ جميع الحقول');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل تسجيل الدخول');
+        }
+    });
 
-    // زر التسجيل
-    const registerBtn = document.getElementById('registerBtn');
-    if (registerBtn) {
-        registerBtn.addEventListener('click', async () => {
-            const name = document.getElementById('regName');
-            const email = document.getElementById('regEmail');
-            const password = document.getElementById('regPassword');
-            const phone = document.getElementById('regPhone');
-            const role = document.getElementById('regRole');
-            
-            if (!name || !email || !password || !phone || !role) {
-                showToast('املأ جميع الحقول', 'error');
-                return;
-            }
-            
-            const nameValue = name.value.trim();
-            const emailValue = email.value.trim();
-            const passwordValue = password.value.trim();
-            const phoneValue = phone.value.trim();
-            const roleValue = role.value;
-            
-            if (!nameValue || !emailValue || !passwordValue || !phoneValue) {
-                showToast('املأ جميع الحقول', 'error');
-                return;
-            }
-            
-            if (passwordValue.length < 6) {
-                showToast('كلمة المرور 6 أحرف على الأقل', 'error');
-                return;
-            }
-            
-            try {
-                registerBtn.disabled = true;
-                registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التسجيل...';
-                
-                const res = await fetch(API_BASE_URL + '/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        name: nameValue, 
-                        email: emailValue, 
-                        password: passwordValue, 
-                        phone: phoneValue, 
-                        role: roleValue 
-                    })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
-                saveAuth(data);
-                showToast('✅ تم التسجيل بنجاح', 'success');
-            } catch (err) {
-                showToast(err.message || 'فشل التسجيل', 'error');
-            } finally {
-                registerBtn.disabled = false;
-                registerBtn.innerHTML = '<span data-i18n="auth.register">تسجيل</span> <i class="fas fa-user-plus"></i>';
-            }
-        });
-    }
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const role = document.getElementById('regRole').value;
+        if (!name || !email || !password || !phone) return alert('املأ جميع الحقول');
+        if (password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل');
+        try {
+            const res = await fetch(API_BASE_URL + '/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, phone, role })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            saveAuth(data);
+        } catch (err) {
+            alert(err.message || 'فشل التسجيل');
+        }
+    });
 
-    // روابط التبديل بين شاشات الدخول والتسجيل
-    const showRegisterLink = document.getElementById('showRegister');
-    if (showRegisterLink) {
-        showRegisterLink.addEventListener('click', showRegister);
-    }
-    
-    const showLoginLink = document.getElementById('showLogin');
-    if (showLoginLink) {
-        showLoginLink.addEventListener('click', showLogin);
-    }
-    
-    // أزرار الخروج
-    const logoutAdminBtn = document.getElementById('logoutBtnAdmin');
-    if (logoutAdminBtn) {
-        logoutAdminBtn.addEventListener('click', logout);
-    }
-    
-    const logoutParentBtn = document.getElementById('logoutBtnParent');
-    if (logoutParentBtn) {
-        logoutParentBtn.addEventListener('click', logout);
-    }
+    document.getElementById('showRegister').addEventListener('click', showRegister);
+    document.getElementById('showLogin').addEventListener('click', showLogin);
+    document.getElementById('logoutBtnAdmin').addEventListener('click', logout);
+    document.getElementById('logoutBtnParent').addEventListener('click', logout);
 
-    // أزرار الإعدادات
-    const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
-    if (toggleSettingsBtn) {
-        toggleSettingsBtn.addEventListener('click', toggleSettingsForm);
-    }
+    document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsForm);
+    document.getElementById('saveSettingsBtn').addEventListener('click', saveSchoolSettings);
+    document.getElementById('toggleAddStudentBtn').addEventListener('click', toggleAddStudentForm);
+    document.getElementById('adminAddBtn').addEventListener('click', adminAddStudent);
+    document.getElementById('adminSendNotificationBtn').addEventListener('click', adminSendGeneralNotification);
+    document.getElementById('adminSendParentNotificationBtn').addEventListener('click', adminSendParentNotification);
     
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-    if (saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', saveSchoolSettings);
-    }
-    
-    // أزرار إضافة طالب
-    const toggleAddBtn = document.getElementById('toggleAddStudentBtn');
-    if (toggleAddBtn) {
-        toggleAddBtn.addEventListener('click', toggleAddStudentForm);
-    }
-    
-    const adminAddBtn = document.getElementById('adminAddBtn');
-    if (adminAddBtn) {
-        adminAddBtn.addEventListener('click', adminAddStudent);
-    }
-    
-    // أزرار الإشعارات
-    const sendGeneralBtn = document.getElementById('adminSendNotificationBtn');
-    if (sendGeneralBtn) {
-        sendGeneralBtn.addEventListener('click', adminSendGeneralNotification);
-    }
-    
-    const sendParentBtn = document.getElementById('adminSendParentNotificationBtn');
-    if (sendParentBtn) {
-        sendParentBtn.addEventListener('click', adminSendParentNotification);
-    }
-    
-    // أزرار التغيير الجماعي
-    const allInsideBtn = document.getElementById('toggleAllInsideBtn');
-    if (allInsideBtn) {
-        allInsideBtn.addEventListener('click', function() {
-            toggleAllStudents(true);
-        });
-    }
-    
-    const allOutsideBtn = document.getElementById('toggleAllOutsideBtn');
-    if (allOutsideBtn) {
-        allOutsideBtn.addEventListener('click', function() {
-            toggleAllStudents(false);
-        });
-    }
-    
-    // أزرار عرض السجلات القديمة
-    const adminShowOldBtn = document.getElementById('adminShowOldLogsBtn');
-    if (adminShowOldBtn) {
-        adminShowOldBtn.addEventListener('click', function() {
-            toggleAdminOldLogs(true);
-        });
-    }
-    
-    const adminHideOldBtn = document.getElementById('adminHideOldLogsBtn');
-    if (adminHideOldBtn) {
-        adminHideOldBtn.addEventListener('click', function() {
-            toggleAdminOldLogs(false);
-        });
-    }
-    
-    const parentShowOldBtn = document.getElementById('parentShowOldLogsBtn');
-    if (parentShowOldBtn) {
-        parentShowOldBtn.addEventListener('click', function() {
-            toggleParentOldLogs(true);
-        });
-    }
-    
-    const parentHideOldBtn = document.getElementById('parentHideOldLogsBtn');
-    if (parentHideOldBtn) {
-        parentHideOldBtn.addEventListener('click', function() {
-            toggleParentOldLogs(false);
-        });
-    }
-    
-    // أزرار الإشعارات القديمة
-    const showOldNotifBtn = document.getElementById('showOldNotificationsBtn');
-    if (showOldNotifBtn) {
-        showOldNotifBtn.addEventListener('click', function() {
-            toggleOldNotifications(true);
-        });
-    }
-    
-    const hideOldNotifBtn = document.getElementById('hideOldNotificationsBtn');
-    if (hideOldNotifBtn) {
-        hideOldNotifBtn.addEventListener('click', function() {
-            toggleOldNotifications(false);
-        });
-    }
+    document.getElementById('toggleAllInsideBtn').addEventListener('click', function() {
+        toggleAllStudents(true);
+    });
+    document.getElementById('toggleAllOutsideBtn').addEventListener('click', function() {
+        toggleAllStudents(false);
+    });
+
+    document.getElementById('adminShowOldLogsBtn').addEventListener('click', function() {
+        toggleAdminOldLogs(true);
+    });
+    document.getElementById('adminHideOldLogsBtn').addEventListener('click', function() {
+        toggleAdminOldLogs(false);
+    });
+
+    document.getElementById('parentShowOldLogsBtn').addEventListener('click', function() {
+        toggleParentOldLogs(true);
+    });
+    document.getElementById('parentHideOldLogsBtn').addEventListener('click', function() {
+        toggleParentOldLogs(false);
+    });
+
+    document.getElementById('showOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(true);
+    });
+    document.getElementById('hideOldNotificationsBtn').addEventListener('click', function() {
+        toggleOldNotifications(false);
+    });
 }
 
 // ==========================================
@@ -3600,214 +3192,6 @@ function setupParentMessageForm() {
 }
 
 // ==========================================
-// 1. أنيميشن عند التمرير (Scroll Animation)
-// ==========================================
-function initScrollAnimations() {
-    const elements = document.querySelectorAll('.animate-on-scroll');
-    if (!elements.length) return;
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-            }
-        });
-    }, {
-        threshold: 0.1,
-        rootMargin: '0px 0px -30px 0px'
-    });
-    
-    elements.forEach(el => observer.observe(el));
-}
-
-// ==========================================
-// 2. تحديث الإحصائيات
-// ==========================================
-function updateStats(students) {
-    if (!students || !Array.isArray(students)) return;
-    
-    const total = students.length;
-    const inside = students.filter(s => s.isInside === true).length;
-    const outside = total - inside;
-    
-    const totalEl = document.getElementById('statTotalStudents');
-    const insideEl = document.getElementById('statInsideStudents');
-    const outsideEl = document.getElementById('statOutsideStudents');
-    const todayEl = document.getElementById('statTodayLogs');
-    
-    if (totalEl) totalEl.textContent = total;
-    if (insideEl) insideEl.textContent = inside;
-    if (outsideEl) outsideEl.textContent = outside;
-    
-    // ✅ إصلاح مشكلة سجل اليوم
-    const logContainer = document.getElementById('adminLogContainer');
-    if (logContainer && todayEl) {
-        const items = logContainer.querySelectorAll('.log-item');
-        // فقط السجلات التي تحتوي على وقت اليوم
-        const todayItems = Array.from(items).filter(item => {
-            const timeSpan = item.querySelector('.log-time');
-            if (timeSpan) {
-                const timeText = timeSpan.textContent;
-                // التحقق من وجود تاريخ اليوم
-                const today = new Date();
-                const todayStr = today.toISOString().split('T')[0];
-                return timeText.includes(todayStr);
-            }
-            return true; // إذا لم نتمكن من التحقق، نعتبره من اليوم
-        });
-        todayEl.textContent = todayItems.length || items.length || 0;
-    }
-}
-
-// ==========================================
-// 3. تحسين Sidebar
-// ==========================================
-function setupSidebar(toggleId, closeId, overlayId, sidebarId) {
-    const toggle = document.getElementById(toggleId);
-    const close = document.getElementById(closeId);
-    const overlay = document.getElementById(overlayId);
-    const sidebar = document.getElementById(sidebarId);
-    
-    if (!toggle || !sidebar) return;
-    
-    function openSidebar() {
-        sidebar.classList.add('open');
-        if (overlay) overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-    
-    function closeSidebar() {
-        sidebar.classList.remove('open');
-        if (overlay) overlay.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-    
-    toggle.addEventListener('click', openSidebar);
-    if (close) close.addEventListener('click', closeSidebar);
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-    
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeSidebar();
-    });
-}
-
-// التنقل بين الأقسام
-function setupSectionNavigation(sidebarId) {
-    const sidebar = document.getElementById(sidebarId);
-    if (!sidebar) return;
-    
-    const links = sidebar.querySelectorAll('.sidebar-link');
-    const dashboard = sidebar.closest('.dashboard') || document.querySelector('.dashboard');
-    if (!dashboard) return;
-    
-    const sections = dashboard.querySelectorAll('.dashboard-section');
-    if (!sections.length) return;
-    
-    links.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const sectionId = this.dataset.section;
-            if (!sectionId) return;
-            
-            links.forEach(l => l.classList.remove('active'));
-            this.classList.add('active');
-            
-            sections.forEach(s => s.style.display = 'none');
-            
-            const targetSection = document.getElementById(`section-${sectionId}`);
-            if (targetSection) {
-                targetSection.style.display = 'block';
-                targetSection.classList.remove('visible');
-                setTimeout(() => targetSection.classList.add('visible'), 50);
-            }
-            
-            sidebar.classList.remove('open');
-            const overlay = document.getElementById(sidebarId + 'Overlay');
-            if (overlay) overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
-    });
-}
-
-// عرض إشعار توست
-function showToast(message, type = 'success', duration = 4000) {
-    const oldToast = document.querySelector('.toast-notification');
-    if (oldToast) oldToast.remove();
-    
-    const toast = document.createElement('div');
-    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
-    
-    toast.innerHTML = `
-        <div class="toast-icon">${icon}</div>
-        <div class="toast-message">${message}</div>
-        <button class="toast-close">&times;</button>
-    `;
-    
-    const colors = {
-        success: '#27ae60',
-        error: '#e74c3c',
-        warning: '#f39c12',
-        info: '#3498db'
-    };
-    
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: ${colors[type] || colors.info};
-        color: white;
-        padding: 14px 24px;
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        z-index: 99999;
-        font-family: 'Tajawal', 'Segoe UI', sans-serif;
-        font-weight: 600;
-        animation: slideUp 0.4s ease;
-        max-width: 90%;
-        direction: rtl;
-        transition: all 0.3s ease;
-    `;
-    
-    document.body.appendChild(toast);
-    
-    toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
-    
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(-50%) translateY(20px)';
-            setTimeout(() => toast.remove(), 400);
-        }
-    }, duration);
-}
-
-// ربط جميع التحسينات
-function setupEnhancedEvents() {
-    setupSidebar('adminSidebarToggle', 'adminSidebarClose', 'adminSidebarOverlay', 'adminSidebar');
-    setupSidebar('parentSidebarToggle', 'parentSidebarClose', 'parentSidebarOverlay', 'parentSidebar');
-    setupSectionNavigation('adminSidebar');
-    setupSectionNavigation('parentSidebar');
-    initScrollAnimations();
-    applyTranslationsToAll();
-
-    const studentsList = document.getElementById('adminStudentsList');
-    if (studentsList) {
-        const observer = new MutationObserver(() => {
-            if (currentUser && currentUser.role === 'admin' && allStudents && allStudents.length > 0) {
-                updateStats(allStudents);
-            }
-        });
-        observer.observe(studentsList, { childList: true, subtree: true });
-    }
-    
-    console.log('✅ تم تفعيل جميع التحسينات الإضافية');
-}
-
-// ==========================================
 // الوضع الليلي (Dark Mode)
 // ==========================================
 
@@ -3856,29 +3240,20 @@ updateDarkModeIcon();
 // 20. بدء التطبيق
 // ==========================================
 document.addEventListener('DOMContentLoaded', async function() {
-    // طلب إذن الإشعارات
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
 
-    // تحميل الترجمات
     await loadTranslations();
     applyTranslationsToAll();
 
-    // تحميل إعدادات المدرسة
     loadSchoolSettings();
-    
-    // إعداد الأحداث الأساسية
     setupAuthEvents();
     setupLeaveEvents();
-    setupSearchEvents();
+    setupSearchEvents(); 
     setupSmartAlertEvents();
     setupHolidayEvents();
     
-    // ✅ تفعيل التحسينات الجديدة
-    setupEnhancedEvents();
-    
-    // التحقق من وجود توكن لتسجيل الدخول التلقائي
     if (token) {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
@@ -3889,17 +3264,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 } else {
                     showParentDashboard();
                 }
-                // بعد تحميل لوحة التحكم، تحديث الإحصائيات إذا كان مديراً
-                if (currentUser.role === 'admin' && allStudents && allStudents.length > 0) {
-                    setTimeout(() => updateStats(allStudents), 500);
-                }
                 return;
             }
-        } catch(e) {
-            console.warn('⚠️ فشل استعادة بيانات المستخدم:', e);
-        }
+        } catch(e) {}
     }
-    
-    // إذا لم يكن هناك توكن أو مستخدم، عرض شاشة تسجيل الدخول
     showLogin();
 });
