@@ -3231,10 +3231,30 @@ document.addEventListener('click', function(e) {
 
 // عند تحميل الصفحة، تأكد من تحديث الأيقونة
 document.addEventListener('DOMContentLoaded', function() {
-    updateDarkModeIcon();
-});
+    const toggleBtn = document.getElementById('themeToggle');
+    const htmlElement = document.documentElement; // نطبق على <html>
 
-updateDarkModeIcon();
+    // 1. استعادة الوضع المحفوظ
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        htmlElement.classList.add('dark-mode');
+        if (toggleBtn) toggleBtn.checked = true; // لو كان checkbox
+    }
+
+    // 2. حدث النقر
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function(e) {
+            // ندعم كلا النوعين: زر عادي أو checkbox
+            const isDark = htmlElement.classList.toggle('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            // لو كان Checkbox نخلي حالته متطابقة
+            if (toggleBtn.type === 'checkbox') {
+                toggleBtn.checked = isDark;
+            }
+        });
+    }
+});
 
 // ==========================================
 // 20. بدء التطبيق
