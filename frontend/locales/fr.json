@@ -237,7 +237,7 @@
     "title": "Soumettre une excuse d'absence",
     "select_student": "Sélectionner l'élève",
     "date": "Date d'absence",
-    "reason": "Motif de l'absence",
+    "reason_placeholder": "Motif de l'absence",
     "file": "Télécharger un fichier (certificat médical)",
     "submit": "Envoyer la demande",
     "requests": "Demandes d'excuse d'absence",
