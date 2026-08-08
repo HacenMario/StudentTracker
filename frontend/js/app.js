@@ -113,13 +113,20 @@ function t(key, params = {}) {
 }
 
 // تبديل اللغة
+// تبديل اللغة
 function switchLanguage(lang) {
     if (lang === currentLanguage) return;
     currentLanguage = lang;
     localStorage.setItem('language', lang);
-    applyTranslationsToAll();
+    
+    // ✅ تغيير الاتجاه واللغة قبل إعادة التحميل
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
+    
+    // تطبيق الترجمة (اختياري، لكن يُفضل)
+    applyTranslationsToAll();
+    
+    // تحديث الأزرار
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
     });
@@ -127,9 +134,10 @@ function switchLanguage(lang) {
         btn.classList.toggle('active', btn.dataset.lang === lang);
     });
     updateLanguageButtons(lang);
+    
     console.log(`تم تغيير اللغة إلى: ${lang}`);
-
-    // ⬅️ أضف هذا السطر لإعادة تحميل الصفحة
+    
+    // ✅ إعادة تحميل الصفحة
     window.location.reload();
 }
 
@@ -138,15 +146,15 @@ let translations = {};
 
 // تحميل ملف اللغة
 function loadLanguage(lang) {
-    return fetch(`../locales/${lang}.json`)  // ✅ استخدم مساراً نسبياً
-        .then(res => {
-            if (!res.ok) throw new Error('فشل تحميل ملف اللغة');
-            return res.json();
-        })
+    return fetch(`../locales/${lang}.json`)
+        .then(res => res.json())
         .then(data => {
             translations[lang] = data;
             currentLanguage = lang;
             localStorage.setItem('language', lang);
+            
+            // ❌ لا تغيّر dir هنا، لأن DOMContentLoaded قام بذلك بالفعل
+            
             applyTranslationsToAll();
             console.log(`✅ تم تحميل اللغة: ${lang}`, data);
         })
@@ -240,6 +248,9 @@ function updateDynamicTexts() {
 // ✅ تحميل اللغة عند بدء الصفحة
 document.addEventListener('DOMContentLoaded', function() {
     const lang = localStorage.getItem('language') || 'ar';
+       // ✅ تطبيق الاتجاه واللغة على الصفحة فوراً
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
     loadLanguage(lang).then(() => {
         // بعد تحميل اللغة وتطبيق الترجمة، جلب بيانات ولي الأمر
         fetchParentData();
