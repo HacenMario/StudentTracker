@@ -292,7 +292,7 @@
     "name_label": "📝 Holiday Name",
     "holiday_description": "📋 Description (optional)",
     "save_changes": "Save Changes",
-    "cancel_edit_btn": "Cancel"
+    "cancel_edit_btn": "Cancel",
     "save": "Save Changes",
     "cancel": "Cancel"
   },
