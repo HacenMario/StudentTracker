@@ -389,18 +389,20 @@
 <!-- ========================================== -->
 <div class="parent-info-card" id="parentInfoCard">
     <h3>
-        <span data-i18n="welcome_greeting">👋 مرحباً،</span>
-<span id="parentNameDisplay">${sessionScope.parent.fullName}</span>
+        <!-- ✅ النص الثابت سيُترجم -->
+        <span data-i18n="welcome_greeting">👋 </span>
+        <!-- ❌ الاسم ديناميكي، ليس له data-i18n -->
+        <span id="parentNameDisplay">...</span>
     </h3>
     <p>
-<span id="parentEmailDisplay">${sessionScope.parent.email}</span>
+        <span data-i18n="email_label">📧 :</span>
         <span id="parentEmailDisplay">...</span>
     </p>
     <p>
-<span id="parentPhoneDisplay">${sessionScope.parent.phone}</span>
+        <span data-i18n="phone_label">📞 :</span>
         <span id="parentPhoneDisplay">...</span>
     </p>
-    <span class="badge-parent" data-i18n="guardian_role">👨‍👩‍👦 ولي أمر</span>
+    <span class="badge-parent" data-i18n="guardian_role">👨‍👩‍👦</span>
 </div>
 
     <div id="parentStudentsList" class="students-grid"></div>
