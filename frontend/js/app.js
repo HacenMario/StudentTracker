@@ -48,7 +48,6 @@ function updateLanguageButtons(lang) {
 // ==========================================
 // نظام الترجمة (i18n)
 // ==========================================
-let currentLanguage = localStorage.getItem('language') || 'ar';
 let translationsLoaded = false;
 
 // تحميل الترجمات
