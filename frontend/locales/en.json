@@ -237,7 +237,7 @@
     "title": "Submit Leave Excuse",
     "select_student": "Select Student",
     "date": "Absence Date",
-    "reason": "Reason for Absence",
+    "reason_placeholder": "Reason for Absence",
     "file": "Upload File (Medical Certificate)",
     "submit": "Submit Request",
     "requests": "Leave Excuse Requests",
