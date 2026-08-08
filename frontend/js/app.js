@@ -146,6 +146,7 @@ function applyTranslationsToAll() {
             }
         }
     });
+}  
     updateDynamicTexts();
 }
 
@@ -3231,10 +3232,11 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// عند تحميل الصفحة، تأكد من تحديث الأيقونة
 document.addEventListener('DOMContentLoaded', function() {
     const toggleBtn = document.getElementById('themeToggle');
     const htmlElement = document.documentElement; // نطبق على <html>
+    const lang = localStorage.getItem('language') || 'ar';
+    loadLanguage(lang);
 
     // 1. استعادة الوضع المحفوظ
     const savedTheme = localStorage.getItem('theme');
@@ -3257,6 +3259,53 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// --- إعدادات الترجمة ---
+let translations = {};
+let currentLanguage = localStorage.getItem('language') || 'ar';
+
+// تحميل ملف اللغة
+function loadLanguage(lang) {
+    return fetch(`/frontend/locales/${lang}.json`)  // تأكد من المسار الصحيح
+        .then(res => {
+            if (!res.ok) throw new Error('فشل تحميل ملف اللغة');
+            return res.json();
+        })
+        .then(data => {
+            translations[lang] = data;
+            currentLanguage = lang;
+            localStorage.setItem('language', lang);
+            applyTranslationsToAll();
+            updateDynamicTexts();
+            console.log(`✅ تم تحميل اللغة: ${lang}`, data);
+        })
+        .catch(err => {
+            console.error('❌ خطأ في تحميل اللغة:', err);
+        });
+}
+
+// دالة الترجمة الرئيسية (تدعم المفاتيح المسطحة والمنقطة)
+function t(key) {
+    const langData = translations[currentLanguage];
+    if (!langData) return key;
+
+    // إذا كان المفتاح يحتوي على نقاط، نبحث في الكائن المتداخل
+    if (key.includes('.')) {
+        const keys = key.split('.');
+        let value = langData;
+        for (const k of keys) {
+            if (value && typeof value === 'object' && k in value) {
+                value = value[k];
+            } else {
+                return key; // المفتاح غير موجود
+            }
+        }
+        return value || key;
+    } else {
+        // مفتاح مسطح (في الجذر)
+        return langData[key] || key;
+    }
+}
 
 // ==========================================
 // 20. بدء التطبيق
