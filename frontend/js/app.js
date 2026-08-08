@@ -247,9 +247,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fetchParentData() {
-    // البيانات موجودة بالفعل في الـ HTML، نطبق الترجمة فقط
+    // قراءة البيانات من localStorage
+    const parentData = JSON.parse(localStorage.getItem('parentData') || '{}');
+    
+    // تعبئة العناصر
+    const nameElement = document.getElementById('parentNameDisplay');
+    const emailElement = document.getElementById('parentEmailDisplay');
+    const phoneElement = document.getElementById('parentPhoneDisplay');
+    
+    if (nameElement) nameElement.textContent = parentData.fullName || 'غير متوفر';
+    if (emailElement) emailElement.textContent = parentData.email || 'غير متوفر';
+    if (phoneElement) phoneElement.textContent = parentData.phone || 'غير متوفر';
+    
+    // تطبيق الترجمة
     applyTranslationsToAll();
-    console.log('✅ تم تحديث الترجمة لصفحة ولي الأمر');
+    
+    console.log('✅ تم تحميل بيانات ولي الأمر من localStorage');
 }
 
 // دالة مساعدة للترجمة في JavaScript
