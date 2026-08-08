@@ -341,14 +341,6 @@
     "notifications": "Notifications",
     "leave": "Excuse d'absence"
   },
-  "messages": {
-    "title": "Envoyer un message à l'école",
-    "send_to_school": "✉️ Envoyer un message à l'école",
-    "student_concerned": "Élève concerné par le message",
-    "subject_optional": "Sujet (optionnel)",
-    "message_text": "Texte du message",
-    "send": "Envoyer le message"
-  },
   "children": {
     "my_children": "Mes enfants"
   },
