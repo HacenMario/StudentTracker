@@ -287,8 +287,8 @@
     "duplicate": "⚠️ يوجد عطلة في هذا التاريخ بالفعل",
     "start_date": "📅 تاريخ البداية",
     "end_date": "📅 تاريخ النهاية (اختياري - للإجازات المتعددة الأيام)",
-    "holiday_name": "📝 اسم العطلة",
-    "holiday_description": "📋 وصف (اختياري)",
+    "name_label": "📝 اسم العطلة",
+    "description_label": "📋 وصف (اختياري)",
     "save_changes": "حفظ التعديلات",
     "cancel_edit_btn": "إلغاء",
     "edit_modal": {
