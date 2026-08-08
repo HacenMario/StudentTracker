@@ -176,7 +176,7 @@
     "start_failed": "Échec du démarrage de la caméra"
   },
   "common": {
-    "time": "Heure :",
+    "common.time": "Heure :",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
