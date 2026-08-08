@@ -236,26 +236,41 @@
         </button>
     </div>
 
-    <!-- نموذج إضافة عطلة -->
-<div id="holidayForm" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
-    <div class="form-group">
-        <label>📅 التاريخ</label>
-        <input type="date" id="holidayDate" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>📝 اسم العطلة</label>
-        <input type="text" id="holidayName" class="form-control" placeholder="مثال: عيد الفطر">
-    </div>
-    <div class="form-group">
-        <label>📋 وصف (اختياري)</label>
-        <textarea id="holidayDescription" class="form-control" placeholder="وصف العطلة..."></textarea>
-    </div>
-    <div class="form-actions" style="display: flex; gap: 10px; margin-top: 10px;">
-        <button id="saveHolidayBtn" class="btn-success">
-            <i class="fas fa-save"></i> حفظ العطلة
+<!-- نموذج إضافة عطلة -->
+<div id="addHolidayForm" style="display: none; background: #f9f9f9; padding: 20px; border-radius: 12px; margin-top: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 data-i18n="holidays.add_title">➕ إضافة عطلة</h3>
+        <button id="closeAddHolidayFormBtn" class="btn-close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #888;">
+            <i class="fas fa-times"></i> <span data-i18n="holidays.close_form">إغلاق النموذج</span>
         </button>
-        <button id="cancelHolidayBtn" class="btn-secondary">
-            <i class="fas fa-times"></i> إلغاء
+    </div>
+
+    <div class="form-group" style="margin-bottom: 12px;">
+        <label data-i18n="holidays.start_date">📅 التاريخ</label>
+        <input type="date" id="addHolidayDate" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;" placeholder="dd/mm/yyyy">
+    </div>
+
+    <div class="form-group" style="margin-bottom: 12px;">
+        <label data-i18n="holidays.end_date">📅 تاريخ النهاية (اختياري - للإجازات المتعددة الأيام)</label>
+        <input type="date" id="addHolidayEndDate" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;" placeholder="dd/mm/yyyy">
+    </div>
+
+    <div class="form-group" style="margin-bottom: 12px;">
+        <label data-i18n="holidays.name_label">📝 اسم العطلة</label>
+        <input type="text" id="addHolidayName" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;" data-i18n="holidays.name_placeholder" placeholder="مثال: عيد الفطر">
+    </div>
+
+    <div class="form-group" style="margin-bottom: 12px;">
+        <label data-i18n="holidays.description_label">📋 وصف (اختياري)</label>
+        <textarea id="addHolidayDescription" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; resize: vertical;" data-i18n="holidays.description_placeholder" placeholder="وصف العطلة..."></textarea>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button id="saveAddHolidayBtn" class="btn-success" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: #27ae60; color: white; cursor: pointer;">
+            <i class="fas fa-save"></i> <span data-i18n="holidays.save">حفظ العطلة</span>
+        </button>
+        <button id="cancelAddHolidayBtn" class="btn-secondary" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: #95a5a6; color: white; cursor: pointer;">
+            <i class="fas fa-times"></i> <span data-i18n="holidays.cancel">إلغاء</span>
         </button>
     </div>
 </div>
