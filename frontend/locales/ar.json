@@ -350,14 +350,6 @@
     "notifications": "الإشعارات",
     "leave": "عذر غياب"
   },
-  "messages": {
-    "title": "إرسال رسالة للمدرسة",
-    "send_to_school": "✉️ إرسال رسالة إلى المدرسة",
-    "student_concerned": "الطالب المعني بالرسالة",
-    "subject_optional": "الموضوع (اختياري)",
-    "message_text": "نص الرسالة",
-    "send": "إرسال الرسالة"
-  },
   "children": {
     "my_children": "أبنائي"
   },
