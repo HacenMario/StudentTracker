@@ -288,8 +288,12 @@
     "start_date": "📅 Date de début",
     "end_date": "📅 Date de fin (optionnel - pour les congés de plusieurs jours)",
     "holiday_name": "📝 Nom du jour férié",
+    "name_label": "📝 Nom du jour férié",
     "holiday_description": "📋 Description (optionnel)",
+    "description_label": "📋 Description (optionnel)",
     "save_changes": "Enregistrer les modifications",
+    "save": "Enregistrer les modifications",
+    "cancel": "Annuler",
     "cancel_edit_btn": "Annuler"
   },
   "parent": {
