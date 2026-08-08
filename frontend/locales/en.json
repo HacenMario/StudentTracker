@@ -176,7 +176,7 @@
     "start_failed": "Failed to start camera"
   },
   "common": {
-    "time": "Time:",
+    "common.time": "Time:",
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
