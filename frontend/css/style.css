@@ -1,219 +1,137 @@
 /* ============================================================
-   STUDENT TRACKER SYSTEM - ULTIMATE STYLESHEET
-   Version: 3.0 (Pro Enhanced)
+   VERSION: ULTIMATE 4.0 (Global Standard)
+   FEATURES: Glassmorphism, Dark/Light Toggle, 4K Responsive
    ============================================================ */
 
 /* ============================================================
-   1.  CSS CUSTOM PROPERTIES (المتغيرات)
+   1.  CSS CUSTOM PROPERTIES (نظام الألوان المتقدم)
    ============================================================ */
 :root {
-    /* الألوان الأساسية */
-    --primary-900: #1a365d;
-    --primary-700: #2b6cb0;
-    --primary-500: #4299e1;
-    --primary-300: #90cdf4;
-    --primary-100: #ebf8ff;
+    /* ---------- الألوان الأساسية (Light Mode) ---------- */
+    --primary-900: #1e1b4b;
+    --primary-800: #312e81;
+    --primary-700: #4338ca;
+    --primary-600: #4f46e5;
+    --primary-500: #6366f1;
+    --primary-400: #818cf8;
+    --primary-300: #a5b4fc;
+    --primary-200: #c7d2fe;
+    --primary-100: #e0e7ff;
+    --primary-50: #eef2ff;
 
-    /* الألوان الثانوية */
-    --secondary-900: #2d3748;
-    --secondary-700: #4a5568;
-    --secondary-500: #718096;
-    --secondary-300: #a0aec0;
-    --secondary-100: #e2e8f0;
+    /* الألوان المحايدة (Slate) */
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
 
-    /* ألوان الحالة */
-    --success: #38a169;
-    --success-light: #c6f6d5;
-    --success-dark: #276749;
-    --danger: #e53e3e;
-    --danger-light: #fed7d7;
-    --danger-dark: #c53030;
-    --warning: #d69e2e;
-    --warning-light: #fefcbf;
-    --info: #3182ce;
-    --info-light: #bee3f8;
+    /* الألوان الوظيفية */
+    --success: #10b981;
+    --success-dark: #047857;
+    --success-light: #d1fae5;
+    --danger: #ef4444;
+    --danger-dark: #b91c1c;
+    --danger-light: #fee2e2;
+    --warning: #f59e0b;
+    --warning-dark: #b45309;
+    --warning-light: #fef3c7;
+    --info: #3b82f6;
+    --info-light: #dbeafe;
 
-    /* ألوان الخلفية */
-    --bg-body: #f7fafc;
-    --bg-card: #ffffff;
-    --bg-glass: rgba(255, 255, 255, 0.75);
-    --bg-input: #f7fafc;
+    /* ---------- الخلفيات والشفافية ---------- */
+    --bg-body: #f1f5f9;
+    --bg-card: rgba(255, 255, 255, 0.75);
+    --bg-glass: rgba(255, 255, 255, 0.6);
+    --bg-input: #f8fafc;
+    --bg-hover: rgba(99, 102, 241, 0.08);
 
-    /* الظلال */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
-    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15);
+    /* ---------- النصوص ---------- */
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --text-inverse: #ffffff;
 
-    /* الزوايا */
+    /* ---------- الظلال المتطورة ---------- */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+    --shadow-xl: 0 20px 50px -8px rgba(0, 0, 0, 0.12);
+    --shadow-2xl: 0 25px 60px -12px rgba(0, 0, 0, 0.2);
+    --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.25);
+
+    /* ---------- الزوايا ---------- */
     --radius-sm: 8px;
-    --radius-md: 16px;
-    --radius-lg: 24px;
-    --radius-xl: 32px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
     --radius-full: 9999px;
 
-    /* الخطوط */
-    --font-family: 'Tajawal', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    --font-size-xs: 12px;
-    --font-size-sm: 14px;
-    --font-size-md: 16px;
-    --font-size-lg: 20px;
-    --font-size-xl: 26px;
-    --font-size-2xl: 32px;
+    /* ---------- الخطوط والمسافات ---------- */
+    --font-family: 'Tajawal', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-xs: 0.75rem;
+    --font-sm: 0.875rem;
+    --font-md: 1rem;
+    --font-lg: 1.125rem;
+    --font-xl: 1.25rem;
+    --font-2xl: 1.5rem;
+    --font-3xl: 2rem;
+    --font-4xl: 2.5rem;
 
-    /* الانتقالات */
-    --transition-fast: 0.15s ease;
-    --transition-base: 0.3s ease;
-    --transition-slow: 0.5s ease;
-
-    /* التباعد */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
     --spacing-lg: 24px;
     --spacing-xl: 32px;
+    --spacing-2xl: 48px;
 
-    /* ألوان الوضع المظلم (سيتم تفعيلها تلقائياً) */
-    --color-text: #1a202c;
-    --color-text-secondary: #4a5568;
-    --color-text-muted: #a0aec0;
-    --color-border: #e2e8f0;
-    --color-bg: #f7fafc;
+    /* ---------- الحدود ---------- */
+    --border-light: 1px solid rgba(255, 255, 255, 0.4);
+    --border-dark: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 /* ============================================================
-   2.  DARK MODE (الوضع المظلم)
+   2.  DARK MODE (الوضع المظلم الفاخر)
    ============================================================ */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --primary-900: #2d3748;
-        --primary-700: #4299e1;
-        --primary-500: #63b3ed;
+html.dark-mode {
+    --bg-body: #0b1120;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-glass: rgba(15, 23, 42, 0.7);
+    --bg-input: #1e293b;
+    --bg-hover: rgba(99, 102, 241, 0.15);
 
-        --bg-body: #1a202c;
-        --bg-card: #2d3748;
-        --bg-glass: rgba(26, 32, 44, 0.85);
-        --bg-input: #2d3748;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-inverse: #0f172a;
 
-        --color-text: #f7fafc;
-        --color-text-secondary: #e2e8f0;
-        --color-text-muted: #a0aec0;
-        --color-border: #4a5568;
-        --color-bg: #1a202c;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.7);
+    --shadow-2xl: 0 30px 70px rgba(0, 0, 0, 0.8);
+    --shadow-glow: 0 0 50px rgba(99, 102, 241, 0.15);
 
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.5);
-        --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.6);
-    }
+    --border-light: 1px solid rgba(255, 255, 255, 0.06);
+    --border-dark: 1px solid rgba(255, 255, 255, 0.08);
 
-    .school-header {
-        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-    }
+    --primary-50: #1e1b4b;
+    --primary-100: #312e81;
+    --primary-200: #4338ca;
 
-    .container {
-        background: var(--bg-glass) !important;
-        border-color: var(--color-border) !important;
-    }
-
-    .student-card,
-    .leave-request-card,
-    .action-card,
-    .admin-col,
-    .admin-col-log,
-    .admin-col-leave,
-    .admin-col-holiday,
-    .admin-col-alerts,
-    .notif-box,
-    .log-section,
-    .message-form-card,
-    #loginScreen,
-    #registerScreen {
-        background: var(--bg-card) !important;
-        border-color: var(--color-border) !important;
-        color: var(--color-text) !important;
-    }
-
-    .student-name,
-    header h1,
-    .school-header h1,
-    .modal-box h3,
-    .log-header h3,
-    .notif-box h4,
-    .parent-info-card h3,
-    .message-form-card h4 {
-        color: var(--color-text) !important;
-    }
-
-    .student-time,
-    .log-time,
-    .action-card-content p {
-        color: var(--color-text-secondary) !important;
-    }
-
-    .form-grid input,
-    .notif-box input,
-    .notif-box textarea,
-    .message-form-card input,
-    .message-form-card select,
-    .message-form-card textarea,
-    #loginScreen input,
-    #registerScreen input,
-    #registerScreen select {
-        background: var(--bg-input) !important;
-        border-color: var(--color-border) !important;
-        color: var(--color-text) !important;
-    }
-
-    .form-grid input:focus,
-    .notif-box input:focus,
-    .notif-box textarea:focus,
-    .message-form-card input:focus,
-    .message-form-card select:focus,
-    .message-form-card textarea:focus,
-    #loginScreen input:focus,
-    #registerScreen input:focus,
-    #registerScreen select:focus {
-        border-color: var(--primary-500) !important;
-        background: var(--bg-card) !important;
-    }
-
-    .btn-logout {
-        background: #4a5568 !important;
-        color: var(--color-text) !important;
-    }
-
-    .btn-logout:hover {
-        background: #5a6a7e !important;
-        color: var(--danger-light) !important;
-    }
-
-    .modal-box {
-        background: var(--bg-card) !important;
-        color: var(--color-text) !important;
-    }
-
-    .modal-box p {
-        color: var(--color-text-secondary) !important;
-    }
-
-    .actions-container {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border-color: var(--color-border) !important;
-    }
-
-    .parent-info-card {
-        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-    }
-
-    .parent-info-card p,
-    .parent-info-card h3 {
-        color: var(--color-text) !important;
-    }
+    --slate-100: #1e293b;
+    --slate-200: #334155;
+    --slate-300: #475569;
 }
 
 /* ============================================================
-   3.  RESET & BASE (إعادة ضبط وأساسيات)
+   3.  RESET & GLOBAL (إعادة ضبط احترافية)
    ============================================================ */
 *,
 *::before,
@@ -231,96 +149,178 @@ html {
 body {
     font-family: var(--font-family);
     background: var(--bg-body);
-    color: var(--color-text);
+    color: var(--text-primary);
     min-height: 100vh;
     padding: var(--spacing-lg);
-    line-height: 1.6;
-    transition: background var(--transition-slow), color var(--transition-slow);
+    line-height: 1.7;
+    transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
+    background-image: radial-gradient(ellipse at 10% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 80%, rgba(236, 72, 153, 0.06) 0%, transparent 50%);
+}
+
+html.dark-mode body {
+    background-image: radial-gradient(ellipse at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 80%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
 }
 
 /* ============================================================
-   4.  SCROLLBAR (شريط التمرير المخصص)
+   4.  CUSTOM SCROLLBAR (شريط تمرير أنيق)
    ============================================================ */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-    background: var(--secondary-100);
+    background: var(--slate-200);
     border-radius: var(--radius-full);
 }
-
 ::-webkit-scrollbar-thumb {
-    background: var(--primary-300);
+    background: var(--primary-400);
     border-radius: var(--radius-full);
-    transition: background var(--transition-base);
+    border: 2px solid var(--slate-200);
 }
-
 ::-webkit-scrollbar-thumb:hover {
     background: var(--primary-500);
 }
-
-/* ============================================================
-   5.  SELECTION (تحديد النص)
-   ============================================================ */
-::selection {
-    background: var(--primary-500);
-    color: white;
+html.dark-mode ::-webkit-scrollbar-track {
+    background: var(--slate-800);
+}
+html.dark-mode ::-webkit-scrollbar-thumb {
+    border-color: var(--slate-800);
 }
 
 /* ============================================================
-   6.  APP WRAPPER & CONTAINER
+   5.  APP WRAPPER & CONTAINER (الزجاجية)
    ============================================================ */
 .app-wrapper {
-    max-width: 1280px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
 .container {
     background: var(--bg-glass);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-radius: var(--radius-xl);
-    padding: var(--spacing-xl) var(--spacing-lg);
-    box-shadow: var(--shadow-xl);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    transition: all var(--transition-base);
-}
-
-@media (max-width: 640px) {
-    .container {
-        padding: var(--spacing-md);
-        border-radius: var(--radius-lg);
-    }
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    box-shadow: var(--shadow-2xl);
+    border: var(--border-light);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ============================================================
-   7.  SCHOOL HEADER (رأس المدرسة)
+   6.  THEME TOGGLE (زر تغيير الثيم الاحترافي)
+   ============================================================ */
+.theme-toggle-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-md);
+}
+
+.theme-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+    user-select: none;
+    transition: color 0.3s ease;
+}
+
+.theme-toggle-label:hover {
+    color: var(--primary-500);
+}
+
+/* المفتاح الكهربائي (Switch) */
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 56px;
+    height: 30px;
+    flex-shrink: 0;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--slate-300);
+    border-radius: var(--radius-full);
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.theme-slider::before {
+    content: '☀️';
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.theme-switch input:checked+.theme-slider {
+    background: var(--primary-600);
+}
+
+.theme-switch input:checked+.theme-slider::before {
+    content: '🌙';
+    transform: translateX(26px);
+    background: #1e293b;
+}
+
+html.dark-mode .theme-slider {
+    background: var(--slate-600);
+}
+
+/* ============================================================
+   7.  SCHOOL HEADER (رأس المدرسة بلمسة عالمية)
    ============================================================ */
 .school-header {
-    background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 100%);
+    background: linear-gradient(135deg, var(--primary-800) 0%, var(--primary-600) 50%, var(--primary-400) 100%);
     color: white;
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: var(--spacing-xl) var(--spacing-2xl);
     border-radius: var(--radius-lg);
     margin-bottom: var(--spacing-lg);
-    box-shadow: 0 8px 32px rgba(26, 54, 93, 0.3);
-    text-align: center;
+    box-shadow: var(--shadow-xl);
     position: relative;
     overflow: hidden;
-    transition: all var(--transition-base);
+    isolation: isolate;
+    transition: all 0.5s ease;
 }
 
 .school-header::before {
     content: '';
     position: absolute;
-    top: -50%;
+    top: -60%;
     right: -20%;
-    width: 300px;
-    height: 300px;
-    background: rgba(255, 255, 255, 0.05);
+    width: 400px;
+    height: 400px;
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 50%;
     pointer-events: none;
+    animation: floatBubble 8s ease-in-out infinite alternate;
 }
 
 .school-header::after {
@@ -328,193 +328,167 @@ body {
     position: absolute;
     bottom: -40%;
     left: -10%;
-    width: 200px;
-    height: 200px;
-    background: rgba(255, 255, 255, 0.04);
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 50%;
     pointer-events: none;
+    animation: floatBubble 10s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes floatBubble {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        transform: translate(30px, -30px) scale(1.1);
+    }
 }
 
 .school-header h1 {
-    font-size: var(--font-size-2xl);
-    font-weight: 800;
-    letter-spacing: 1px;
-    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-4xl);
+    font-weight: 900;
+    letter-spacing: -0.5px;
     position: relative;
     z-index: 1;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .school-header p {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-lg);
     opacity: 0.9;
-    margin: var(--spacing-xs) 0;
     position: relative;
     z-index: 1;
-}
-
-@media (max-width: 640px) {
-    .school-header {
-        padding: var(--spacing-md);
-        border-radius: var(--radius-md);
-    }
-
-    .school-header h1 {
-        font-size: var(--font-size-xl);
-    }
-
-    .school-header p {
-        font-size: var(--font-size-xs);
-    }
+    font-weight: 400;
 }
 
 /* ============================================================
-   8.  AUTH SCREENS (شاشات المصادقة)
+   8.  AUTH SCREENS (شاشات الدخول)
    ============================================================ */
 #loginScreen,
 #registerScreen {
-    max-width: 440px;
-    margin: 20px auto;
-    padding: var(--spacing-xl);
+    max-width: 460px;
+    margin: 40px auto;
+    padding: var(--spacing-2xl);
     background: var(--bg-card);
+    backdrop-filter: blur(16px);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--color-border);
-    transition: all var(--transition-base);
+    box-shadow: var(--shadow-2xl);
+    border: var(--border-light);
+    transition: all 0.4s ease;
 }
 
 #loginScreen:hover,
 #registerScreen:hover {
-    box-shadow: var(--shadow-xl);
+    box-shadow: var(--shadow-2xl), var(--shadow-glow);
+    transform: translateY(-2px);
 }
 
 #loginScreen h2,
 #registerScreen h2 {
     text-align: center;
-    color: var(--primary-900);
-    margin-bottom: var(--spacing-lg);
+    color: var(--primary-700);
+    margin-bottom: var(--spacing-xl);
     font-weight: 800;
-    font-size: var(--font-size-xl);
+    font-size: var(--font-3xl);
+    letter-spacing: -0.5px;
 }
 
 #loginScreen input,
 #registerScreen input,
 #registerScreen select {
     width: 100%;
-    padding: 14px 18px;
+    padding: 16px 20px;
     margin: var(--spacing-sm) 0;
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-md);
+    border: 2px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    font-size: var(--font-md);
     font-family: var(--font-family);
     background: var(--bg-input);
-    color: var(--color-text);
-    transition: all var(--transition-base);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
 }
 
 #loginScreen input:focus,
 #registerScreen input:focus,
 #registerScreen select:focus {
     border-color: var(--primary-500);
-    box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.15);
-    background: var(--bg-card);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
     outline: none;
+    background: var(--bg-card);
 }
 
 #loginScreen button,
 #registerScreen button {
     width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, var(--primary-700), var(--primary-900));
+    padding: 16px;
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
     color: white;
     border: none;
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-lg);
+    border-radius: var(--radius-md);
+    font-size: var(--font-lg);
     font-weight: 700;
     cursor: pointer;
     font-family: var(--font-family);
-    margin-top: var(--spacing-md);
-    transition: all var(--transition-base);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
 }
 
 #loginScreen button:hover,
 #registerScreen button:hover {
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 8px 30px rgba(43, 108, 176, 0.35);
-}
-
-#loginScreen button:active,
-#registerScreen button:active {
-    transform: scale(0.98);
-}
-
-#loginScreen p,
-#registerScreen p {
-    text-align: center;
-    margin-top: var(--spacing-md);
-    color: var(--color-text-secondary);
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 8px 35px rgba(79, 70, 229, 0.4);
 }
 
 #loginScreen a,
 #registerScreen a {
-    color: var(--primary-700);
+    color: var(--primary-600);
+    font-weight: 700;
     cursor: pointer;
     text-decoration: none;
-    font-weight: 700;
-    transition: color var(--transition-fast);
+    transition: color 0.2s;
 }
-
 #loginScreen a:hover,
 #registerScreen a:hover {
-    color: var(--primary-500);
+    color: var(--primary-800);
     text-decoration: underline;
 }
 
 /* ============================================================
-   9.  HEADER (الهيدر المشترك)
+   9.  HEADER (رأس الصفحة الداخلية)
    ============================================================ */
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-lg);
     flex-wrap: wrap;
     gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
 }
 
 header h1 {
-    font-size: var(--font-size-xl);
-    font-weight: 800;
-    color: var(--primary-900);
+    font-size: var(--font-3xl);
+    font-weight: 900;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    transition: color var(--transition-base);
 }
 
 .live-badge {
     background: var(--success-light);
     color: var(--success-dark);
-    padding: var(--spacing-xs) var(--spacing-lg);
+    padding: 4px 16px;
     border-radius: var(--radius-full);
-    font-size: var(--font-size-xs);
+    font-size: var(--font-xs);
     font-weight: 700;
     border: 1px solid var(--success);
-    animation: pulse-green 2s ease-in-out infinite;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
+    animation: pulse-badge 2s infinite;
 }
 
-.live-badge i {
-    font-size: 10px;
-    color: var(--success);
-}
-
-@keyframes pulse-green {
+@keyframes pulse-badge {
     0%,
     100% {
         opacity: 0.7;
@@ -522,20 +496,20 @@ header h1 {
     }
     50% {
         opacity: 1;
-        transform: scale(1.02);
+        transform: scale(1.03);
     }
 }
 
 .btn-logout {
-    background: var(--secondary-100);
+    background: var(--slate-200);
     border: none;
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border-radius: var(--radius-md);
+    padding: 10px 24px;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    color: var(--text-secondary);
     cursor: pointer;
+    transition: all 0.3s ease;
     font-family: var(--font-family);
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    transition: all var(--transition-base);
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
@@ -544,480 +518,291 @@ header h1 {
 .btn-logout:hover {
     background: var(--danger-light);
     color: var(--danger);
-    transform: translateY(-1px);
-}
-
-@media (max-width: 640px) {
-    header h1 {
-        font-size: var(--font-size-lg);
-    }
-
-    .live-badge {
-        font-size: var(--font-size-xs);
-        padding: var(--spacing-xs) var(--spacing-md);
-    }
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 /* ============================================================
-   10. BUTTONS (الأزرار)
+   10. BUTTONS (نظام الأزرار المتكامل)
    ============================================================ */
-/* زر تبديل النموذج */
-.btn-toggle-form {
-    background: linear-gradient(135deg, var(--primary-700), var(--primary-900));
-    color: white;
-    border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-md);
-    font-weight: 700;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
-    font-family: var(--font-family);
-    box-shadow: 0 4px 15px rgba(43, 108, 176, 0.25);
-}
-
-.btn-toggle-form:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(43, 108, 176, 0.35);
-}
-
-.btn-toggle-form:active {
-    transform: scale(0.97);
-}
-
-/* الزر الرئيسي */
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
     color: white;
     border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
+    padding: 12px 28px;
     border-radius: var(--radius-md);
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-sm);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.35);
-    font-family: var(--font-family);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.45);
-}
-
-.btn-primary:active {
-    transform: scale(0.97);
-}
-
-/* زر الإضافة */
-.btn-add {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.35);
-    font-family: var(--font-family);
-}
-
-.btn-add:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 30px rgba(245, 87, 108, 0.45);
-}
-
-/* زر الإعدادات */
-.btn-settings {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
-    border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.35);
-    font-family: var(--font-family);
-}
-
-.btn-settings:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(79, 172, 254, 0.45);
-}
-
-/* أزرار الدخول/الخروج الجماعي */
-.btn-bulk-enter {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    color: white;
-    border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-lg);
     font-weight: 700;
     cursor: pointer;
-    transition: all var(--transition-base);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
+    font-family: var(--font-family);
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-md);
-    box-shadow: 0 4px 20px rgba(17, 153, 142, 0.35);
-    min-width: 160px;
-    justify-content: center;
-    font-family: var(--font-family);
+    gap: var(--spacing-sm);
+}
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(79, 70, 229, 0.35);
 }
 
+.btn-add {
+    background: linear-gradient(135deg, #ec4899, #8b5cf6);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.25);
+    font-family: var(--font-family);
+}
+.btn-add:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(236, 72, 153, 0.35);
+}
+
+.btn-settings {
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-family);
+}
+.btn-settings:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.35);
+}
+
+/* الأزرار الجماعية */
+.btn-bulk-enter {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: var(--radius-md);
+    font-weight: 800;
+    font-size: var(--font-lg);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+    font-family: var(--font-family);
+}
 .btn-bulk-enter:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 35px rgba(17, 153, 142, 0.45);
+    box-shadow: 0 8px 35px rgba(16, 185, 129, 0.45);
 }
 
 .btn-bulk-exit {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #dc2626, #ef4444);
     color: white;
     border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
+    padding: 14px 32px;
     border-radius: var(--radius-md);
-    font-size: var(--font-size-lg);
-    font-weight: 700;
+    font-weight: 800;
+    font-size: var(--font-lg);
     cursor: pointer;
-    transition: all var(--transition-base);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    box-shadow: 0 4px 20px rgba(245, 87, 108, 0.35);
-    min-width: 160px;
-    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
     font-family: var(--font-family);
 }
-
 .btn-bulk-exit:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 35px rgba(245, 87, 108, 0.45);
+    box-shadow: 0 8px 35px rgba(239, 68, 68, 0.45);
 }
 
-/* الأزرار داخل البطاقات */
-.btn-toggle,
-.btn-delete,
-.btn-qr,
-.btn-edit {
-    border: none;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: var(--font-size-xs);
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-family: var(--font-family);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
-
+/* أزرار البطاقات */
 .btn-toggle.enter {
-    background: var(--success-light);
-    color: var(--success-dark);
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: var(--font-xs);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
-
 .btn-toggle.enter:hover {
-    background: #9ae6b4;
-    transform: translateY(-1px);
+    background: #059669;
+    transform: scale(1.05);
 }
-
 .btn-toggle.exit {
-    background: var(--danger-light);
-    color: var(--danger-dark);
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: var(--font-xs);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
-
 .btn-toggle.exit:hover {
-    background: #feb2b2;
-    transform: translateY(-1px);
+    background: #dc2626;
+    transform: scale(1.05);
 }
 
 .btn-delete {
-    background: var(--secondary-100);
-    color: var(--color-text-secondary);
+    background: var(--slate-200);
+    color: var(--text-secondary);
+    border: none;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: var(--font-xs);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
-
 .btn-delete:hover {
     background: var(--danger-light);
     color: var(--danger);
-    transform: translateY(-1px);
 }
 
 .btn-qr {
-    background: linear-gradient(135deg, #8e44ad, #6c3483);
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
     color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: var(--font-xs);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
-
 .btn-qr:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4);
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
 }
 
 .btn-edit {
-    background: linear-gradient(135deg, #f39c12, #d68910);
-    color: white;
-}
-
-.btn-edit:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
-}
-
-/* أزرار التحذير والنجاح */
-.btn-warning {
-    background: linear-gradient(135deg, #e67e22, #d35400);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
     color: white;
     border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-weight: 700;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-family: var(--font-family);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.btn-warning:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(211, 84, 0, 0.35);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #27ae60, #1e8449);
-    color: white;
-    border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-weight: 700;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-family: var(--font-family);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.btn-success:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(30, 132, 73, 0.35);
-}
-
-/* أزرار النوافذ المنبثقة */
-.btn-danger {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: white;
-    border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-weight: 700;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-family: var(--font-family);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.btn-danger:hover {
-    transform: scale(1.02);
-    box-shadow: 0 6px 25px rgba(192, 57, 43, 0.35);
-}
-
-.btn-secondary {
-    background: var(--secondary-100);
-    color: var(--secondary-900);
-    border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-weight: 700;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-family: var(--font-family);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.btn-secondary:hover {
-    background: var(--secondary-300);
-}
-
-/* أحجام الأزرار */
-.btn-sm {
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: var(--font-size-xs);
-    border-radius: var(--radius-sm);
-}
-
-.btn-lg {
-    padding: var(--spacing-lg) var(--spacing-xl);
-    font-size: var(--font-size-lg);
-    border-radius: var(--radius-lg);
-}
-
-/* زر الإرسال */
-.btn-submit-message {
-    background: linear-gradient(135deg, var(--primary-700), var(--primary-900));
-    color: #fff;
-    border: none;
-    padding: var(--spacing-md) var(--spacing-xl);
+    padding: 6px 14px;
     border-radius: var(--radius-full);
-    font-size: var(--font-size-lg);
-    font-weight: 700;
+    font-weight: 600;
+    font-size: var(--font-xs);
     cursor: pointer;
-    transition: all var(--transition-base);
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-sm);
-    box-shadow: 0 4px 15px rgba(43, 108, 176, 0.3);
-    font-family: var(--font-family);
+    transition: all 0.2s ease;
 }
-
-.btn-submit-message:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(43, 108, 176, 0.4);
-    background: linear-gradient(135deg, var(--primary-900), #0f3b6e);
-}
-
-.btn-submit-message:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
+.btn-edit:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
 }
 
 /* ============================================================
-   11. FORM (نموذج إضافة طالب)
+   11. FORM (نموذج الإضافة)
    ============================================================ */
 .add-student-form {
     background: var(--bg-card);
+    backdrop-filter: blur(12px);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-    border: 1px solid var(--color-border);
-    animation: fadeIn 0.3s ease;
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
-}
-
-.add-student-form:hover {
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    border: var(--border-light);
     box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+}
+.add-student-form:hover {
+    box-shadow: var(--shadow-lg);
 }
 
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: var(--spacing-md);
 }
 
 .form-grid input {
-    padding: var(--spacing-md) var(--spacing-lg);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-sm);
+    padding: 14px 20px;
+    border: 2px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
     font-family: var(--font-family);
     background: var(--bg-input);
-    color: var(--color-text);
-    transition: all var(--transition-base);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
 }
-
 .form-grid input:focus {
     border-color: var(--primary-500);
-    box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.12);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
     outline: none;
-    background: var(--bg-card);
-}
-
-@media (max-width: 640px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 /* ============================================================
-   12. STUDENTS GRID (شبكة بطاقات الطلاب)
+   12. STUDENTS GRID (بطاقات الطلاب)
    ============================================================ */
 .students-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--spacing-md);
+    gap: var(--spacing-lg);
     padding: var(--spacing-md) 0;
-    max-height: 500px;
+    max-height: 550px;
     overflow-y: auto;
-    min-height: 120px;
 }
 
 .student-card {
     background: var(--bg-card);
-    padding: var(--spacing-lg) var(--spacing-md);
+    backdrop-filter: blur(12px);
+    padding: var(--spacing-lg);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
+    border: var(--border-light);
     box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
     position: relative;
+    overflow: hidden;
+}
+
+.student-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-500), var(--primary-300));
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .student-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: var(--shadow-xl);
     border-color: var(--primary-300);
 }
-
-.student-card .student-name {
-    font-size: var(--font-size-lg);
-    font-weight: 800;
-    color: var(--primary-900);
-    transition: color var(--transition-base);
+.student-card:hover::before {
+    opacity: 1;
 }
 
-.student-card .student-time {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
+.student-name {
+    font-size: var(--font-xl);
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.student-time {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
 }
 
 .status-badge {
-    padding: var(--spacing-xs) var(--spacing-md);
+    padding: 4px 14px;
     border-radius: var(--radius-full);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-xs);
     font-weight: 700;
-    display: inline-block;
     width: fit-content;
-    transition: all var(--transition-base);
 }
-
 .status-badge.inside {
     background: var(--success-light);
     color: var(--success-dark);
 }
-
 .status-badge.outside {
     background: var(--danger-light);
     color: var(--danger-dark);
@@ -1030,28 +815,17 @@ header h1 {
     margin-top: var(--spacing-xs);
 }
 
-.loading-state {
-    text-align: center;
-    color: var(--color-text-muted);
-    padding: 40px 0;
-    grid-column: 1 / -1;
-}
-
 /* ============================================================
-   13. LOG SECTION (سجل النشاطات)
+   13. LOG SECTION (سجل الأنشطة على شكل Timeline)
    ============================================================ */
 .log-section {
     background: var(--bg-card);
+    backdrop-filter: blur(12px);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
-    border: 1px solid var(--color-border);
+    padding: var(--spacing-xl);
+    border: var(--border-light);
     margin-top: var(--spacing-lg);
     box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
-}
-
-.log-section:hover {
-    box-shadow: var(--shadow-md);
 }
 
 .log-header {
@@ -1062,468 +836,44 @@ header h1 {
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
 }
-
 .log-header h3 {
-    color: var(--primary-900);
-    font-size: var(--font-size-lg);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.btn-show-old,
-.btn-hide-old {
-    background: var(--secondary-100);
-    border: none;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-family: var(--font-family);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    color: var(--secondary-900);
-}
-
-.btn-show-old:hover,
-.btn-hide-old:hover {
-    background: var(--secondary-300);
-    transform: translateY(-1px);
+    color: var(--text-primary);
+    font-size: var(--font-xl);
 }
 
 .log-item {
     display: flex;
     justify-content: space-between;
-    padding: var(--spacing-sm) 0;
-    border-bottom: 1px dashed var(--color-border);
-    font-size: var(--font-size-sm);
-    color: var(--color-text);
-    transition: background var(--transition-fast);
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--slate-200);
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    padding-right: var(--spacing-sm);
 }
-
-.log-item:last-child {
-    border-bottom: none;
-}
-
 .log-item:hover {
-    background: rgba(66, 153, 225, 0.04);
-    padding-left: var(--spacing-sm);
+    background: var(--bg-hover);
     border-radius: var(--radius-sm);
+    padding-right: var(--spacing-md);
 }
-
 .log-time {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    font-size: var(--font-xs);
+    font-weight: 500;
+}
+html.dark-mode .log-item {
+    border-color: var(--slate-700);
 }
 
 /* ============================================================
-   14. NOTIFICATION FORMS (نماذج الإشعارات)
-   ============================================================ */
-.notification-forms {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
-}
-
-@media (max-width: 768px) {
-    .notification-forms {
-        grid-template-columns: 1fr;
-    }
-}
-
-.notif-box {
-    background: var(--bg-card);
-    padding: var(--spacing-lg);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
-}
-
-.notif-box:hover {
-    box-shadow: var(--shadow-md);
-}
-
-.notif-box h4 {
-    color: var(--primary-900);
-    margin-bottom: var(--spacing-md);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.notif-box input,
-.notif-box textarea {
-    width: 100%;
-    padding: var(--spacing-md) var(--spacing-lg);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-family: var(--font-family);
-    background: var(--bg-input);
-    color: var(--color-text);
-    margin-bottom: var(--spacing-md);
-    transition: all var(--transition-base);
-}
-
-.notif-box input:focus,
-.notif-box textarea:focus {
-    border-color: var(--primary-500);
-    box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.12);
-    outline: none;
-    background: var(--bg-card);
-}
-
-.notif-box textarea {
-    min-height: 70px;
-    resize: vertical;
-}
-
-/* ============================================================
-   15. NOTIFICATION CONTAINER (إشعارات ولي الأمر)
-   ============================================================ */
-#notificationContainer {
-    margin-top: var(--spacing-lg);
-    background: var(--bg-card);
-    padding: var(--spacing-lg);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-sm);
-}
-
-#notificationContainer h4 {
-    color: var(--primary-900);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-}
-
-#notificationList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-#notificationList li {
-    padding: var(--spacing-md) var(--spacing-lg);
-    margin: var(--spacing-xs) 0;
-    border-radius: var(--radius-md);
-    transition: all var(--transition-base);
-    border-right: 4px solid var(--primary-300);
-    background: var(--bg-body);
-}
-
-#notificationList li:hover {
-    background: var(--primary-100);
-    transform: translateX(-2px);
-}
-
-/* ============================================================
-   16. MODALS (النوافذ المنبثقة)
-   ============================================================ */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(8px) saturate(180%);
-    -webkit-backdrop-filter: blur(8px) saturate(180%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    animation: fadeIn 0.25s ease;
-    padding: var(--spacing-md);
-}
-
-.modal-box {
-    background: var(--bg-card);
-    max-width: 440px;
-    width: 100%;
-    padding: var(--spacing-xl);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-xl);
-    text-align: center;
-    animation: slideUp 0.3s ease;
-    border: 1px solid var(--color-border);
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-#confirmModal {
-    z-index: 9999 !important;
-}
-
-#confirmModal .modal-box {
-    position: relative;
-    z-index: 10000;
-}
-
-#editStudentModal {
-    z-index: 2000;
-}
-
-#editStudentModal .modal-box {
-    max-width: 600px;
-}
-
-#editStudentModal .form-grid {
-    grid-template-columns: 1fr 1fr;
-}
-
-@media (max-width: 600px) {
-    #editStudentModal .form-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-#allLogsModal {
-    z-index: 2000;
-}
-
-#allLogsModal .modal-box {
-    max-width: 700px;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-#scannerModal {
-    z-index: 3000;
-}
-
-#scannerModal .modal-box {
-    max-width: 500px;
-}
-
-@keyframes slideUp {
-    from {
-        transform: translateY(30px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.modal-box h3 {
-    color: var(--primary-900);
-    font-size: var(--font-size-xl);
-    margin-bottom: var(--spacing-md);
-}
-
-.modal-box p {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-md);
-    margin-bottom: var(--spacing-lg);
-}
-
-.modal-actions {
-    display: flex;
-    gap: var(--spacing-md);
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.modal-actions button {
-    padding: var(--spacing-md) var(--spacing-xl);
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-md);
-    font-weight: 700;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-family: var(--font-family);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    min-width: 100px;
-    justify-content: center;
-}
-
-/* ============================================================
-   17. LEAVE REQUESTS (طلبات الإجازات)
-   ============================================================ */
-.leave-requests-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-md);
-}
-
-.leave-request-card {
-    background: var(--bg-card);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
-}
-
-.leave-request-card:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--primary-300);
-    transform: translateY(-2px);
-}
-
-.leave-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing-md);
-}
-
-.leave-header .student-name {
-    font-weight: 700;
-    color: var(--primary-900);
-}
-
-.leave-status {
-    padding: var(--spacing-xs) var(--spacing-md);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-}
-
-.leave-status.pending {
-    background: var(--warning-light);
-    color: var(--warning);
-}
-
-.leave-status.approved {
-    background: var(--success-light);
-    color: var(--success-dark);
-}
-
-.leave-status.rejected {
-    background: var(--danger-light);
-    color: var(--danger-dark);
-}
-
-.leave-body p {
-    margin: var(--spacing-xs) 0;
-    font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
-}
-
-.leave-body .btn-file {
-    display: inline-block;
-    padding: var(--spacing-xs) var(--spacing-md);
-    background: var(--secondary-100);
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-xs);
-    text-decoration: none;
-    color: var(--secondary-900);
-    margin: var(--spacing-xs) var(--spacing-xs) var(--spacing-xs) 0;
-    transition: all var(--transition-base);
-}
-
-.leave-body .btn-file:hover {
-    background: var(--secondary-300);
-    transform: translateY(-1px);
-}
-
-.file-preview {
-    margin: var(--spacing-sm) 0;
-}
-
-.file-preview img {
-    max-width: 100px;
-    max-height: 100px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border);
-    cursor: pointer;
-    transition: transform var(--transition-fast);
-}
-
-.file-preview img:hover {
-    transform: scale(1.05);
-}
-
-.leave-actions {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-md);
-    flex-wrap: wrap;
-}
-
-.leave-actions .btn-approve {
-    background: var(--success);
-    color: white;
-    border: none;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-weight: 600;
-    font-family: var(--font-family);
-    transition: all var(--transition-base);
-}
-
-.leave-actions .btn-approve:hover {
-    background: var(--success-dark);
-    transform: translateY(-1px);
-}
-
-.leave-actions .btn-reject {
-    background: var(--danger);
-    color: white;
-    border: none;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-weight: 600;
-    font-family: var(--font-family);
-    transition: all var(--transition-base);
-}
-
-.leave-actions .btn-reject:hover {
-    background: var(--danger-dark);
-    transform: translateY(-1px);
-}
-
-/* ============================================================
-   18. SEARCH (البحث)
-   ============================================================ */
-.search-section input:focus {
-    border-color: var(--primary-500);
-    box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.12);
-}
-
-#clearSearchBtn {
-    transition: all var(--transition-base);
-}
-
-#clearSearchBtn:hover {
-    background: var(--secondary-300);
-    transform: scale(1.05);
-}
-
-#searchByQRBtn {
-    transition: all var(--transition-base);
-}
-
-#searchByQRBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(142, 68, 173, 0.35);
-}
-
-/* ============================================================
-   19. ADMIN PANEL (لوحة الإدارة)
+   14. ADMIN PANEL (لوحة الإدارة - Bento Grid)
    ============================================================ */
 .admin-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
 }
-
 .admin-row-two {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1537,618 +887,400 @@ header h1 {
 .admin-col-holiday,
 .admin-col-alerts {
     background: var(--bg-card);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    border: 1px solid var(--color-border);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    border: var(--border-light);
     box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
+    transition: all 0.3s ease;
 }
-
 .admin-col:hover,
 .admin-col-log:hover,
 .admin-col-leave:hover,
 .admin-col-holiday:hover,
 .admin-col-alerts:hover {
-    box-shadow: var(--shadow-md);
-}
-
-@media (max-width: 992px) {
-    .admin-row {
-        grid-template-columns: 1fr;
-    }
-    .admin-row-two {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* ============================================================
-   20. SCROLLABLE CONTAINERS (حاويات قابلة للتمرير)
-   ============================================================ */
-#adminLogContainer,
-.leave-requests-container {
-    max-height: 300px;
-    overflow-y: auto;
-    padding: var(--spacing-xs) 0;
-}
-
-#adminLogContainer::-webkit-scrollbar,
-.leave-requests-container::-webkit-scrollbar,
-.students-grid::-webkit-scrollbar,
-#smartAlertsList::-webkit-scrollbar {
-    width: 5px;
-}
-
-#adminLogContainer::-webkit-scrollbar-track,
-.leave-requests-container::-webkit-scrollbar-track,
-.students-grid::-webkit-scrollbar-track,
-#smartAlertsList::-webkit-scrollbar-track {
-    background: var(--secondary-100);
-    border-radius: var(--radius-full);
-}
-
-#adminLogContainer::-webkit-scrollbar-thumb,
-.leave-requests-container::-webkit-scrollbar-thumb,
-.students-grid::-webkit-scrollbar-thumb,
-#smartAlertsList::-webkit-scrollbar-thumb {
-    background: var(--primary-300);
-    border-radius: var(--radius-full);
-}
-
-#adminLogContainer::-webkit-scrollbar-thumb:hover,
-.leave-requests-container::-webkit-scrollbar-thumb:hover,
-.students-grid::-webkit-scrollbar-thumb:hover,
-#smartAlertsList::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-500);
-}
-
-/* ============================================================
-   21. SMART ALERTS (التنبيهات الذكية)
-   ============================================================ */
-#smartAlertsList {
-    max-height: 150px;
-    overflow-y: auto;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-xs) 0;
-}
-
-/* ============================================================
-   22. PARENT DASHBOARD (لوحة ولي الأمر)
-   ============================================================ */
-.parent-info-card {
-    background: linear-gradient(135deg, #f0f7ff 0%, #e3edfa 100%);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg) var(--spacing-xl);
-    margin: var(--spacing-md) 0 var(--spacing-lg) 0;
-    border-right: 6px solid var(--primary-700);
-    box-shadow: var(--shadow-md);
-    transition: all var(--transition-base);
-}
-
-.parent-info-card:hover {
+    box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-}
-
-.parent-info-card h3 {
-    color: var(--primary-900);
-    margin-bottom: var(--spacing-sm);
-    font-size: var(--font-size-xl);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.parent-info-card p {
-    color: var(--secondary-900);
-    margin: var(--spacing-xs) 0;
-    font-size: var(--font-size-md);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.parent-info-card .badge-parent {
-    display: inline-block;
-    background: var(--primary-700);
-    color: #fff;
-    padding: var(--spacing-xs) var(--spacing-lg);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    margin-top: var(--spacing-sm);
-    letter-spacing: 0.5px;
 }
 
 /* ============================================================
-   23. MESSAGE FORM (نموذج الرسالة)
+   15. NOTIFICATIONS & MESSAGES (الإشعارات والرسائل)
    ============================================================ */
-.message-form-card {
+.notification-forms {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+.notif-box {
     background: var(--bg-card);
+    padding: var(--spacing-xl);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-lg) var(--spacing-xl);
-    margin: var(--spacing-lg) 0 var(--spacing-xl) 0;
-    box-shadow: var(--shadow-md);
-    border-top: 5px solid #f6ad55;
-    transition: all var(--transition-base);
+    border: var(--border-light);
+    box-shadow: var(--shadow-sm);
 }
-
-.message-form-card:hover {
-    box-shadow: var(--shadow-lg);
-}
-
-.message-form-card h4 {
-    color: var(--primary-900);
-    margin: 0 0 var(--spacing-lg) 0;
-    font-size: var(--font-size-xl);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-}
-
-.message-form-card .form-group {
+.notif-box h4 {
+    color: var(--text-primary);
     margin-bottom: var(--spacing-md);
 }
-
-.message-form-card label {
-    display: block;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--spacing-xs);
-    font-size: var(--font-size-sm);
+.notif-box input,
+.notif-box textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    font-family: var(--font-family);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    transition: all 0.3s ease;
+}
+.notif-box input:focus,
+.notif-box textarea:focus {
+    border-color: var(--primary-500);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+.notif-box textarea {
+    min-height: 80px;
+    resize: vertical;
 }
 
+.message-form-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin: var(--spacing-lg) 0;
+    box-shadow: var(--shadow-md);
+    border-top: 5px solid var(--primary-500);
+}
 .message-form-card input,
 .message-form-card select,
 .message-form-card textarea {
     width: 100%;
-    padding: var(--spacing-md) var(--spacing-lg);
-    border: 2px solid var(--color-border);
+    padding: 14px 18px;
+    border: 2px solid var(--slate-200);
     border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
     font-family: var(--font-family);
     background: var(--bg-input);
-    color: var(--color-text);
-    transition: all var(--transition-base);
-    box-sizing: border-box;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    transition: all 0.3s ease;
 }
-
 .message-form-card input:focus,
 .message-form-card select:focus,
 .message-form-card textarea:focus {
     border-color: var(--primary-500);
     outline: none;
-    background: var(--bg-card);
-    box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.12);
-}
-
-.message-form-card textarea {
-    min-height: 100px;
-    resize: vertical;
-}
-
-.message-form-card select {
-    appearance: auto;
-    cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
 }
 
 /* ============================================================
-   24. ALERT MESSAGES (رسائل التنبيه)
+   16. MODALS (النوافذ المنبثقة المتطورة)
    ============================================================ */
-.alert-msg-form {
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-radius: var(--radius-md);
-    margin-bottom: var(--spacing-md);
-    display: none;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-}
-
-.alert-success-form {
-    background: var(--success-light);
-    color: var(--success-dark);
-    border: 1px solid var(--success);
-    display: block;
-}
-
-.alert-error-form {
-    background: var(--danger-light);
-    color: var(--danger-dark);
-    border: 1px solid var(--danger);
-    display: block;
-}
-
-/* ============================================================
-   25. ACTION CARDS (بطاقات الإجراءات)
-   ============================================================ */
-.actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: var(--spacing-lg);
-    padding: var(--spacing-lg);
-    margin: var(--spacing-lg) 0;
-}
-
-.action-card {
-    background: var(--bg-card);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-lg);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    cursor: pointer;
-    transition: all var(--transition-base);
-    box-shadow: var(--shadow-sm);
-    border: 2px solid transparent;
-}
-
-.action-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
-    border-color: #667eea;
-}
-
-.action-card-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: var(--radius-md);
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px) saturate(180%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: var(--font-size-xl);
-    flex-shrink: 0;
+    z-index: 9999;
+    padding: var(--spacing-md);
+    animation: fadeIn 0.25s ease;
 }
 
-.action-card-content {
-    flex: 1;
+.modal-box {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    max-width: 520px;
+    width: 100%;
+    padding: var(--spacing-2xl);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-2xl);
+    border: var(--border-light);
+    animation: slideUpModal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
-.action-card-content h4 {
-    margin: 0 0 var(--spacing-xs) 0;
-    font-size: var(--font-size-md);
-    color: var(--color-text);
+@keyframes slideUpModal {
+    from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
-.action-card-content p {
-    margin: 0;
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
+.modal-box h3 {
+    color: var(--text-primary);
+    font-size: var(--font-2xl);
+    margin-bottom: var(--spacing-md);
 }
-
-.action-card-arrow {
-    font-size: var(--font-size-lg);
-    color: var(--color-text-muted);
-    transition: all var(--transition-base);
-}
-
-.action-card:hover .action-card-arrow {
-    transform: translateX(5px);
-    color: #667eea;
+.modal-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 /* ============================================================
-   26. ACTIONS CONTAINER (حاوية الأزرار)
+   17. LEAVE REQUESTS (طلبات الإجازات)
+   ============================================================ */
+.leave-requests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+}
+.leave-request-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    border: var(--border-light);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+.leave-request-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+.leave-status.pending {
+    background: var(--warning-light);
+    color: var(--warning-dark);
+}
+.leave-status.approved {
+    background: var(--success-light);
+    color: var(--success-dark);
+}
+.leave-status.rejected {
+    background: var(--danger-light);
+    color: var(--danger-dark);
+}
+
+/* ============================================================
+   18. PARENT DASHBOARD (لوحة ولي الأمر)
+   ============================================================ */
+.parent-info-card {
+    background: linear-gradient(135deg, var(--primary-50), var(--primary-100));
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    border-right: 6px solid var(--primary-600);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+}
+.parent-info-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+html.dark-mode .parent-info-card {
+    background: linear-gradient(135deg, var(--slate-800), var(--slate-700));
+}
+
+/* ============================================================
+   19. ACTIONS CONTAINER (حاوية الأزرار السريعة)
    ============================================================ */
 .actions-container {
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-md);
-    padding: var(--spacing-lg);
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-md);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: var(--spacing-xl);
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius-lg);
+    border: var(--border-light);
     justify-content: center;
     align-items: center;
-}
-
-.btn-icon {
-    font-size: var(--font-size-lg);
-    line-height: 1;
-}
-
-/* تأثير النقر */
-.btn-click-effect {
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-click-effect::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-}
-
-.btn-click-effect:active::after {
-    width: 300px;
-    height: 300px;
-}
-
-/* أزرار مع ظل متوهج */
-.btn-glow {
-    animation: glowPulse 2s ease-in-out infinite;
-}
-
-@keyframes glowPulse {
-    0%,
-    100% {
-        box-shadow: 0 0 20px rgba(102, 126, 234, 0.25);
-    }
-    50% {
-        box-shadow: 0 0 40px rgba(102, 126, 234, 0.5);
-    }
+    margin: var(--spacing-lg) 0;
 }
 
 /* ============================================================
-   27. ANIMATIONS (الحركات)
+   20. RESPONSIVE (التجاوب الشامل 320px ↔ 4K)
    ============================================================ */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ============================================================
-   28. RESPONSIVE DESIGN (التجاوب مع الشاشات)
-   ============================================================ */
-/* شاشات كبيرة */
-@media (max-width: 1200px) {
+/* 4K & Large Screens */
+@media (min-width: 1920px) {
     .app-wrapper {
-        max-width: 100%;
-        padding: 0 var(--spacing-md);
+        max-width: 1600px;
+    }
+    .students-grid {
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    }
+    .school-header h1 {
+        font-size: var(--font-4xl);
     }
 }
 
-/* شاشات متوسطة */
-@media (max-width: 992px) {
-    .admin-row {
-        grid-template-columns: 1fr;
+/* Laptops / Small Desktops */
+@media (max-width: 1200px) {
+    .container {
+        padding: var(--spacing-xl);
     }
+}
+
+/* Tablets & Small Laptops */
+@media (max-width: 1024px) {
+    .admin-row,
     .admin-row-two {
         grid-template-columns: 1fr;
     }
-    .students-grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    .notification-forms {
+        grid-template-columns: 1fr;
     }
 }
 
-/* شاشات صغيرة */
+/* Tablets */
 @media (max-width: 768px) {
     body {
         padding: var(--spacing-md);
     }
-
+    .container {
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-lg);
+    }
     .students-grid {
         grid-template-columns: 1fr;
-        max-height: 350px;
+        max-height: 400px;
     }
-
-    .admin-col-log,
-    .admin-col-leave,
-    .admin-col-holiday,
-    .admin-col-alerts {
-        padding: var(--spacing-md);
+    .school-header {
+        padding: var(--spacing-lg);
     }
-
-    .notification-forms {
-        grid-template-columns: 1fr;
+    .school-header h1 {
+        font-size: var(--font-2xl);
     }
-
+    header h1 {
+        font-size: var(--font-xl);
+    }
     .actions-container {
         flex-direction: column;
         align-items: stretch;
-        padding: var(--spacing-md);
     }
-
     .btn-bulk-enter,
     .btn-bulk-exit {
         width: 100%;
         justify-content: center;
-        padding: var(--spacing-md) var(--spacing-lg);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-md);
     }
-
-    .btn-primary,
-    .btn-add,
-    .btn-settings {
-        width: 100%;
-        justify-content: center;
+    .modal-box {
+        padding: var(--spacing-lg);
+        width: 95%;
     }
-
     .leave-requests-grid {
         grid-template-columns: 1fr;
     }
-
-    .actions-grid {
-        grid-template-columns: 1fr;
-        padding: var(--spacing-md);
-    }
-
-    .modal-box {
-        padding: var(--spacing-lg);
-        margin: var(--spacing-md);
-        width: 95%;
-    }
-
-    .parent-info-card {
-        padding: var(--spacing-md);
-    }
-
-    .message-form-card {
-        padding: var(--spacing-md);
-    }
-
-    #editStudentModal .modal-box {
-        max-width: 95%;
+    .theme-toggle-wrapper {
+        justify-content: center;
+        margin-bottom: var(--spacing-md);
     }
 }
 
-/* شاشات صغيرة جداً */
+/* Mobile Phones */
 @media (max-width: 480px) {
     body {
         padding: var(--spacing-sm);
     }
-
     .container {
         padding: var(--spacing-md);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-md);
     }
-
     .school-header {
         padding: var(--spacing-md);
     }
-
     .school-header h1 {
-        font-size: var(--font-size-lg);
+        font-size: var(--font-xl);
     }
-
-    header h1 {
-        font-size: var(--font-size-lg);
+    .school-header p {
+        font-size: var(--font-sm);
     }
-
     .form-grid {
         grid-template-columns: 1fr;
     }
-
     .student-card {
         padding: var(--spacing-md);
     }
-
     .card-actions {
         flex-direction: column;
     }
-
-    .card-actions .btn-toggle,
-    .card-actions .btn-delete,
-    .card-actions .btn-qr,
-    .card-actions .btn-edit {
+    .card-actions button {
         width: 100%;
         justify-content: center;
     }
-
+    #loginScreen,
+    #registerScreen {
+        padding: var(--spacing-lg);
+        margin: 10px auto;
+    }
     .modal-actions {
         flex-direction: column;
     }
-
     .modal-actions button {
         width: 100%;
         justify-content: center;
     }
-
-    .log-header {
+    header {
         flex-direction: column;
         align-items: stretch;
+        gap: var(--spacing-sm);
+    }
+    .btn-logout {
+        width: 100%;
+        justify-content: center;
+    }
+    .theme-switch {
+        width: 48px;
+        height: 26px;
+    }
+    .theme-slider::before {
+        height: 18px;
+        width: 18px;
+        font-size: 10px;
+    }
+    .theme-switch input:checked+.theme-slider::before {
+        transform: translateX(22px);
     }
 }
 
-/* ============================================================
-   29. PRINT STYLES (طباعة)
-   ============================================================ */
-@media print {
-    .btn-logout,
-    .btn-toggle-form,
-    .btn-primary,
-    .btn-add,
-    .btn-settings,
-    .btn-bulk-enter,
-    .btn-bulk-exit,
-    .btn-delete,
-    .btn-qr,
-    .btn-edit,
-    .btn-toggle,
-    .btn-warning,
-    .btn-success,
-    .btn-danger,
-    .btn-secondary,
-    .btn-show-old,
-    .btn-hide-old,
-    .btn-submit-message,
-    .modal-overlay,
-    .actions-container,
-    .action-card,
-    .card-actions,
-    .leave-actions,
-    .notification-forms {
-        display: none !important;
+/* Very Small Phones (320px) */
+@media (max-width: 380px) {
+    .school-header h1 {
+        font-size: var(--font-lg);
     }
-
     .container {
-        box-shadow: none !important;
-        border: 1px solid #ddd !important;
-        backdrop-filter: none !important;
+        padding: var(--spacing-sm);
     }
-
-    .student-card {
-        break-inside: avoid;
-        box-shadow: none !important;
-        border: 1px solid #ddd !important;
-    }
-
-    .school-header {
-        background: #1a365d !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+    .modal-box {
+        padding: var(--spacing-md);
     }
 }
 
 /* ============================================================
-   30. UTILITY CLASSES (فئات مساعدة)
+   21. UTILITY & MISC (فئات مساعدة وتأثيرات)
    ============================================================ */
+.hidden {
+    display: none !important;
+}
 .text-center {
     text-align: center;
 }
-.text-right {
-    text-align: right;
+.w-full {
+    width: 100%;
 }
-.text-left {
-    text-align: left;
-}
-
-.mt-1 {
-    margin-top: var(--spacing-sm);
-}
-.mt-2 {
-    margin-top: var(--spacing-md);
-}
-.mt-3 {
-    margin-top: var(--spacing-lg);
-}
-.mb-1 {
-    margin-bottom: var(--spacing-sm);
-}
-.mb-2 {
-    margin-bottom: var(--spacing-md);
-}
-.mb-3 {
-    margin-bottom: var(--spacing-lg);
-}
-
-.flex {
-    display: flex;
+.gap-2 {
+    gap: var(--spacing-md);
 }
 .flex-center {
     display: flex;
@@ -2160,62 +1292,58 @@ header h1 {
     align-items: center;
     justify-content: space-between;
 }
-.flex-col {
-    display: flex;
-    flex-direction: column;
+
+/* تأثير تموج (Ripple) للأزرار */
+.btn-ripple {
+    position: relative;
+    overflow: hidden;
 }
-.gap-1 {
-    gap: var(--spacing-sm);
+.btn-ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s;
 }
-.gap-2 {
-    gap: var(--spacing-md);
-}
-.gap-3 {
-    gap: var(--spacing-lg);
+.btn-ripple:active::after {
+    opacity: 1;
+    transition: 0s;
 }
 
-.w-full {
-    width: 100%;
-}
-.h-full {
-    height: 100%;
-}
-
-.rounded-full {
-    border-radius: var(--radius-full);
-}
-.rounded-lg {
-    border-radius: var(--radius-lg);
-}
-.rounded-md {
-    border-radius: var(--radius-md);
-}
-
-.shadow-sm {
-    box-shadow: var(--shadow-sm);
-}
-.shadow-md {
-    box-shadow: var(--shadow-md);
-}
-.shadow-lg {
-    box-shadow: var(--shadow-lg);
-}
-
-.hidden {
-    display: none !important;
-}
-.visible {
-    display: block !important;
-}
-
-.sr-only {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
+/* ============================================================
+   22. PRINT STYLES (تحسين الطباعة)
+   ============================================================ */
+@media print {
+    .btn-logout,
+    .theme-toggle-wrapper,
+    .btn-primary,
+    .btn-add,
+    .btn-settings,
+    .btn-bulk-enter,
+    .btn-bulk-exit,
+    .btn-delete,
+    .btn-qr,
+    .btn-edit,
+    .btn-toggle,
+    .modal-overlay,
+    .actions-container,
+    .notification-forms {
+        display: none !important;
+    }
+    .container {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        backdrop-filter: none !important;
+    }
+    .student-card {
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+    .school-header {
+        background: #1e1b4b !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 }
