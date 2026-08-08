@@ -301,11 +301,10 @@
 }
   },
   "parent": {
-    "welcome_greeting": "👋 مرحباً،",
-    "email_label": "📧 البريد الإلكتروني:",
-    "phone_label": "📞 رقم الهاتف:",
-    "guardian_role": "👨‍👩‍👦 ولي أمر",
-
+  "welcome_greeting": "👋 مرحباً،",
+  "email_label": "📧 البريد الإلكتروني:",
+  "phone_label": "📞 رقم الهاتف:",
+  "guardian_role": "👨‍👩‍👦 ولي أمر",
     "info_card_title": "👋 مرحباً",
     "badge": "👨‍👩‍👦 ولي أمر",
     "message_form_title": "✉️ إرسال رسالة إلى المدرسة",
