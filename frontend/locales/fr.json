@@ -292,11 +292,10 @@
     "cancel_edit_btn": "Annuler"
   },
   "parent": {
-    "welcome_greeting": "👋 Bonjour,",
-    "email_label": "📧 E-mail :",
-    "phone_label": "📞 Téléphone :",
-    "guardian_role": "👨‍👩‍👦 Tuteur",
-
+  "welcome_greeting": "👋 Bonjour,",
+  "email_label": "📧 E-mail :",
+  "phone_label": "📞 Téléphone :",
+  "guardian_role": "👨‍👩‍👦 Tuteur",
     "info_card_title": "👋 Bonjour",
     "badge": "👨‍👩‍👦 Tuteur",
     "message_form_title": "✉️ Envoyer un message à l'école",
