@@ -292,11 +292,10 @@
     "cancel_edit_btn": "Cancel"
   },
   "parent": {
-    "welcome_greeting": "👋 Hello,",
-    "email_label": "📧 Email:",
-    "phone_label": "📞 Phone:",
-    "guardian_role": "👨‍👩‍👦 Guardian",
-
+   "welcome_greeting": "👋 Hello,",
+  "email_label": "📧 Email:",
+  "phone_label": "📞 Phone:",
+  "guardian_role": "👨‍👩‍👦 Guardian",
     "info_card_title": "👋 Hello",
     "badge": "👨‍👩‍👦 Guardian",
     "message_form_title": "✉️ Send a Message to School",
