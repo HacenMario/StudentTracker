@@ -126,9 +126,11 @@ function switchLanguage(lang) {
     document.querySelectorAll('.header-lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
     });
-    // تحديث حالة الأزرار في كل مكان
     updateLanguageButtons(lang);
-    console.log(`🌍 تم تغيير اللغة إلى: ${lang}`);
+    console.log(`تم تغيير اللغة إلى: ${lang}`);
+
+    // ⬅️ أضف هذا السطر لإعادة تحميل الصفحة
+    window.location.reload();
 }
 
 // تطبيق الترجمات على جميع العناصر
