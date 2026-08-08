@@ -48,6 +48,7 @@ function updateLanguageButtons(lang) {
 // ==========================================
 // نظام الترجمة (i18n)
 // ==========================================
+let currentLanguage = localStorage.getItem('language') || 'ar';
 let translationsLoaded = false;
 
 // تحميل الترجمات
@@ -134,7 +135,6 @@ function switchLanguage(lang) {
 
 // --- إعدادات الترجمة ---
 let translations = {};
-let currentLanguage = localStorage.getItem('language') || 'ar';
 
 // تحميل ملف اللغة
 function loadLanguage(lang) {
