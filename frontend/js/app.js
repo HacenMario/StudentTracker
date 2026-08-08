@@ -1217,9 +1217,9 @@ function translateNotificationMessage(message) {
             // إعادة بناء الرسالة المترجمة
             const translated = translate('attendance.student_became', { name, status: translatedStatus });
             // إضافة الوقت إذا وجد
-            const timeMatch = message.match(/\(وقت: (.*?)\)/);
+            const timeMatch = message.match(/\( (.*?)\)/);
             if (timeMatch) {
-                return translated + ' (وقت: ' + timeMatch[1] + ')';
+                return translated + ' ( ' + timeMatch[1] + ')';
             }
             return translated;
         }
@@ -1276,7 +1276,7 @@ function addNotificationToUI(message, createdAt, isRead = false, id = null) {
     // ✅ استخدام التاريخ مباشرة وعرضه عبر formatFullTime
     const correctedDate = new Date(createdAt);
     const time = formatFullTime(correctedDate);
-    li.textContent = message + ' (وقت: ' + time + ')';
+    li.textContent = message + ' ( ' + time + ')';
     li.style.cssText = 'padding:10px 16px; margin:4px 0; border-radius:12px; transition:0.3s;';
     
     if (!isRead) {
