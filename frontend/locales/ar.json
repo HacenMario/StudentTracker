@@ -74,6 +74,7 @@
     "today_logs": "سجل اليوم"
   },
   "notification": {
+    "time": "وقت:",
     "title": "الإشعارات الواردة",
     "general": "إشعار عام",
     "private": "إشعار خاص",
@@ -176,7 +177,7 @@
     "start_failed": "فشل تشغيل الكاميرا"
   },
   "common": {
-    "common.time": "وقت:",
+    "time": "وقت:",
     "save": "حفظ",
     "cancel": "إلغاء",
     "confirm": "تأكيد",
