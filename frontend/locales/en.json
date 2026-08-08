@@ -341,14 +341,6 @@
     "notifications": "Notifications",
     "leave": "Leave Excuse"
   },
-  "messages": {
-    "title": "Send a Message to the School",
-    "send_to_school": "✉️ Send a Message to the School",
-    "student_concerned": "Student concerned by the message",
-    "subject_optional": "Subject (optional)",
-    "message_text": "Message text",
-    "send": "Send Message"
-  },
   "children": {
     "my_children": "My Children"
   },
