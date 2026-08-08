@@ -304,13 +304,13 @@
       "description": "📋 Description (optional)",
       "save": "Save Changes",
       "cancel": "Cancel"
+    }
   },
-    },
   "parent": {
-   "welcome_greeting": "👋 Hello,",
-  "email_label": "📧 Email:",
-  "phone_label": "📞 Phone:",
-  "guardian_role": "👨‍👩‍👦 Parent",
+    "welcome_greeting": "👋 Hello,",
+    "email_label": "📧 Email:",
+    "phone_label": "📞 Phone:",
+    "guardian_role": "👨‍👩‍👦 Parent",
     "info_card_title": "👋 Hello",
     "badge": "👨‍👩‍👦 Parent",
     "message_form_title": "✉️ Send a Message to School",
