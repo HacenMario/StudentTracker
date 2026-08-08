@@ -74,6 +74,7 @@
     "today_logs": "Journal d'aujourd'hui"
   },
   "notification": {
+    "time": "Heure :",
     "title": "Notifications reçues",
     "general": "Notification générale",
     "private": "Notification privée",
@@ -176,7 +177,7 @@
     "start_failed": "Échec du démarrage de la caméra"
   },
   "common": {
-    "common.time": "Heure :",
+    "time": "Heure :",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
