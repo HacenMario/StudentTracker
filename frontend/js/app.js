@@ -3235,8 +3235,6 @@ document.addEventListener('click', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     const toggleBtn = document.getElementById('themeToggle');
     const htmlElement = document.documentElement; // نطبق على <html>
-    const lang = localStorage.getItem('language') || 'ar';
-    loadLanguage(lang);
 
     // 1. استعادة الوضع المحفوظ
     const savedTheme = localStorage.getItem('theme');
