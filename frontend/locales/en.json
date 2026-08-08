@@ -305,6 +305,7 @@
       "save": "Save Changes",
       "cancel": "Cancel"
   },
+    },
   "parent": {
    "welcome_greeting": "👋 Hello,",
   "email_label": "📧 Email:",
