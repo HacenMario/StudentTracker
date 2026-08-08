@@ -3194,7 +3194,6 @@ async function loadParentChildren() {
 
         const select = document.getElementById('parentStudentSelect');
         if (select) {
-            select.innerHTML = '<option value="">-- اختر الطالب --</option>';
             students.forEach(student => {
                 const option = document.createElement('option');
                 option.value = student._id;
