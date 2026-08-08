@@ -265,6 +265,7 @@
     "date": "Date",
     "name": "Holiday Name",
     "description": "Description (optional)",
+    "description_label": "📋 Description (optional)",
     "save": "Save",
     "delete": "Delete Holiday",
     "confirm_delete": "Are you sure you want to delete this holiday?",
@@ -288,9 +289,12 @@
     "start_date": "📅 Start Date",
     "end_date": "📅 End Date (optional - for multi-day holidays)",
     "holiday_name": "📝 Holiday Name",
+    "name_label": "📝 Holiday Name",
     "holiday_description": "📋 Description (optional)",
     "save_changes": "Save Changes",
     "cancel_edit_btn": "Cancel"
+    "save": "Save Changes",
+    "cancel": "Cancel"
   },
   "parent": {
    "welcome_greeting": "👋 Hello,",
