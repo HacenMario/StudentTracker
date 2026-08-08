@@ -247,36 +247,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fetchParentData() {
-    // 1️⃣ جلب بيانات ولي الأمر من الخادم
-    fetch('/api/parent/profile')  // استبدل المسار حسب API الخاص بك
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('فشل جلب بيانات ولي الأمر');
-            }
-            return response.json();
-        })
-        .then(data => {
-            // 2️⃣ تعبئة العناصر الديناميكية (البيانات الشخصية)
-            const nameElement = document.getElementById('parentNameDisplay');
-            const emailElement = document.getElementById('parentEmailDisplay');
-            const phoneElement = document.getElementById('parentPhoneDisplay');
-            
-            if (nameElement) nameElement.textContent = data.fullName || '---';
-            if (emailElement) emailElement.textContent = data.email || '---';
-            if (phoneElement) phoneElement.textContent = data.phone || '---';
-            
-            // 3️⃣ ✅ إعادة تطبيق الترجمة بعد تعبئة البيانات
-            //    (للتأكد من أن العناصر الثابتة التي تحمل data-i18n ما زالت مترجمة)
-            applyTranslationsToAll();
-            
-            console.log('✅ تم تحميل بيانات ولي الأمر:', data);
-        })
-        .catch(error => {
-            console.error('❌ خطأ في جلب بيانات ولي الأمر:', error);
-            // عرض رسائل خطأ مترجمة بدلاً من النصوص الثابتة
-            const nameElement = document.getElementById('parentNameDisplay');
-            if (nameElement) nameElement.textContent = t('parent.not_available') || '---';
-        });
+    // البيانات موجودة بالفعل في الـ HTML، نطبق الترجمة فقط
+    applyTranslationsToAll();
+    console.log('✅ تم تحديث الترجمة لصفحة ولي الأمر');
 }
 
 // دالة مساعدة للترجمة في JavaScript
