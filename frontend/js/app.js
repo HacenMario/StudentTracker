@@ -2499,34 +2499,39 @@ window.handleEditHoliday = async function(id) {
     align-items: center;
     z-index: 9999;
   `;
-  modal.innerHTML = `
-    <div style="background: white; padding: 25px; border-radius: 12px; width: 400px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-      <h3 style="margin-top: 0; color: #2c3e50;">✏️ تعديل العطلة</h3>
-      <div class="form-group" style="margin-bottom: 12px;">
-        <label>📅 تاريخ البداية</label>
-        <input type="date" id="editHolidayDate" value="${formattedDate}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
-      </div>
-      <div class="form-group" style="margin-bottom: 12px;">
-        <label>📅 تاريخ النهاية (اختياري - للإجازات المتعددة الأيام)</label>
-        <input type="date" id="editHolidayEndDate" value="${formattedEndDate}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
-      </div>
-      <div class="form-group" style="margin-bottom: 12px;">
-        <label>📝 اسم العطلة</label>
-        <input type="text" id="editHolidayName" value="${holiday.name}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
-      </div>
-      <div class="form-group" style="margin-bottom: 12px;">
-        <label>📋 وصف (اختياري)</label>
-        <textarea id="editHolidayDescription" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; resize: vertical;">${holiday.description || ''}</textarea>
-      </div>
-      <div style="display: flex; gap: 10px; margin-top: 15px;">
-        <button id="saveEditHolidayBtn" class="btn-success" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: #27ae60; color: white; cursor: pointer;">
-          <i class="fas fa-save"></i> حفظ التعديلات
-        </button>
-        <button id="cancelEditHolidayBtn" class="btn-secondary" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: #95a5a6; color: white; cursor: pointer;">
-          <i class="fas fa-times"></i> إلغاء
-        </button>
-      </div>
+modal.innerHTML = `
+  <div style="background: white; padding: 25px; border-radius: 12px; width: 400px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+    <h3 style="margin-top: 0; color: #2c3e50;">${t('holidays.edit_title')}</h3>
+    
+    <div class="form-group" style="margin-bottom: 12px;">
+      <label>${t('holidays.start_date')}</label>
+      <input type="date" id="editHolidayDate" value="${formattedDate}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
     </div>
+    
+    <div class="form-group" style="margin-bottom: 12px;">
+      <label>${t('holidays.end_date')}</label>
+      <input type="date" id="editHolidayEndDate" value="${formattedEndDate}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+    </div>
+    
+    <div class="form-group" style="margin-bottom: 12px;">
+      <label>${t('holidays.name_label')}</label>
+      <input type="text" id="editHolidayName" value="${holiday.name}" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+    </div>
+    
+    <div class="form-group" style="margin-bottom: 12px;">
+      <label>${t('holidays.description_label')}</label>
+      <textarea id="editHolidayDescription" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; resize: vertical;">${holiday.description || ''}</textarea>
+    </div>
+    
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+      <button id="saveEditHolidayBtn" class="btn-success" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: #27ae60; color: white; cursor: pointer;">
+        <i class="fas fa-save"></i> ${t('holidays.save')}
+      </button>
+      <button id="cancelEditHolidayBtn" class="btn-secondary" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: #95a5a6; color: white; cursor: pointer;">
+        <i class="fas fa-times"></i> ${t('holidays.cancel')}
+      </button>
+    </div>
+  </div>
   `;
   document.body.appendChild(modal);
   
