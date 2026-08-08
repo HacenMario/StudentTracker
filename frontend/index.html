@@ -389,20 +389,18 @@
 <!-- ========================================== -->
 <div class="parent-info-card" id="parentInfoCard">
     <h3>
-        <!-- ✅ النص الثابت سيُترجم -->
-        <span data-i18n="welcome_greeting">👋 </span>
-        <!-- ❌ الاسم ديناميكي، ليس له data-i18n -->
+        <span data-i18n="parent.welcome_greeting">👋 مرحباً،</span>
         <span id="parentNameDisplay">...</span>
     </h3>
     <p>
-        <span data-i18n="email_label">📧 :</span>
+        <span data-i18n="parent.email_label">📧 البريد الإلكتروني:</span>
         <span id="parentEmailDisplay">...</span>
     </p>
     <p>
-        <span data-i18n="phone_label">📞 :</span>
+        <span data-i18n="parent.phone_label">📞 رقم الهاتف:</span>
         <span id="parentPhoneDisplay">...</span>
     </p>
-    <span class="badge-parent" data-i18n="guardian_role">👨‍👩‍👦</span>
+    <span class="badge-parent" data-i18n="parent.guardian_role">👨‍👩‍👦 ولي أمر</span>
 </div>
 
     <div id="parentStudentsList" class="students-grid"></div>
@@ -411,32 +409,25 @@
 <!-- نموذج إرسال رسالة للمدرسة (جديد) -->
 <!-- ========================================== -->
 <div class="message-form-card">
-    <!-- ✅ إضافة data-i18n للعنوان -->
-    <h4 data-i18n="message_form_title">✉️ إرسال رسالة إلى المدرسة</h4>
+    <!-- ✅ استخدم parent.message_form_title -->
+    <h4 data-i18n="parent.message_form_title">✉️ إرسال رسالة إلى المدرسة</h4>
     <div id="parentMessageAlert" class="alert-msg-form"></div>
     <form id="parentMessageForm">
         <div class="form-group">
-            <!-- ✅ إضافة data-i18n للتسمية -->
-            <label for="parentStudentSelect" data-i18n="student_label">الطالب المعني بالرسالة</label>
+            <label for="parentStudentSelect" data-i18n="parent.student_label">الطالب المعني بالرسالة</label>
             <select id="parentStudentSelect" required>
-                <!-- ✅ إضافة data-i18n للخيار الافتراضي -->
-                <option value="" data-i18n="select_student">-- اختر الطالب --</option>
+                <option value="" data-i18n="parent.select_student">-- اختر الطالب --</option>
             </select>
         </div>
         <div class="form-group">
-            <!-- ✅ إضافة data-i18n للتسمية -->
-            <label for="parentSubjectInput" data-i18n="subject_label">الموضوع (اختياري)</label>
-            <!-- ✅ إضافة data-i18n للـ placeholder -->
-            <input type="text" id="parentSubjectInput" data-i18n="subject_placeholder" placeholder="مثال: استفسار عن الحضور" />
+            <label for="parentSubjectInput" data-i18n="parent.subject_label">الموضوع (اختياري)</label>
+            <input type="text" id="parentSubjectInput" data-i18n="parent.subject_placeholder" placeholder="مثال: استفسار عن الحضور" />
         </div>
         <div class="form-group">
-            <!-- ✅ إضافة data-i18n للتسمية -->
-            <label for="parentMessageInput" data-i18n="message_label">نص الرسالة</label>
-            <!-- ✅ إضافة data-i18n للـ placeholder -->
-            <textarea id="parentMessageInput" data-i18n="message_placeholder" placeholder="اكتب رسالتك هنا..." required></textarea>
+            <label for="parentMessageInput" data-i18n="parent.message_label">نص الرسالة</label>
+            <textarea id="parentMessageInput" data-i18n="parent.message_placeholder" placeholder="اكتب رسالتك هنا..." required></textarea>
         </div>
-        <!-- ✅ إضافة data-i18n للزر -->
-        <button type="submit" class="btn-submit-message" id="parentSendMessageBtn" data-i18n="send_btn">إرسال الرسالة</button>
+        <button type="submit" class="btn-submit-message" id="parentSendMessageBtn" data-i18n="parent.send_btn">إرسال الرسالة</button>
     </form>
 </div>
 
