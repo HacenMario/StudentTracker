@@ -138,7 +138,7 @@ let translations = {};
 
 // تحميل ملف اللغة
 function loadLanguage(lang) {
-    return fetch(`/frontend/locales/${lang}.json`)  // تأكد من المسار الصحيح
+    return fetch(`../locales/${lang}.json`)  // ✅ استخدم مساراً نسبياً
         .then(res => {
             if (!res.ok) throw new Error('فشل تحميل ملف اللغة');
             return res.json();
