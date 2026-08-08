@@ -407,30 +407,39 @@
 
     <div id="parentStudentsList" class="students-grid"></div>
 
-<!-- ========================================== -->
-<!-- نموذج إرسال رسالة للمدرسة (جديد) -->
-<!-- ========================================== -->
-<div class="message-form-card">
-    <h4>✉️ إرسال رسالة إلى المدرسة</h4>
-    <div id="parentMessageAlert" class="alert-msg-form"></div>
-    <form id="parentMessageForm">
-        <div class="form-group">
-            <label for="parentStudentSelect">الطالب المعني بالرسالة</label>
-            <select id="parentStudentSelect" required>
-                <option value="">-- اختر الطالب --</option>
+        <!-- نموذج إرسال رسالة (مع الترجمة الكاملة) -->
+        <div class="message-form">
+            <!-- ✅ عنوان النموذج -->
+            <h3 data-i18n="message_form_title">✉️ إرسال رسالة إلى المدرسة</h3>
+            
+            <!-- ✅ تسمية الطالب -->
+            <label data-i18n="student_label">الطالب المعني بالرسالة</label>
+            <select id="studentSelect">
+                <!-- ✅ الخيار الافتراضي (مترجم) -->
+                <option value="" data-i18n="select_student">-- اختر الطالب --</option>
+                <!-- باقي الخيارات ستُضاف ديناميكياً عبر JavaScript -->
             </select>
+            
+            <!-- ✅ تسمية الموضوع -->
+            <label data-i18n="subject_label">الموضوع (اختياري)</label>
+            <!-- ✅ placeholder مترجم -->
+            <input type="text" id="subjectInput" data-i18n="subject_placeholder" placeholder="مثال: استفسار عن الحضور">
+            
+            <!-- ✅ تسمية الرسالة -->
+            <label data-i18n="message_label">نص الرسالة</label>
+            <!-- ✅ placeholder مترجم -->
+            <textarea id="messageInput" data-i18n="message_placeholder" placeholder="اكتب رسالتك هنا..."></textarea>
+            
+            <!-- ✅ زر الإرسال -->
+            <button id="sendMessageBtn" data-i18n="send_btn">إرسال الرسالة</button>
+            
+            <!-- ✅ رسائل النجاح والخطأ (قابلة للترجمة) -->
+            <div id="messageStatus" class="status-message">
+                <span data-i18n="message_sent" style="display:none;">✅ تم إرسال رسالتك إلى المدرسة بنجاح</span>
+                <span data-i18n="load_error" style="display:none;">❌ حدث خطأ في الإرسال</span>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="parentSubjectInput">الموضوع (اختياري)</label>
-            <input type="text" id="parentSubjectInput" placeholder="مثال: استفسار عن الحضور" />
-        </div>
-        <div class="form-group">
-            <label for="parentMessageInput">نص الرسالة</label>
-            <textarea id="parentMessageInput" placeholder="اكتب رسالتك هنا..." required></textarea>
-        </div>
-        <button type="submit" class="btn-submit-message" id="parentSendMessageBtn">إرسال الرسالة</button>
-    </form>
-</div>
+    </div>
 
     <!-- سجل دخول/خروج أبنائي -->
     <div class="log-section">
