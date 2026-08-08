@@ -388,10 +388,19 @@
 <!-- بطاقة معلومات ولي الأمر (جديدة) -->
 <!-- ========================================== -->
 <div class="parent-info-card" id="parentInfoCard">
-    <h3>👋 مرحباً، <span id="parentNameDisplay">...</span></h3>
-    <p>📧 البريد الإلكتروني: <span id="parentEmailDisplay">...</span></p>
-    <p>📞 رقم الهاتف: <span id="parentPhoneDisplay">...</span></p>
-    <span class="badge-parent">👨‍👩‍👦 ولي أمر</span>
+    <h3>
+        <span data-i18n="welcome_greeting">👋 مرحباً،</span>
+        <span id="parentNameDisplay">...</span>
+    </h3>
+    <p>
+        <span data-i18n="email_label">📧 البريد الإلكتروني:</span>
+        <span id="parentEmailDisplay">...</span>
+    </p>
+    <p>
+        <span data-i18n="phone_label">📞 رقم الهاتف:</span>
+        <span id="parentPhoneDisplay">...</span>
+    </p>
+    <span class="badge-parent" data-i18n="guardian_role">👨‍👩‍👦 ولي أمر</span>
 </div>
 
     <div id="parentStudentsList" class="students-grid"></div>
