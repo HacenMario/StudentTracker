@@ -74,6 +74,7 @@
     "today_logs": "Today's Log"
   },
   "notification": {
+    "time": "Time:",
     "title": "Incoming Notifications",
     "general": "General Notification",
     "private": "Private Notification",
@@ -176,7 +177,7 @@
     "start_failed": "Failed to start camera"
   },
   "common": {
-    "common.time": "Time:",
+    "time": "Time:",
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
