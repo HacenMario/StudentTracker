@@ -176,7 +176,7 @@
     "start_failed": "فشل تشغيل الكاميرا"
   },
   "common": {
-    "time": "وقت:",
+    "common.time": "وقت:",
     "save": "حفظ",
     "cancel": "إلغاء",
     "confirm": "تأكيد",
